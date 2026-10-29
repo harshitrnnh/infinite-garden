@@ -1,6 +1,9 @@
 import { createClient } from '@supabase/supabase-js';
 
-// Default Supabase configuration (reads from Vite env vars or localStorage fallback)
+// Default Supabase configuration (reads from Vite env vars, constants, or localStorage)
+const DEFAULT_SUPABASE_URL = 'https://vlslbpagvytnifxfmofc.supabase.co';
+const DEFAULT_SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZsc2xicGFndnl0bmlmeGZtb2ZjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTMyOTU5MTUsImV4cCI6MjEwODg3MTkxNX0.XgBA7QovQcthKqJ4QfqtcakukO62JIz-lfNbK-XM3b0';
+
 const getSupabaseConfig = () => {
   const envUrl = import.meta.env?.VITE_SUPABASE_URL;
   const envKey = import.meta.env?.VITE_SUPABASE_ANON_KEY;
@@ -8,8 +11,8 @@ const getSupabaseConfig = () => {
   const localKey = typeof localStorage !== 'undefined' ? localStorage.getItem('supabase_anon_key') : null;
 
   return {
-    url: envUrl || localUrl || '',
-    key: envKey || localKey || ''
+    url: envUrl || localUrl || DEFAULT_SUPABASE_URL,
+    key: envKey || localKey || DEFAULT_SUPABASE_ANON_KEY
   };
 };
 
