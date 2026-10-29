@@ -485,7 +485,7 @@ class MeadowVisualLab {
 
   findClearPlantedSlot(minDist = 1.85) {
     // 360-degree radial candidate search across the whole meadow glade
-    for (let r = 2.0; r <= 12.0; r += 0.45) {
+    for (let r = 2.0; r <= 14.0; r += 0.45) {
       const stepAngle = Math.max(0.16, minDist / r);
       const phase = Math.random() * Math.PI * 2;
       for (let theta = 0; theta < Math.PI * 2; theta += stepAngle) {
@@ -495,12 +495,14 @@ class MeadowVisualLab {
 
         // Skip camera vantage point
         if (Math.hypot(x - 0.3, z - 1.8) < 1.15) continue;
-        if (Math.hypot(x, z) > 12.6) continue;
+        if (Math.hypot(x, z) > 15.0) continue;
 
         let clear = true;
         for (const fl of this.flowers) {
-          const dx = x - fl.group.position.x;
-          const dz = z - fl.group.position.z;
+          const pos = fl.group ? fl.group.position : fl.position;
+          if (!pos) continue;
+          const dx = x - pos.x;
+          const dz = z - pos.z;
           if (dx * dx + dz * dz < minDist * minDist) {
             clear = false;
             break;
@@ -513,14 +515,16 @@ class MeadowVisualLab {
   }
 
   initCommunalSync() {
-    const handleNewPlant = (flowerData) => {
+    const handleNewPlant = (flowerData, isLiveAlert = true) => {
       if (!flowerData || !flowerData.name) return;
       const exists = this.flowers.some(f => f.isPlanted && (f.id === flowerData.id || f.name.toLowerCase() === flowerData.name.toLowerCase()));
       if (exists) return;
 
       // Find guaranteed non-overlapping position with full 1.85m clearance
       const slot = this.findClearPlantedSlot(1.85);
-      const groundY = Math.sin(slot.x * 0.35) * Math.cos(slot.z * 0.35) * 0.18 - Math.hypot(slot.x, slot.z) * 0.015;
+      const groundY = Math.sin(slot.x * 0.25) * Math.cos(slot.z * 0.25) * 0.35 +
+                      Math.sin(slot.x * 0.08 + slot.z * 0.08) * 0.40 -
+                      Math.hypot(slot.x, slot.z) * 0.006;
 
       const planted = new PlantedChoreographyFlower(flowerData, slot, true);
       planted.setPosition(slot.x, groundY, slot.z);
@@ -528,16 +532,27 @@ class MeadowVisualLab {
       this.flowers.unshift(planted);
       this.heroFlower = planted;
 
-      // Fly camera to celebrate the new bloom!
-      const wp = new THREE.Vector3();
-      planted.group.getWorldPosition(wp);
-      this.sceneEnv.targetLookAt.set(wp.x, wp.y + 1.1, wp.z);
-      this.sceneEnv.targetSpherical.radius = 2.2;
+      // Cache locally on device so reloads retain cloud plants even offline
+      try {
+        const userPlants = JSON.parse(localStorage.getItem('botanical_garden_user_plants') || '[]');
+        if (!userPlants.some(p => p.id === flowerData.id || p.name === flowerData.name)) {
+          userPlants.unshift(flowerData);
+          localStorage.setItem('botanical_garden_user_plants', JSON.stringify(userPlants.slice(0, 100)));
+        }
+      } catch (_) {}
 
-      const input = document.getElementById('flower-search-input');
-      if (input) {
-        input.value = flowerData.name;
-        this.doSearch(flowerData.name);
+      if (isLiveAlert) {
+        // Fly camera to celebrate the new bloom!
+        const wp = new THREE.Vector3();
+        planted.group.getWorldPosition(wp);
+        this.sceneEnv.targetLookAt.set(wp.x, wp.y + 1.1, wp.z);
+        this.sceneEnv.targetSpherical.radius = 2.2;
+
+        const input = document.getElementById('flower-search-input');
+        if (input) {
+          input.value = flowerData.name;
+          this.doSearch(flowerData.name);
+        }
       }
     };
 
@@ -547,7 +562,7 @@ class MeadowVisualLab {
         try {
           const payload = JSON.parse(e.newValue);
           if (payload && payload.name) {
-            handleNewPlant(payload);
+            handleNewPlant(payload, true);
           }
         } catch (_) {}
       }
@@ -558,7 +573,7 @@ class MeadowVisualLab {
       const channel = new BroadcastChannel('botanical_garden_channel');
       channel.onmessage = (e) => {
         if (e.data && e.data.type === 'NEW_BLOOM' && e.data.flowerData) {
-          handleNewPlant(e.data.flowerData);
+          handleNewPlant(e.data.flowerData, true);
         }
       };
     } catch (_) {}
@@ -566,14 +581,15 @@ class MeadowVisualLab {
     // 3. Supabase Cloud Realtime Channel (Cross-device WebSocket: Mac Laptop -> iPad TV display)
     subscribeToNewBlooms((cloudFlower) => {
       if (cloudFlower && cloudFlower.name) {
-        handleNewPlant(cloudFlower);
+        handleNewPlant(cloudFlower, true);
       }
     });
 
     // 4. Initial Cloud Fetch from Supabase (loads previous visitor flowers onto iPad)
     fetchCloudChoreographies().then((cloudFlowers) => {
       if (Array.isArray(cloudFlowers) && cloudFlowers.length > 0) {
-        cloudFlowers.forEach((f) => handleNewPlant(f));
+        const reversed = [...cloudFlowers].reverse();
+        reversed.forEach((f) => handleNewPlant(f, false));
       }
     }).catch(() => {});
   }

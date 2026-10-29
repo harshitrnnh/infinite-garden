@@ -17,6 +17,7 @@ const getSupabaseConfig = () => {
 };
 
 let _supabaseClient = null;
+let _realtimeBroadcastChannel = null;
 
 export function getSupabase() {
   if (_supabaseClient) return _supabaseClient;
@@ -37,6 +38,18 @@ export function getSupabase() {
     }
   }
   return null;
+}
+
+export function getRealtimeBroadcastChannel() {
+  const supabase = getSupabase();
+  if (!supabase) return null;
+  if (!_realtimeBroadcastChannel) {
+    _realtimeBroadcastChannel = supabase.channel('devcon_garden_realtime');
+    _realtimeBroadcastChannel.subscribe((status) => {
+      console.log('Supabase Realtime Channel Status:', status);
+    });
+  }
+  return _realtimeBroadcastChannel;
 }
 
 export function isCloudConfigured() {
@@ -130,15 +143,17 @@ export async function saveChoreographyToCloud(flowerData, videoBlob = null) {
 
     // 2. Broadcast real-time websocket ping directly to iPad / TV
     try {
-      const channel = supabase.channel('devcon_garden_realtime');
-      await channel.send({
-        type: 'broadcast',
-        event: 'NEW_BLOOM',
-        payload: {
-          ...payload,
-          isPlanted: true
-        }
-      });
+      const channel = getRealtimeBroadcastChannel();
+      if (channel) {
+        channel.send({
+          type: 'broadcast',
+          event: 'NEW_BLOOM',
+          payload: {
+            ...payload,
+            isPlanted: true
+          }
+        });
+      }
     } catch (_) {}
 
     return { success: true, data: payload, videoUrl };
