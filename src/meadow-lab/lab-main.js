@@ -14,6 +14,7 @@ import { WildGrassesField } from './wild-grasses.js';
 import { CHOREOGRAPHY_PRESETS } from './choreography-simulator.js';
 import { FlowerLabelSystem, resetNameDeck, nextName } from './flower-labels.js';
 import { InstancedBotanicalMeadow } from './instanced-meadow.js';
+import { subscribeToNewBlooms, fetchCloudChoreographies } from '../supabase.js';
 
 /**
  * PlantedChoreographyFlower
@@ -561,6 +562,20 @@ class MeadowVisualLab {
         }
       };
     } catch (_) {}
+
+    // 3. Supabase Cloud Realtime Channel (Cross-device WebSocket: Mac Laptop -> iPad TV display)
+    subscribeToNewBlooms((cloudFlower) => {
+      if (cloudFlower && cloudFlower.name) {
+        handleNewPlant(cloudFlower);
+      }
+    });
+
+    // 4. Initial Cloud Fetch from Supabase (loads previous visitor flowers onto iPad)
+    fetchCloudChoreographies().then((cloudFlowers) => {
+      if (Array.isArray(cloudFlowers) && cloudFlowers.length > 0) {
+        cloudFlowers.forEach((f) => handleNewPlant(f));
+      }
+    }).catch(() => {});
   }
 
   setFlowerCount(newCount) {

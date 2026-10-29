@@ -5,6 +5,7 @@ import { StudioFlowerManager, CHOREOGRAPHY_SPECIES_META } from './plant-morpholo
 import { BodyTracker } from './tracker.js';
 import { ChoreographyRecorder, CommunityGardenManager } from './choreography.js';
 import { InstagramPostcardGenerator } from './instagram-postcard.js';
+import { saveChoreographyToCloud } from './supabase.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
   const container = document.getElementById('canvas-container');
@@ -758,6 +759,20 @@ document.addEventListener('DOMContentLoaded', async () => {
         flowerData: newRecord.meta
       });
     }
+
+    // Save motion data + video recording to Supabase Cloud & Realtime channel
+    // Pushes instant bloom directly to iPad & TV display!
+    saveChoreographyToCloud({
+      id: newRecord.meta.id,
+      name: flowerName,
+      choreographer: choreographerName,
+      species: currentSpecies,
+      duration: lastRecordedChoreography.duration || 10.0,
+      fps: lastRecordedChoreography.fps || 20,
+      frames: lastRecordedChoreography.frames
+    }, lastRecordedChoreography.videoBlob).catch((err) => {
+      console.warn('Supabase cloud save note:', err);
+    });
 
     try {
       localStorage.setItem('botanical_garden_new_bloom', JSON.stringify({
