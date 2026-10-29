@@ -1,0 +1,7 @@
+{
+  "cleanUrls": true,
+  "rewrites": [
+    { "source": "/visual-lab", "destination": "/visual-lab.html" },
+    { "source": "/flower-geometries", "destination": "/flower-geometries.html" }
+  ]
+}
