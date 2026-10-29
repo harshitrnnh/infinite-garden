@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Symbiosis — Body Choreography & Living Flower Studio</title>
+  <meta name="description" content="Split-screen body choreography interactive installation. Your physical movement directly shapes and blooms a living digital flower.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;1,9..144,400&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./src/style.css">
+</head>
+<body class="choreography-split-view">
+  <!-- Minimal Ambient Mist Vignette -->
+  <div class="mist-vignette"></div>
+
+  <!-- SPLIT SCREEN MAIN VIEWPORT -->
+  <main class="split-viewport" id="split-viewport">
+    <!-- LEFT HALF: Dancer Detection (Webcam + MediaPipe Skeleton Overlay) -->
+    <section class="split-pane split-left" id="camera-pane">
+      <div class="camera-stage">
+        <video id="webcam-feed" playsinline autoplay muted></video>
+        <canvas id="skeleton-canvas"></canvas>
+        <div class="camera-grade-overlay"></div>
+      </div>
+      <div class="pane-badge left-badge">
+        <span class="live-pulse-dot"></span>
+        <span>DANCER DETECTION</span>
+      </div>
+    </section>
+
+    <!-- CENTER VERTICAL DIVIDER -->
+    <div class="split-divider"></div>
+
+    <!-- RIGHT HALF: 3D Living Flower Organism -->
+    <section class="split-pane split-right" id="flower-pane">
+      <div id="canvas-container"></div>
+      <div class="pane-badge right-badge">
+        <span class="flower-tag-dot"></span>
+        <span id="active-flower-title">PERIWINKLE</span>
+      </div>
+      <div class="orbit-hint-badge">
+        <span>🖱️ Drag to Orbit • Scroll to Zoom</span>
+      </div>
+    </section>
+  </main>
+
+  <!-- TOP MINIMAL HEADER BAR -->
+  <header class="studio-header">
+    <div class="brand-group">
+      <h1 class="brand-title">Symbiosis</h1>
+      <span class="brand-sep">•</span>
+      <span class="brand-sub">Choreography Studio</span>
+    </div>
+
+    <!-- 7 BOTANICAL FLOWER SPECIES SELECTOR -->
+    <div class="species-selector-strip" id="species-selector-strip">
+      <button class="flower-card species-pill active" data-species="periwinkle" title="Periwinkle (Key 1)">
+        <span class="pill-dot periwinkle-dot"></span>
+        <span class="pill-name">Periwinkle</span>
+        <kbd>1</kbd>
+      </button>
+
+      <button class="flower-card species-pill" data-species="poppy" title="Wild Poppy (Key 2)">
+        <span class="pill-dot poppy-dot"></span>
+        <span class="pill-name">Poppy</span>
+        <kbd>2</kbd>
+      </button>
+
+      <button class="flower-card species-pill" data-species="chamomile" title="Chamomile Wheat (Key 3)">
+        <span class="pill-dot chamomile-dot"></span>
+        <span class="pill-name">Chamomile</span>
+        <kbd>3</kbd>
+      </button>
+
+      <button class="flower-card species-pill" data-species="meadow" title="Meadow Chalice (Key 4)">
+        <span class="pill-dot meadow-dot"></span>
+        <span class="pill-name">Meadow</span>
+        <kbd>4</kbd>
+      </button>
+
+      <button class="flower-card species-pill" data-species="marigold" title="Festive Marigold (Key 5)">
+        <span class="pill-dot marigold-dot"></span>
+        <span class="pill-name">Marigold</span>
+        <kbd>5</kbd>
+      </button>
+
+      <button class="flower-card species-pill" data-species="lotus" title="Sacred Lotus (Key 6)">
+        <span class="pill-dot lotus-dot"></span>
+        <span class="pill-name">Lotus</span>
+        <kbd>6</kbd>
+      </button>
+
+      <button class="flower-card species-pill" data-species="hibiscus" title="Royal Hibiscus (Key 7)">
+        <span class="pill-dot hibiscus-dot"></span>
+        <span class="pill-name">Hibiscus</span>
+        <kbd>7</kbd>
+      </button>
+    </div>
+
+    <!-- STATUS & NAVIGATION SHORTCUTS -->
+    <div class="header-right">
+      <div class="status-badge" id="tracking-status">
+        <span class="status-dot pulse"></span>
+        <span id="status-text">Starting camera...</span>
+      </div>
+
+      <a href="./visual-lab.html" class="nav-lab-btn" title="Explore Wild Meadow Visual Lab">
+        <span>🎨</span>
+        <span>Visual Lab</span>
+      </a>
+
+      <button class="icon-hud-btn" id="fullscreen-btn" title="Toggle Fullscreen (F)">
+        <span>⛶</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- BOTTOM RECORDING CONTROLS DOCK -->
+  <footer class="studio-footer">
+    <div class="record-center-dock">
+      <button class="studio-record-btn" id="record-choreography-btn">
+        <span class="record-pulse-dot"></span>
+        <span id="choreograph-btn-label">Record Dance [SPACE]</span>
+      </button>
+      <p class="record-hint">
+        Press <kbd>SPACE</kbd> or click to record 10s dance • Move arms & body to shape the bloom
+      </p>
+    </div>
+  </footer>
+
+  <!-- 1. Countdown Overlay (3, 2, 1, DANCE!) -->
+  <div class="record-countdown-overlay hidden" id="record-countdown-overlay">
+    <div class="countdown-circle">
+      <span class="countdown-num" id="countdown-num">3</span>
+      <span class="countdown-text">Prepare your dance...</span>
+    </div>
+  </div>
+
+  <!-- 2. Active Recording Floating HUD Bar -->
+  <div class="recording-active-hud hidden" id="recording-active-hud">
+    <div class="record-hud-card">
+      <div class="record-indicator">
+        <span class="live-rec-dot"></span>
+        <span class="rec-title">Recording Choreography</span>
+      </div>
+      <div class="record-progress-container">
+        <div class="record-progress-bar" id="record-progress-bar"></div>
+      </div>
+      <div class="record-meta">
+        <span class="record-time" id="record-timer-text">0.0s / 10.0s</span>
+        <span class="record-tip">Sway, reach upward, spread arms & bloom!</span>
+        <button class="record-cancel-btn" id="record-cancel-btn">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. Planting Dialog Modal (After Recording Finishes) -->
+  <div class="planting-modal-backdrop hidden" id="planting-modal">
+    <div class="planting-modal-card">
+      <div class="modal-header">
+        <span class="modal-badge">🌸 Choreography Imprinted</span>
+        <button class="modal-close-btn" id="planting-cancel-btn">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <h3 class="modal-title">Plant Your Bloom in the Meadow</h3>
+        <p class="modal-desc">Your 10-second physical dance has been recorded into botanical memory.</p>
+
+        <div class="form-group">
+          <div class="form-label-row">
+            <label for="flower-name-input">Title or Message:</label>
+            <span class="char-counter" id="title-char-count"><span id="char-num">0</span>/20</span>
+          </div>
+          <div class="input-with-button">
+            <input type="text" id="flower-name-input" placeholder="e.g. Luna Bloom" maxlength="20" autocomplete="off">
+            <button class="dice-btn" id="random-name-btn" title="Generate Poetic Name">🎲 Poetic</button>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="choreographer-input">Choreographer:</label>
+          <input type="text" id="choreographer-input" placeholder="e.g. Devcon Dancer" maxlength="25">
+        </div>
+
+        <!-- Instagram Story 9:16 Postcard & Mobile QR Scan Card -->
+        <div class="postcard-feature-card" id="postcard-feature-card">
+          <div class="postcard-feature-header">
+            <div class="postcard-feature-title">
+              <span class="ig-icon">📱</span>
+              <strong>Instagram Story Postcard (9:16)</strong>
+            </div>
+            <span class="artist-badge">Infinite Garden • Harshit Agrawal</span>
+          </div>
+
+          <div class="postcard-feature-body">
+            <!-- 9:16 Mini Postcard Canvas Preview -->
+            <div class="postcard-canvas-wrap">
+              <canvas id="postcard-preview-canvas" width="135" height="240" class="postcard-preview-thumb"></canvas>
+              <div class="postcard-ratio-tag">9:16 Story</div>
+            </div>
+
+            <!-- QR Code & Direct Mobile Download Section -->
+            <div class="postcard-qr-panel">
+              <div class="postcard-qr-box">
+                <img id="postcard-qr-img" class="postcard-qr-img" alt="Scan with Phone Camera" />
+                <span class="qr-scan-badge">📷 Scan on 5G/Mobile</span>
+              </div>
+              <div class="postcard-instructions">
+                <p class="postcard-instructions-lead">Scan with your phone camera to download directly to your mobile device.</p>
+                <p class="postcard-instructions-sub">Includes <em>Devcon, Mumbai 2026</em> takeaway quote, your choreographed bloom, and artist attribution.</p>
+                
+                <div class="postcard-btn-row">
+                  <button type="button" class="postcard-btn ig-video" id="planting-instagram-btn" title="Download 9:16 vertical video formatted for Instagram Stories">
+                    <span>📱</span> <span id="ig-btn-label">Instagram Story (9:16)</span>
+                  </button>
+                  <button type="button" class="postcard-btn ig-still" id="planting-postcard-btn" title="Save high-resolution 9:16 image postcard">
+                    <span>📸</span> <span>Save Postcard (PNG)</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Email Option for 10s Animation Delivery -->
+        <div class="form-group email-option-group">
+          <div class="email-toggle-row">
+            <label class="custom-checkbox-label" for="send-email-toggle">
+              <input type="checkbox" id="send-email-toggle" checked>
+              <span class="custom-checkbox-box"></span>
+              <span class="checkbox-label-text">Send 10s animation video to my email</span>
+            </label>
+            <span class="animation-duration-badge">🎬 10s Video</span>
+          </div>
+          <div class="email-input-container" id="email-input-container">
+            <div class="email-input-field-wrap">
+              <span class="email-prefix-icon">✉️</span>
+              <input type="email" id="visitor-email-input" placeholder="Enter your email (e.g. dancer@ethereum.org)" autocomplete="email">
+            </div>
+            <p class="email-subtext">You will receive a 10-second animation of your choreographed flower blooming with your title or message.</p>
+          </div>
+        </div>
+
+        <div class="species-confirm-pill" id="species-confirm-pill">
+          <span class="species-pill-icon" id="species-pill-icon">🌸</span>
+          <span class="species-pill-name" id="species-pill-name">Periwinkle</span>
+          <span class="species-pill-note">• 10s Botanical Movement Loop</span>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="hud-btn" id="planting-rerecord-btn">🔁 Re-record [R]</button>
+        <button class="hud-btn download-btn" id="planting-download-btn" type="button" title="Save recording video and motion file to local disk">💾 Download to Disk</button>
+        <button class="hud-btn primary glow-btn" id="planting-submit-btn">🌱 Plant & Save to Disk [ENTER]</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. Email & Animation Dispatch Notification Toast -->
+  <div class="delivery-toast hidden" id="delivery-toast">
+    <div class="toast-card">
+      <div class="toast-header">
+        <span class="toast-icon">✉️</span>
+        <div class="toast-title-group">
+          <h4 class="toast-title">10-Second Animation Dispatched!</h4>
+          <span class="toast-timestamp" id="toast-time">Just now</span>
+        </div>
+        <button class="toast-close-btn" id="toast-close-btn">&times;</button>
+      </div>
+      <p class="toast-message" id="toast-message">
+        Sent 10s animation video of "<strong>Luna Bloom</strong>" with your message to <strong>dancer@ethereum.org</strong>.
+      </p>
+      <div class="toast-qr-row" id="toast-qr-row">
+        <img id="toast-qr-img" class="toast-qr-img" alt="Scan QR Code" />
+        <div class="toast-qr-text">
+          <strong>📱 Scan on your phone</strong>
+          <span>Save your Instagram Story postcard directly before you go.</span>
+        </div>
+      </div>
+      <div class="toast-actions">
+        <a class="toast-action-btn download-btn" id="toast-download-btn" href="#" download="flower_choreography_10s.webm" target="_blank">
+          <span>⬇️ Download Video</span>
+        </a>
+        <button class="toast-action-btn postcard-action-btn" id="toast-postcard-btn">
+          <span>📸 Postcard</span>
+        </button>
+        <button class="toast-action-btn ok-btn" id="toast-ok-btn">Done</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Camera Permission Banner -->
+  <div class="camera-prompt-banner hidden" id="camera-prompt-banner">
+    <div class="prompt-card">
+      <span class="prompt-icon">📷</span>
+      <div class="prompt-text">
+        <strong id="prompt-title">Webcam Permission Needed</strong>
+        <span id="prompt-desc">Click below to allow camera access so your movements can shape the living plant.</span>
+      </div>
+      <button class="prompt-btn" id="prompt-enable-btn">Enable Camera</button>
+      <button class="dismiss-guide-btn" id="prompt-dismiss-btn" title="Dismiss banner">Dismiss</button>
+    </div>
+  </div>
+
+  <!-- Hidden Compatibility Mounts (Ensures zero JS errors with existing manager objects) -->
+  <div class="hidden-compatibility-mounts" style="display:none !important;">
+    <select id="flower-palette">
+      <option value="periwinkle" selected>Periwinkle</option>
+      <option value="poppy">Poppy</option>
+      <option value="chamomile">Chamomile</option>
+      <option value="meadow">Meadow</option>
+    </select>
+    <div id="pip-container">
+      <button id="pip-close-btn"></button>
+    </div>
+    <div id="visitor-guide"><button id="dismiss-guide-btn"></button></div>
+    <div id="recording-guide-modal">
+      <div id="guide-modal-backdrop"></div>
+      <button id="guide-modal-close-btn"></button>
+      <button id="guide-ready-btn"></button>
+      <button id="open-guide-btn"></button>
+    </div>
+    <div id="flower-inspect-card">
+      <span id="inspect-flower-name"></span>
+      <strong id="inspect-species-name"></strong>
+      <strong id="inspect-choreographer"></strong>
+      <span id="inspect-loop-time"></span>
+      <button id="inspect-close-btn"></button>
+      <button id="inspect-next-btn"></button>
+      <button id="inspect-return-btn"></button>
+    </div>
+    <button id="launch-tv-btn"></button>
+    <div id="tv-hud">
+      <span id="tv-count-text"></span>
+      <div id="tv-celebration-banner">
+        <span id="celebration-title"></span>
+        <span id="celebration-desc"></span>
+      </div>
+    </div>
+    <div id="live-metrics">
+      <strong id="metric-bloom"></strong>
+      <strong id="metric-lean"></strong>
+      <strong id="metric-height"></strong>
+    </div>
+    <div id="garden-count-badge"><span id="garden-count-text"></span></div>
+    <div id="keyboard-legend-bar"></div>
+    <button id="toggle-panorama-btn"><span id="panorama-btn-label"></span></button>
+    <button id="toggle-camera-btn"><span id="camera-btn-label"></span></button>
+    <button id="toggle-pip-btn"></button>
+    <button id="toggle-wind-btn"></button>
+    <button id="toggle-ui-btn"></button>
+    <button id="restore-ui-btn"></button>
+    <div id="fallback-hint"></div>
+    <span id="story-name"></span>
+    <span id="story-tagline"></span>
+  </div>
+
+  <script type="module" src="./src/main.js"></script>
+</body>
+</html>

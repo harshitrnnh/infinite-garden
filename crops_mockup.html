@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>A garden grown from gesture — installation mockup</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Work+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #0b1210;
+    --bg-deep: #070b09;
+    --paper: #ece3d0;
+    --paper-dim: #b9ae97;
+    --paper-faint: #8c8570;
+    --cool: #4c8069;
+    --warm: #e08a4b;
+    --gold: #f2c879;
+    --line: rgba(236,227,208,0.14);
+  }
+  *{ box-sizing: border-box; }
+  html,body{ margin:0; padding:0; background:var(--bg); }
+  body{
+    font-family:'Work Sans', -apple-system, sans-serif;
+    color: var(--paper);
+    padding: 28px 20px 60px;
+    -webkit-font-smoothing: antialiased;
+  }
+  .frame{ max-width: 900px; margin: 0 auto; }
+
+  header.plate{ margin-bottom: 18px; }
+  .plate-row{
+    display:flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  h1{
+    font-family:'Fraunces', serif;
+    font-weight: 500;
+    font-size: clamp(1.6rem, 4vw, 2.35rem);
+    letter-spacing: -0.01em;
+    line-height: 1.15;
+    margin: 0;
+    color: var(--paper);
+  }
+  .catalog{
+    font-variant-numeric: tabular-nums;
+    font-size: 0.85rem;
+    color: var(--paper-faint);
+    white-space: nowrap;
+  }
+  .catalog span{ color: var(--paper-dim); }
+  .lede{
+    margin: 10px 0 0;
+    max-width: 58ch;
+    font-size: 1.02rem;
+    line-height: 1.55;
+    color: var(--paper-dim);
+  }
+
+  .vitrine{
+    position: relative;
+    width: 100%;
+    aspect-ratio: 16 / 10.5;
+    max-height: 640px;
+    margin-top: 22px;
+    border-radius: 3px;
+    overflow: hidden;
+    background: radial-gradient(ellipse at 50% 88%, #101a15 0%, var(--bg-deep) 72%);
+    box-shadow: 0 1px 0 var(--line), 0 30px 60px -30px rgba(0,0,0,0.7);
+  }
+  .vitrine::after{
+    content:"";
+    position:absolute; inset:0;
+    background: linear-gradient(to bottom, rgba(0,0,0,0.28), transparent 26%);
+    pointer-events:none;
+  }
+  canvas{ display:block; width:100%; height:100%; touch-action: none; }
+
+  .corner{ position:absolute; width:20px; height:20px; border-color: var(--paper-dim); opacity:0.45; pointer-events:none; }
+  .corner.tl{ top:12px; left:12px; border-top:1px solid; border-left:1px solid; }
+  .corner.tr{ top:12px; right:12px; border-top:1px solid; border-right:1px solid; }
+  .corner.bl{ bottom:12px; left:12px; border-bottom:1px solid; border-left:1px solid; }
+  .corner.br{ bottom:12px; right:12px; border-bottom:1px solid; border-right:1px solid; }
+
+  .stage-hint{
+    position:absolute;
+    left:50%; top:78%;
+    transform: translate(-50%, -50%);
+    margin:0;
+    font-size: 0.82rem;
+    color: var(--paper-dim);
+    letter-spacing: 0.01em;
+    pointer-events:none;
+    transition: opacity 0.5s ease;
+    text-align:center;
+  }
+  .stage-hint.hidden{ opacity:0; }
+
+  .controls{
+    display:flex;
+    align-items:center;
+    gap: 18px;
+    flex-wrap: wrap;
+    margin-top: 20px;
+  }
+  button{
+    font-family:'Work Sans', sans-serif;
+    font-size: 0.92rem;
+    font-weight: 500;
+    color: var(--bg-deep);
+    background: var(--paper);
+    border: 1px solid var(--paper);
+    border-radius: 3px;
+    padding: 10px 18px;
+    cursor: pointer;
+    transition: background 0.2s ease, opacity 0.2s ease, transform 0.15s ease;
+  }
+  button:hover:not(:disabled){ background: var(--gold); border-color: var(--gold); }
+  button:active:not(:disabled){ transform: translateY(1px); }
+  button:disabled{ opacity: 0.35; cursor: not-allowed; }
+  button:focus-visible{ outline: 2px solid var(--gold); outline-offset: 3px; }
+  button.ghost{
+    background: transparent;
+    color: var(--paper-dim);
+    border: 1px solid var(--line);
+  }
+  button.ghost:hover{ color: var(--paper); border-color: var(--paper-dim); background: transparent; }
+
+  .stat{ margin:0; font-size: 0.9rem; color: var(--paper-faint); }
+
+  .remix-bar{
+    display:flex; align-items:center; gap:14px; flex-wrap:wrap;
+    margin-top: 12px;
+    padding: 12px 16px;
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    background: rgba(236,227,208,0.03);
+  }
+  .remix-bar[hidden]{ display:none; }
+  #selectedCount{ font-size: 0.88rem; color: var(--paper-dim); }
+
+  .footnote{
+    margin: 26px 0 0;
+    max-width: 66ch;
+    font-size: 0.82rem;
+    line-height: 1.6;
+    color: var(--paper-faint);
+    border-top: 1px solid var(--line);
+    padding-top: 16px;
+  }
+  .footnote p{ margin: 0 0 6px; }
+  .footnote p:last-child{ margin-bottom:0; }
+
+  @media (max-width: 560px){
+    body{ padding: 20px 14px 44px; }
+    .plate-row{ flex-direction: column; gap: 4px; }
+    .controls{ flex-direction: column; align-items: flex-start; }
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    button{ transition: none; }
+  }
+</style>
+</head>
+<body>
+<div class="frame">
+
+  <header class="plate">
+    <div class="plate-row">
+      <h1>A garden grown from gesture</h1>
+      <p class="catalog">No. <span id="nextNumber">007</span></p>
+    </div>
+    <p class="lede">Stand in front of the frame and your movement becomes a plant. Every visitor leaves a new one behind, so the garden only ever grows.</p>
+  </header>
+
+  <div class="vitrine">
+    <canvas id="gardenCanvas" aria-label="A living digital garden of plants grown from visitor movement"></canvas>
+    <div class="corner tl"></div>
+    <div class="corner tr"></div>
+    <div class="corner bl"></div>
+    <div class="corner br"></div>
+    <p class="stage-hint" id="stageHint">Move here to grow a plant</p>
+  </div>
+
+  <div class="controls">
+    <button id="plantBtn" disabled>Plant it in the garden</button>
+    <p class="stat" id="statLine">This garden holds 6 plants, grown one visitor at a time.</p>
+  </div>
+
+  <div class="remix-bar" id="remixBar" hidden>
+    <span id="selectedCount">0 plants selected</span>
+    <button id="performBtn">Perform together</button>
+    <button id="clearBtn" class="ghost">Clear selection</button>
+  </div>
+
+  <div class="footnote">
+    <p>This is a working prototype: your cursor or finger stands in for the camera that would track your body in the real installation.</p>
+    <p>Click two or more plants in the garden, then choose "Perform together" to replay their movements as a remixed choreography.</p>
+  </div>
+
+</div>
+
+<script>
+(function(){
+  const canvas = document.getElementById('gardenCanvas');
+  const ctx = canvas.getContext('2d');
+  const plantBtn = document.getElementById('plantBtn');
+  const statLine = document.getElementById('statLine');
+  const nextNumberEl = document.getElementById('nextNumber');
+  const stageHintEl = document.getElementById('stageHint');
+  const remixBar = document.getElementById('remixBar');
+  const selectedCountEl = document.getElementById('selectedCount');
+  const performBtn = document.getElementById('performBtn');
+  const clearBtn = document.getElementById('clearBtn');
+
+  const PRESEED_COUNT = 6;
+  const PERFORM_DURATION = 5200;
+
+  const state = {
+    plants: [],
+    nextId: 1,
+    live: { active:false, heightPx:0, nodes:[], lastSampleT:0, lastPointer:null },
+    selected: new Set(),
+    performing: new Map(),
+    stagePos: { xFrac:0.5, yFrac:0.85 },
+    reducedMotion: window.matchMedia('(prefers-reduced-motion: reduce)').matches,
+  };
+
+  let canvasCssW = 0, canvasCssH = 0;
+  let particles = [];
+  let hintShown = true;
+
+  function clamp(v,min,max){ return Math.max(min, Math.min(max, v)); }
+
+  function hexToRgb(hex){
+    const num = parseInt(hex.replace('#',''),16);
+    return [ (num>>16)&255, (num>>8)&255, num&255 ];
+  }
+  const COOL_RGB = hexToRgb('#4c8069');
+  const WARM_RGB = hexToRgb('#e08a4b');
+  function speedColor(t){
+    t = clamp(t,0,1);
+    const r = Math.round(COOL_RGB[0] + (WARM_RGB[0]-COOL_RGB[0])*t);
+    const g = Math.round(COOL_RGB[1] + (WARM_RGB[1]-COOL_RGB[1])*t);
+    const b = Math.round(COOL_RGB[2] + (WARM_RGB[2]-COOL_RGB[2])*t);
+    return `rgb(${r},${g},${b})`;
+  }
+
+  function maxHeight(){ return canvasCssH * 0.46; }
+  function maxSway(){ return canvasCssW * 0.075; }
+  function stageRadius(){ return Math.min(canvasCssW, canvasCssH) * 0.30; }
+
+  function resizeCanvas(){
+    const rect = canvas.getBoundingClientRect();
+    canvasCssW = rect.width;
+    canvasCssH = rect.height;
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = Math.round(canvasCssW * dpr);
+    canvas.height = Math.round(canvasCssH * dpr);
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+  }
+  window.addEventListener('resize', resizeCanvas);
+
+  // ---------- procedural pre-seeded plants ----------
+  function mulberry32(seed){
+    return function(){
+      seed |= 0; seed = (seed + 0x6D2B79F5) | 0;
+      let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+  function genPreseedNodes(seed){
+    const rnd = mulberry32(seed);
+    const n = 26 + Math.floor(rnd()*14);
+    const freq1 = 2 + rnd()*3, freq2 = 5 + rnd()*4;
+    const amp1 = 0.32 + rnd()*0.28, amp2 = 0.12 + rnd()*0.18;
+    const phase1 = rnd()*Math.PI*2, phase2 = rnd()*Math.PI*2;
+    const leafGap = 3 + Math.floor(rnd()*2);
+    const nodes = [];
+    for(let i=0;i<n;i++){
+      const hf = (i+1)/n;
+      const xf = clamp(
+        Math.sin(hf*Math.PI*freq1 + phase1)*amp1 + Math.sin(hf*Math.PI*freq2 + phase2)*amp2,
+        -1, 1
+      );
+      const speed = clamp(0.22 + Math.abs(Math.sin(hf*Math.PI*freq1*0.5 + phase1))*0.6 + rnd()*0.15, 0, 1);
+      const leaf = (i % leafGap === 0) && i > 2;
+      nodes.push({ hf, xf, speed, leaf });
+    }
+    return nodes;
+  }
+
+  function computeSlot(index){
+    const perRow = 8;
+    const row = Math.floor(index/perRow);
+    const col = index % perRow;
+    const xFrac = 0.10 + (col+0.5)*(0.80/perRow);
+    const jitter = (((index*13) % 7) - 3) * 0.006;
+    const yFrac = 0.70 - row*0.085;
+    const scale = Math.max(0.36, 0.95 - row*0.15);
+    return { xFrac: xFrac + jitter, yFrac, scale, depth: row };
+  }
+
+  // ---------- drawing ----------
+  function drawParticles(now){
+    if(state.reducedMotion) return;
+    for(const p of particles){
+      const y = (1 - ((now*p.speed + p.phase) % 1)) * canvasCssH;
+      const x = p.x*canvasCssW + Math.sin(now*0.0003 + p.phase)*canvasCssW*0.02;
+      ctx.globalAlpha = 0.12 + 0.12*Math.sin(now*0.001 + p.phase);
+      ctx.fillStyle = 'rgba(236,227,208,0.9)';
+      ctx.beginPath();
+      ctx.arc(x, y, p.r, 0, Math.PI*2);
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  function drawStageSpot(now){
+    const x = state.stagePos.xFrac*canvasCssW, y = state.stagePos.yFrac*canvasCssH;
+    const r = stageRadius();
+    const pulse = state.reducedMotion ? 0 : 0.5 + 0.5*Math.sin(now*0.0016);
+    const base = state.live.active ? 0.20 : 0.10;
+    const a = base + pulse*0.05;
+    const g = ctx.createRadialGradient(x,y,0,x,y,r);
+    g.addColorStop(0, `rgba(242,200,121,${a})`);
+    g.addColorStop(0.7, `rgba(242,200,121,${a*0.35})`);
+    g.addColorStop(1, 'rgba(242,200,121,0)');
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.ellipse(x,y,r,r*0.4,0,0,Math.PI*2);
+    ctx.fill();
+  }
+
+  function drawLeaf(pt, side, scale, speed){
+    const len = (12+speed*9)*scale;
+    const w = (5+speed*2)*scale;
+    ctx.save();
+    ctx.translate(pt.x, pt.y);
+    ctx.rotate(side*1.0);
+    ctx.globalAlpha = 0.82;
+    ctx.fillStyle = speedColor(speed);
+    ctx.beginPath();
+    ctx.moveTo(0,0);
+    ctx.quadraticCurveTo(len*0.5,-w,len,0);
+    ctx.quadraticCurveTo(len*0.5,w,0,0);
+    ctx.fill();
+    ctx.globalAlpha = 1;
+    ctx.restore();
+  }
+
+  function drawPlant(plant, now, opts){
+    opts = opts || {};
+    const nodes = plant.nodes;
+    if(!nodes || nodes.length < 2) return;
+    const baseX = plant.xFrac*canvasCssW, baseY = plant.yFrac*canvasCssH;
+    const scale = plant.scale != null ? plant.scale : 1;
+    const mh = maxHeight(), ms = maxSway();
+    const performing = opts.performing;
+    let pulseT = null;
+    if(performing){
+      pulseT = ((now-performing.start)*0.0016 + plant.phase) % 1;
+    }
+    const pts = nodes.map(function(n){
+      let sway = 0;
+      if(!state.reducedMotion){
+        sway = performing
+          ? Math.sin(now*0.006 + plant.phase + n.hf*10) * (0.05+n.hf*0.09)
+          : Math.sin(now*0.0007 + plant.phase + n.hf*8) * (0.015+n.hf*0.035);
+      }
+      return {
+        x: baseX + n.xf*ms*scale + sway*ms*scale,
+        y: baseY - n.hf*mh*scale,
+        speed: n.speed || 0,
+        hf: n.hf,
+      };
+    });
+    ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    for(let i=1;i<pts.length;i++){
+      const a = pts[i-1], b = pts[i];
+      const t = i/pts.length;
+      const width = Math.max(1.1*scale, (6.4-t*5)*scale);
+      const color = speedColor(b.speed);
+      let glow = 3 + b.speed*9;
+      if(performing && pulseT !== null){
+        const dist = Math.abs(b.hf-pulseT);
+        const wrapped = Math.min(dist, 1-dist);
+        glow += Math.max(0, 1-wrapped*7)*20;
+      }
+      ctx.strokeStyle = color;
+      ctx.lineWidth = width;
+      ctx.shadowBlur = glow*scale;
+      ctx.shadowColor = color;
+      ctx.beginPath();
+      ctx.moveTo(a.x,a.y);
+      ctx.lineTo(b.x,b.y);
+      ctx.stroke();
+    }
+    ctx.shadowBlur = 0;
+    let side = 1;
+    for(let i=0;i<pts.length;i++){
+      if(nodes[i].leaf){ drawLeaf(pts[i], side, scale, nodes[i].speed||0); side *= -1; }
+    }
+    const bg = ctx.createRadialGradient(baseX,baseY,0,baseX,baseY,24*scale);
+    bg.addColorStop(0,'rgba(232,169,76,0.28)');
+    bg.addColorStop(1,'rgba(232,169,76,0)');
+    ctx.fillStyle = bg;
+    ctx.beginPath();
+    ctx.ellipse(baseX,baseY,22*scale,9*scale,0,0,Math.PI*2);
+    ctx.fill();
+  }
+
+  function drawSelectionRing(plant, now){
+    const baseX = plant.xFrac*canvasCssW, baseY = plant.yFrac*canvasCssH;
+    const scale = plant.scale != null ? plant.scale : 1;
+    const pulse = 0.5+0.5*Math.sin(now*0.003);
+    ctx.strokeStyle = `rgba(242,200,121,${0.35+0.35*pulse})`;
+    ctx.lineWidth = 1.6;
+    ctx.beginPath();
+    ctx.ellipse(baseX,baseY,20*scale+pulse*3,9*scale+pulse*1.5,0,0,Math.PI*2);
+    ctx.stroke();
+  }
+
+  function findPlant(id){
+    for(let i=0;i<state.plants.length;i++){ if(state.plants[i].id===id) return state.plants[i]; }
+    return null;
+  }
+
+  function drawRemixLinks(now){
+    const ids = Array.from(state.performing.keys());
+    if(ids.length < 2) return;
+    const pts = ids.map(function(id){
+      const p = findPlant(id);
+      if(!p) return null;
+      return { x: p.xFrac*canvasCssW, y: p.yFrac*canvasCssH };
+    }).filter(Boolean);
+    ctx.strokeStyle = 'rgba(242,200,121,0.35)';
+    ctx.lineWidth = 1.2;
+    ctx.setLineDash([5,9]);
+    ctx.lineDashOffset = -now*0.03;
+    for(let i=1;i<pts.length;i++){
+      const a = pts[i-1], b = pts[i];
+      const midY = Math.min(a.y,b.y) - 40;
+      ctx.beginPath();
+      ctx.moveTo(a.x,a.y);
+      ctx.quadraticCurveTo((a.x+b.x)/2, midY, b.x, b.y);
+      ctx.stroke();
+    }
+    ctx.setLineDash([]);
+  }
+
+  // ---------- interaction ----------
+  function getCanvasPos(e){
+    const rect = canvas.getBoundingClientRect();
+    const t = (e.touches && e.touches[0]) || null;
+    const clientX = t ? t.clientX : e.clientX;
+    const clientY = t ? t.clientY : e.clientY;
+    return { x: clientX-rect.left, y: clientY-rect.top };
+  }
+
+  function updateLiveGrowth(pointer, now){
+    const stageX = state.stagePos.xFrac*canvasCssW, stageY = state.stagePos.yFrac*canvasCssH;
+    const dx0 = pointer.x-stageX, dy0 = pointer.y-stageY;
+    const dist = Math.hypot(dx0,dy0);
+    const rad = stageRadius();
+    if(dist > rad){ state.live.active = false; return; }
+    state.live.active = true;
+    const last = state.live.lastPointer;
+    let speed = 0;
+    if(last){
+      const dt = now - state.live.lastSampleT;
+      if(dt < 16) return;
+      const d = Math.hypot(pointer.x-last.x, pointer.y-last.y);
+      speed = clamp(d/dt, 0, 2.2)/2.2;
+    }
+    const dtSample = last ? (now-state.live.lastSampleT) : 16;
+    state.live.lastPointer = { x: pointer.x, y: pointer.y };
+    state.live.lastSampleT = now;
+    const mh = maxHeight();
+    if(state.live.heightPx < mh){
+      const growth = (0.035 + speed*0.09) * dtSample;
+      state.live.heightPx = Math.min(mh, state.live.heightPx + growth);
+      const hFrac = state.live.heightPx/mh;
+      const xFrac = clamp(dx0/maxSway(), -1, 1);
+      const leaf = speed > 0.55 && Math.random() < 0.5;
+      state.live.nodes.push({ hf: hFrac, xf: xFrac, speed, leaf });
+    }
+  }
+
+  function plantIt(){
+    if(state.live.nodes.length < 4) return;
+    const idx = state.plants.length;
+    const slot = computeSlot(idx);
+    state.plants.push({
+      id: state.nextId++,
+      nodes: state.live.nodes.slice(),
+      xFrac: slot.xFrac, yFrac: slot.yFrac, scale: slot.scale, depth: slot.depth,
+      phase: Math.random()*Math.PI*2,
+    });
+    state.live = { active:false, heightPx:0, nodes:[], lastSampleT:0, lastPointer:null };
+    plantBtn.disabled = true;
+    updateStats();
+  }
+
+  function hitTestPlant(x,y){
+    const mh = maxHeight();
+    let best = null, bestD = Infinity;
+    for(const p of state.plants){
+      const baseX = p.xFrac*canvasCssW, baseY = p.yFrac*canvasCssH;
+      const cx = baseX, cy = baseY - mh*p.scale*0.4;
+      const r = mh*p.scale*0.55 + 14;
+      const d = Math.hypot(x-cx, y-cy);
+      if(d < r && d < bestD){ best = p; bestD = d; }
+    }
+    return best;
+  }
+
+  function updateControls(){
+    const n = state.selected.size;
+    if(n > 0){
+      remixBar.hidden = false;
+      selectedCountEl.textContent = n + (n===1 ? ' plant selected' : ' plants selected');
+      performBtn.disabled = n < 2;
+    } else {
+      remixBar.hidden = true;
+    }
+  }
+
+  function updateStats(){
+    const total = state.plants.length;
+    statLine.textContent = 'This garden holds ' + total + (total===1?' plant':' plants') + ', grown one visitor at a time.';
+    nextNumberEl.textContent = String(total+1).padStart(3,'0');
+  }
+
+  canvas.addEventListener('mousemove', function(e){
+    const pos = getCanvasPos(e);
+    updateLiveGrowth(pos, performance.now());
+    plantBtn.disabled = state.live.nodes.length < 4;
+  });
+  canvas.addEventListener('mouseleave', function(){
+    state.live.active = false;
+    state.live.lastPointer = null;
+  });
+  canvas.addEventListener('touchmove', function(e){
+    e.preventDefault();
+    const pos = getCanvasPos(e);
+    updateLiveGrowth(pos, performance.now());
+    plantBtn.disabled = state.live.nodes.length < 4;
+  }, { passive:false });
+  canvas.addEventListener('touchend', function(){
+    state.live.active = false;
+    state.live.lastPointer = null;
+  });
+  canvas.addEventListener('click', function(e){
+    const pos = getCanvasPos(e);
+    const hit = hitTestPlant(pos.x, pos.y);
+    if(hit){
+      if(state.selected.has(hit.id)) state.selected.delete(hit.id);
+      else state.selected.add(hit.id);
+      updateControls();
+    }
+  });
+
+  plantBtn.addEventListener('click', plantIt);
+  performBtn.addEventListener('click', function(){
+    const now = performance.now();
+    state.selected.forEach(function(id){
+      state.performing.set(id, { start: now, duration: PERFORM_DURATION });
+    });
+    state.selected.clear();
+    updateControls();
+  });
+  clearBtn.addEventListener('click', function(){
+    state.selected.clear();
+    updateControls();
+  });
+
+  function updateStageHintVisibility(){
+    const shouldShow = !(state.live.active || state.live.nodes.length>0);
+    if(shouldShow !== hintShown){
+      hintShown = shouldShow;
+      stageHintEl.classList.toggle('hidden', !shouldShow);
+    }
+  }
+
+  function frame(now){
+    ctx.clearRect(0,0,canvasCssW,canvasCssH);
+    drawParticles(now);
+    drawStageSpot(now);
+    const sorted = state.plants.slice().sort(function(a,b){ return b.depth-a.depth; });
+    for(const p of sorted){
+      const performing = state.performing.get(p.id);
+      if(performing && (now-performing.start) > performing.duration){
+        state.performing.delete(p.id);
+      }
+      drawPlant(p, now, { performing: state.performing.get(p.id) });
+      if(state.selected.has(p.id)) drawSelectionRing(p, now);
+    }
+    drawRemixLinks(now);
+    if(state.live.nodes.length){
+      drawPlant({ nodes: state.live.nodes, xFrac: state.stagePos.xFrac, yFrac: state.stagePos.yFrac, scale: 1, phase: 0 }, now, {});
+    }
+    updateStageHintVisibility();
+    requestAnimationFrame(frame);
+  }
+
+  function initParticles(){
+    particles = [];
+    if(state.reducedMotion) return;
+    for(let i=0;i<16;i++){
+      particles.push({
+        x: Math.random(), y: Math.random(),
+        r: 0.6+Math.random()*1.4,
+        speed: 0.00006+Math.random()*0.00008,
+        phase: Math.random()*Math.PI*2,
+      });
+    }
+  }
+
+  function init(){
+    resizeCanvas();
+    initParticles();
+    for(let i=0;i<PRESEED_COUNT;i++){
+      const slot = computeSlot(i);
+      state.plants.push({
+        id: state.nextId++,
+        nodes: genPreseedNodes(1000+i*37),
+        xFrac: slot.xFrac, yFrac: slot.yFrac, scale: slot.scale, depth: slot.depth,
+        phase: (i*1.7) % (Math.PI*2),
+      });
+    }
+    updateStats();
+    requestAnimationFrame(frame);
+  }
+
+  window.addEventListener('load', init);
+})();
+</script>
+</body>
+</html>

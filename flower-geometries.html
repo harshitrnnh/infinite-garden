@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Symbiosis — 3D Botanical Morphology & Choreography Lab</title>
+  <meta name="description" content="Interactive 3D geometry showcase inspecting unique petal topologies, crinkled poppy folds, salverform periwinkle, chamomile ray disks, original lotus & hibiscus geometries with live webcam human choreography tracking.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;1,9..144,300;1,9..144,400&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./src/meadow-lab/geometry-style.css">
+</head>
+<body>
+  <!-- 3D Canvas Mount Point -->
+  <div id="canvas-container"></div>
+
+  <!-- Subtle Vignette -->
+  <div class="gallery-vignette"></div>
+
+  <!-- Top Header HUD -->
+  <header class="lab-header">
+    <div class="title-card">
+      <span class="lab-badge">🔬 3D Botanical Morphology & Choreography</span>
+      <h1 class="lab-title">Flower Geometries <em>(Mesh & Form)</em></h1>
+      <p class="lab-subtitle">
+        Procedural petal topologies & botanical kinematics responding to human body choreography and live vision tracking.
+      </p>
+    </div>
+
+    <!-- Navigation to other links -->
+    <nav class="header-nav">
+      <a href="./visual-lab.html" class="nav-link" title="Go to Visual & Choreography Lab">
+        <span>🎨</span>
+        <span>100 Flowers Garden</span>
+      </a>
+      <a href="./index.html" class="nav-link" title="Back to Main Interactive Installation">
+        <span>🌱</span>
+        <span>Main Installation</span>
+      </a>
+    </nav>
+  </header>
+
+  <!-- Interactive Navigation Hint Badge -->
+  <div class="nav-hint-badge">
+    <span>🖱️ <strong>Left-Click Drag</strong>: Orbit 360°</span>
+    <span>•</span>
+    <span><strong>Scroll Wheel</strong>: Zoom / Inspect Mesh</span>
+  </div>
+
+  <!-- Left Sidebar: Live Morphology Specification Card -->
+  <aside class="morphology-card" id="morphology-card">
+    <div class="spec-header">
+      <div class="spec-title-row">
+        <h2 class="spec-name" id="spec-name">Wild Poppy (Papaver rhoeas)</h2>
+      </div>
+      <div class="spec-latin" id="spec-latin">Papaver rhoeas</div>
+      <div class="spec-family" id="spec-family">Papaveraceae</div>
+    </div>
+
+    <div class="spec-body">
+      <div class="spec-item">
+        <span class="spec-label">3D Petal Morphology:</span>
+        <span class="spec-value" id="spec-petals">4 broad crinkled/ruffled petals in 2 decussate pairs</span>
+      </div>
+      <div class="spec-item">
+        <span class="spec-label">Seed Pod & Core Anatomy:</span>
+        <span class="spec-value" id="spec-core">Urn-shaped Papaver seed capsule with 10-ray velvety stigmatic disc crown</span>
+      </div>
+      <div class="spec-notes-box" id="spec-notes">
+        True 3D ruffled paper folds mathematically computed with harmonic sine-flutter across width.
+      </div>
+    </div>
+  </aside>
+
+  <!-- Live Webcam & Choreography PiP Card (Top Right) -->
+  <aside class="webcam-pip-card" id="webcam-pip-card">
+    <div class="pip-header">
+      <div class="pip-status-wrap">
+        <span class="pip-status-dot" id="pip-status-dot"></span>
+        <span class="pip-title">Choreography Vision</span>
+      </div>
+      <div class="pip-header-actions">
+        <button class="pip-toggle-btn" id="btn-toggle-cam" title="Toggle Live Webcam Vision Tracking">
+          <span>📹</span>
+          <span id="btn-toggle-cam-label">Start Webcam</span>
+        </button>
+        <button class="pip-min-btn" id="btn-min-pip" title="Minimize / Expand PiP Card">─</button>
+      </div>
+    </div>
+
+    <!-- Video & MediaPipe Glowing Skeleton Viewport -->
+    <div class="pip-viewport">
+      <video id="webcam-feed" playsinline muted autoplay></video>
+      <canvas id="skeleton-canvas"></canvas>
+      <div class="pip-overlay-hint" id="pip-overlay-hint">
+        <span>Click <strong>Start Webcam</strong> or select simulated movements below to drive flowers</span>
+      </div>
+      <span class="pip-fps-tag" id="pip-fps-tag">30 FPS</span>
+    </div>
+
+    <!-- Live Posture Recognition Tag & Energy -->
+    <div class="pip-action-row">
+      <span class="action-caption">Live Posture:</span>
+      <span class="action-tag" id="live-posture-text">Standing Still</span>
+    </div>
+
+    <!-- Botanical Gauges Grid (Bloom, Stretch, Lean, Wingspan, Hands & Legs) -->
+    <div class="pip-gauges-grid">
+      <div class="gauge-box">
+        <span class="gauge-label">Bloom Unfurl</span>
+        <span class="gauge-val" id="gauge-bloom">70%</span>
+      </div>
+      <div class="gauge-box">
+        <span class="gauge-label">Stem Stretch</span>
+        <span class="gauge-val" id="gauge-height">1.00x</span>
+      </div>
+      <div class="gauge-box">
+        <span class="gauge-label">Spine Lean</span>
+        <span class="gauge-val" id="gauge-lean">0.0°</span>
+      </div>
+      <div class="gauge-box">
+        <span class="gauge-label">Wingspan Spread</span>
+        <span class="gauge-val" id="gauge-wingspan">0.45</span>
+      </div>
+      <div class="gauge-box">
+        <span class="gauge-label">Branch Reach (Hands)</span>
+        <span class="gauge-val" id="gauge-arms">Neutral</span>
+      </div>
+      <div class="gauge-box">
+        <span class="gauge-label">Plant Stance (Legs)</span>
+        <span class="gauge-val" id="gauge-legs">Grounded</span>
+      </div>
+    </div>
+
+    <div class="pip-status-msg" id="pip-status-msg">
+      Human movement dynamically bends stems, stretches calyxes, and blooms petals in real-time.
+    </div>
+  </aside>
+
+  <!-- Bottom Floating Control Dock -->
+  <nav class="lab-dock" id="lab-dock">
+    <!-- Dock Header & Minimize Control -->
+    <div class="dock-header-bar">
+      <span class="dock-header-title">🔬 Botanical Lab Controls</span>
+      <button class="dock-min-btn" id="btn-min-dock" title="Minimize / Expand Control Dock (Press 'M')">
+        <span id="dock-min-icon">─</span>
+        <span id="dock-min-text">Minimize Dock</span>
+      </button>
+    </div>
+
+    <!-- Row 1: Species Selection -->
+    <div class="dock-row">
+      <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+        <span class="section-label">Select 3D Geometry:</span>
+        <div class="pills-group">
+          <button class="species-pill active" data-species="poppy" title="4 broad crinkled/ruffled petals with Papaver capsule">
+            <span>🌺</span>
+            <span>Wild Poppy</span>
+          </button>
+          <button class="species-pill" data-species="periwinkle" title="5 asymmetrical salverform propeller petals">
+            <span>🌸</span>
+            <span>Periwinkle (Vinca)</span>
+          </button>
+          <button class="species-pill" data-species="chamomile" title="16 radiating ray petals around conical golden disk">
+            <span>🌼</span>
+            <span>Chamomile Wheat</span>
+          </button>
+          <button class="species-pill" data-species="marigold" title="4 concentric tiers of fluted ruffled saffron petals & golden pollen core">
+            <span>🏵️</span>
+            <span>Festive Marigold</span>
+          </button>
+          <button class="species-pill" data-species="chalice" title="Flexible 5-vertebrae curved stem chalice flower">
+            <span>🌿</span>
+            <span>Meadow Chalice</span>
+          </button>
+          <button class="species-pill original-pill" data-species="lotus" title="Authentic original multi-tiered lotus from main installation">
+            <span>🪷</span>
+            <span>Original Sacred Lotus</span>
+          </button>
+          <button class="species-pill original-pill" data-species="hibiscus" title="Authentic original trumpet flower with staminal column">
+            <span>🌺</span>
+            <span>Original Royal Hibiscus</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Row 2: Choreography Source & Simulated Movements -->
+    <div class="dock-row">
+      <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+        <span class="section-label">Choreography Source:</span>
+        <div class="btn-group">
+          <button class="action-btn active" id="btn-source-sim" title="Simulated Choreography Movement Presets">
+            <span>💃</span>
+            <span>Simulated Dance</span>
+          </button>
+          <button class="action-btn" id="btn-source-cam" title="Drive flowers with Live Webcam and Skeleton Vision">
+            <span>📹</span>
+            <span>Live Webcam Vision</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="dance-pills-wrap" id="dance-pills-container">
+        <span class="section-label" style="margin-left:8px;">Movement:</span>
+        <button class="dance-pill active" data-preset="surya" title="Sun Salutation — Bow rising into radiant reach">
+          <span>☀️</span>
+          <span>Surya Namaskar</span>
+        </button>
+        <button class="dance-pill" data-preset="monsoon" title="Monsoon Wave — Fluid undulating spinal sway">
+          <span>🌊</span>
+          <span>Monsoon Wave</span>
+        </button>
+        <button class="dance-pill" data-preset="breath" title="Prana Breath — Rhythmic expansion and contraction">
+          <span>🫁</span>
+          <span>Prana Breath</span>
+        </button>
+        <button class="dance-pill" data-preset="spiral" title="Whirling Spiral — Circular gyroscopic torso rotation">
+          <span>🌀</span>
+          <span>Whirling Spiral</span>
+        </button>
+        <button class="dance-pill" id="btn-play-pause" title="Play / Pause simulated choreography playback">
+          <span id="play-pause-icon">⏸️</span>
+          <span id="play-pause-text">Pause</span>
+        </button>
+        <div class="leg-test-group" style="display:inline-flex; gap:6px; margin-left:8px; border-left:1px solid rgba(255,255,255,0.18); padding-left:10px;">
+          <button class="dance-pill active" id="btn-toggle-stance" title="Toggle Stem Stance & Pelvic Weight-Shift Balancing (Option 4) — Key: B">
+            <span>⚖️</span>
+            <span id="btn-stance-text">Stance Balance: ON</span>
+          </button>
+          <button class="dance-pill" id="btn-leg-left" title="Simulate Left Leg Crane Stance Balance (Key: [ or Z)">
+            <span>🦵</span>
+            <span>Left Leg</span>
+          </button>
+          <button class="dance-pill" id="btn-leg-right" title="Simulate Right Leg Crane Stance Balance (Key: ] or X)">
+            <span>🦵</span>
+            <span>Right Leg</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Row 3: View Modes, Wireframe Overlay, and Bloom Controls -->
+    <div class="dock-row">
+      <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+        <span class="section-label">View Arrangement:</span>
+        <div class="btn-group">
+          <button class="action-btn active" id="btn-mode-inspect" title="Single Flower Centered Pedestal Mode">
+            <span>🔬</span>
+            <span>Single Flower Inspection</span>
+          </button>
+          <button class="action-btn" id="btn-mode-gallery" title="Side-by-Side Gallery Arc comparing all geometries together">
+            <span>🏛️</span>
+            <span>Side-by-Side Exhibition</span>
+          </button>
+        </div>
+      </div>
+
+      <div style="display:flex; align-items:center; gap:14px; flex-wrap:wrap;">
+        <!-- Wireframe Mode Toggle -->
+        <button class="action-btn" id="btn-wireframe" title="Toggle 3D Wireframe Mesh to view vertex polygon topology">
+          <span>🔲</span>
+          <span>Wireframe Mesh</span>
+        </button>
+
+        <!-- Auto-Rotate Turntable Toggle -->
+        <button class="action-btn active" id="btn-rotate" title="Toggle 360° turntable spin">
+          <span>🔄</span>
+          <span>Turntable</span>
+        </button>
+
+        <!-- Bloom & Unfurl Slider -->
+        <div class="slider-item">
+          <span>🌸 Bloom:</span>
+          <input type="range" id="bloom-slider" min="0.0" max="1.0" step="0.02" value="0.70">
+          <span class="slider-val" id="bloom-val">70%</span>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Script Entry Point -->
+  <script type="module" src="./src/meadow-lab/geometry-lab.js"></script>
+</body>
+</html>

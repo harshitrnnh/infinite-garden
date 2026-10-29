@@ -1,0 +1,1079 @@
+/* ==========================================================================
+   VISUAL LANGUAGE LAB — MEADOW AESTHETICS & CHOREOGRAPHY STYLES
+   Curated semi-bright palette inspired by misty overcast wild meadow art
+   ========================================================================== */
+
+:root {
+  --bg-deep: #161e18;
+  --panel-bg: rgba(22, 30, 24, 0.76);
+  --panel-border: rgba(190, 208, 192, 0.22);
+  --text-main: #f0f5ed;
+  --text-muted: #b0c2b2;
+  --text-dim: #849686;
+  --accent-blue: #6372b8;
+  --accent-poppy: #eb4328;
+  --accent-gold: #e8c15a;
+  --accent-jade: #7ca88a;
+  --accent-glow: rgba(99, 114, 184, 0.35);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-font-smoothing: antialiased;
+}
+
+body, html {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background-color: #b6c7b7;
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  color: var(--text-main);
+  user-select: none;
+}
+
+#canvas-container {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+  touch-action: none;
+  -webkit-touch-callout: none;
+}
+
+#canvas-container canvas {
+  touch-action: none;
+  display: block;
+}
+
+/* Atmospheric subtle vignette */
+.mist-vignette {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 2;
+  background: radial-gradient(circle at 50% 40%, transparent 60%, rgba(132, 154, 134, 0.35) 100%);
+}
+
+/* ==========================================================================
+   TOP HEADER HUD
+   ========================================================================== */
+.lab-header {
+  position: absolute;
+  top: 24px;
+  left: 28px;
+  display: flex;
+  align-items: flex-start;
+  z-index: 10;
+  pointer-events: none;
+}
+
+.title-card {
+  pointer-events: auto;
+  background: var(--panel-bg);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--panel-border);
+  border-radius: 16px;
+  padding: 16px 22px;
+  max-width: 440px;
+  box-shadow: 0 12px 32px rgba(16, 24, 18, 0.25);
+}
+
+.lab-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent-gold);
+  background: rgba(232, 193, 90, 0.15);
+  border: 1px solid rgba(232, 193, 90, 0.3);
+  padding: 3px 10px;
+  border-radius: 20px;
+  margin-bottom: 8px;
+}
+
+.lab-title {
+  font-family: 'Fraunces', serif;
+  font-weight: 400;
+  font-size: 1.50rem;
+  letter-spacing: -0.01em;
+  color: var(--text-main);
+  line-height: 1.2;
+}
+
+.lab-title em {
+  font-style: italic;
+  font-weight: 300;
+  color: #c4d8c6;
+}
+
+.lab-subtitle {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  line-height: 1.45;
+  margin-top: 6px;
+}
+
+.header-actions {
+  pointer-events: auto;
+  margin-left: 14px;
+}
+
+/* ==========================================================================
+   LAPTOP CAPACITY & PERFORMANCE MONITOR CARD
+   ========================================================================== */
+.capacity-card {
+  pointer-events: auto;
+  margin-left: 14px;
+  background: var(--panel-bg);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border: 1px solid var(--panel-border);
+  border-radius: 16px;
+  padding: 12px 18px;
+  box-shadow: 0 12px 32px rgba(16, 24, 18, 0.25);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 250px;
+}
+
+.capacity-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border-bottom: 1px solid rgba(190, 208, 192, 0.12);
+  padding-bottom: 7px;
+}
+
+.capacity-tag {
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--accent-gold);
+}
+
+.fps-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(10, 16, 12, 0.65);
+  border: 1px solid rgba(190, 208, 192, 0.18);
+  padding: 3px 9px;
+  border-radius: 20px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-main);
+}
+
+.fps-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #4ade80;
+  box-shadow: 0 0 10px #4ade80;
+  transition: all 0.3s ease;
+}
+
+.fps-unit {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.ms-val {
+  font-size: 0.70rem;
+  color: var(--text-dim);
+  font-weight: 400;
+}
+
+.capacity-body {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.count-caption {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.count-selector {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.count-pill {
+  background: rgba(14, 20, 16, 0.45);
+  border: 1px solid rgba(190, 208, 192, 0.15);
+  color: var(--text-muted);
+  padding: 3px 8px;
+  border-radius: 8px;
+  font-size: 0.74rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.count-pill:hover {
+  background: rgba(30, 44, 34, 0.75);
+  border-color: rgba(190, 208, 192, 0.35);
+  color: var(--text-main);
+}
+
+.count-pill.active {
+  background: var(--accent-blue);
+  border-color: var(--accent-gold);
+  color: #ffffff;
+  box-shadow: 0 0 10px rgba(99, 114, 184, 0.4);
+}
+
+.count-pill.highlight-stress.active {
+  background: linear-gradient(135deg, #b8621b, #eb4328);
+  border-color: #ffd166;
+  color: #fff;
+  box-shadow: 0 0 14px rgba(235, 67, 40, 0.45);
+}
+
+/* Stress test button in bottom dock */
+.dance-pill.highlight-stress-pill {
+  background: rgba(235, 67, 40, 0.12);
+  border-color: rgba(235, 67, 40, 0.35);
+  color: #ffb4a2;
+}
+
+.dance-pill.highlight-stress-pill:hover {
+  background: rgba(235, 67, 40, 0.22);
+  border-color: rgba(235, 67, 40, 0.55);
+  color: #ffffff;
+}
+
+.dance-pill.highlight-stress-pill.active {
+  background: linear-gradient(135deg, #d33c16, #b45309) !important;
+  border-color: #ffd166 !important;
+  color: #ffffff !important;
+  box-shadow: 0 0 16px rgba(235, 67, 40, 0.5) !important;
+}
+
+.return-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: var(--panel-bg);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--panel-border);
+  border-radius: 12px;
+  color: var(--text-main);
+  font-size: 0.84rem;
+  font-weight: 500;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 6px 18px rgba(16, 24, 18, 0.2);
+}
+
+.return-btn:hover {
+  background: rgba(36, 48, 38, 0.9);
+  border-color: rgba(220, 240, 222, 0.45);
+  transform: translateY(-1px);
+}
+
+/* ==========================================================================
+   LIVE POSTURE & BOTANICAL KINEMATICS MONITOR (TOP RIGHT)
+   ========================================================================== */
+.posture-monitor-card {
+  position: absolute;
+  top: 24px;
+  right: 28px;
+  z-index: 10;
+  width: 320px;
+  background: var(--panel-bg);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--panel-border);
+  border-radius: 16px;
+  padding: 14px 18px;
+  box-shadow: 0 14px 36px rgba(16, 24, 18, 0.3);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.monitor-header {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  border-bottom: 1px solid rgba(190, 208, 192, 0.12);
+  padding-bottom: 8px;
+}
+
+.monitor-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.live-pulse {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #4ade80;
+  box-shadow: 0 0 10px #4ade80;
+  animation: pulse 1.8s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.85); }
+}
+
+.monitor-title {
+  font-size: 0.74rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--accent-gold);
+}
+
+.live-action-tag {
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: var(--text-main);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.monitor-body {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.dancer-svg-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: rgba(12, 18, 14, 0.45);
+  border: 1px solid rgba(190, 208, 192, 0.15);
+  border-radius: 12px;
+  padding: 6px;
+  width: 90px;
+}
+
+.dancer-label {
+  font-size: 0.64rem;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-top: 2px;
+}
+
+.metrics-grid {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 6px;
+}
+
+.metric-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 0.76rem;
+}
+
+.metric-label {
+  color: var(--text-muted);
+}
+
+.metric-val {
+  font-variant-numeric: tabular-nums;
+  color: var(--accent-gold);
+  font-weight: 600;
+}
+
+.progress-track {
+  width: 100%;
+  height: 4px;
+  background: rgba(190, 208, 192, 0.15);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.progress-bar {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, var(--accent-blue), var(--accent-gold));
+  border-radius: 2px;
+  transition: width 0.1s linear;
+}
+
+/* ==========================================================================
+   NAVIGATION HINT BADGE
+   ========================================================================== */
+.nav-hint-badge {
+  position: absolute;
+  top: 172px;
+  left: 28px;
+  z-index: 10;
+  background: var(--panel-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--panel-border);
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 0.74rem;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.nav-hint-badge strong {
+  color: var(--text-main);
+}
+
+/* ==========================================================================
+   BOTTOM DOCK CONTROLS
+   ========================================================================== */
+.lab-dock {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
+  width: min(1040px, 95vw);
+  background: var(--panel-bg);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--panel-border);
+  border-radius: 18px;
+  padding: 14px 22px;
+  box-shadow: 0 16px 40px rgba(16, 24, 18, 0.35);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.dock-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.section-label {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 600;
+  color: var(--text-dim);
+  margin-right: 4px;
+  white-space: nowrap;
+}
+
+/* Choreography Pills */
+.dance-pills-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.dance-pill {
+  background: rgba(14, 20, 16, 0.45);
+  border: 1px solid rgba(190, 208, 192, 0.16);
+  color: var(--text-muted);
+  padding: 5px 11px;
+  border-radius: 10px;
+  font-size: 0.78rem;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+}
+
+.dance-pill:hover {
+  background: rgba(28, 40, 32, 0.7);
+  border-color: rgba(190, 208, 192, 0.35);
+  color: var(--text-main);
+}
+
+.dance-pill.active {
+  background: var(--accent-blue);
+  border-color: var(--accent-gold);
+  color: #ffffff;
+  box-shadow: 0 0 14px rgba(232, 193, 90, 0.3);
+}
+
+.dance-pill.highlight-pill.active {
+  background: linear-gradient(135deg, #4f6b57, #6372b8);
+}
+
+/* Playback Controls */
+.playback-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.play-btn {
+  background: rgba(12, 18, 14, 0.5);
+  border: 1px solid rgba(190, 208, 192, 0.22);
+  color: var(--text-main);
+  padding: 5px 12px;
+  border-radius: 8px;
+  font-size: 0.76rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.play-btn:hover {
+  background: rgba(40, 56, 44, 0.8);
+  border-color: var(--accent-gold);
+}
+
+.speed-btn-group {
+  display: flex;
+  background: rgba(12, 18, 14, 0.4);
+  border: 1px solid rgba(190, 208, 192, 0.12);
+  border-radius: 8px;
+  padding: 2px;
+}
+
+.speed-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  padding: 4px 8px;
+  font-size: 0.72rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.speed-btn:hover {
+  color: var(--text-main);
+}
+
+.speed-btn.active {
+  background: var(--accent-gold);
+  color: #161e18;
+  font-weight: 700;
+}
+
+/* Camera preset buttons */
+.cam-btn-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(12, 18, 14, 0.4);
+  padding: 3px;
+  border-radius: 10px;
+  border: 1px solid rgba(190, 208, 192, 0.12);
+}
+
+.cam-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  padding: 5px 12px;
+  border-radius: 8px;
+  font-size: 0.78rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.cam-btn:hover {
+  color: var(--text-main);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.cam-btn.active {
+  background: var(--accent-blue);
+  color: #ffffff;
+  box-shadow: 0 4px 12px var(--accent-glow);
+}
+
+/* Palette Pills */
+.palette-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.palette-pill {
+  background: rgba(14, 20, 16, 0.45);
+  border: 1px solid rgba(190, 208, 192, 0.16);
+  color: var(--text-muted);
+  padding: 5px 10px;
+  border-radius: 8px;
+  font-size: 0.76rem;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+}
+
+.palette-pill:hover {
+  background: rgba(28, 40, 32, 0.7);
+  border-color: rgba(190, 208, 192, 0.35);
+  color: var(--text-main);
+}
+
+.palette-pill.active {
+  background: rgba(38, 54, 44, 0.95);
+  border-color: var(--accent-gold);
+  color: #ffffff;
+  box-shadow: 0 0 12px rgba(232, 193, 90, 0.25);
+}
+
+.color-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  display: inline-block;
+  box-shadow: 0 0 6px rgba(0, 0, 0, 0.3);
+}
+
+.color-dot.periwinkle { background: #5c69ad; }
+.color-dot.poppy { background: #eb4328; }
+.color-dot.lavender { background: #8d7cb5; }
+.color-dot.wheat { background: #f3eed9; }
+.color-dot.jade { background: #7ca88a; }
+
+/* Sliders */
+.slider-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.slider-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.76rem;
+  color: var(--text-muted);
+}
+
+.slider-item input[type="range"] {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 72px;
+  height: 4px;
+  border-radius: 2px;
+  background: rgba(190, 208, 192, 0.25);
+  outline: none;
+  cursor: pointer;
+}
+
+.slider-item input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--text-main);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+
+.slider-item input[type="range"]::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+  background: var(--accent-gold);
+}
+
+.slider-val {
+  font-variant-numeric: tabular-nums;
+  font-size: 0.72rem;
+  color: var(--accent-gold);
+  min-width: 30px;
+}
+
+.active-palette-info {
+  font-size: 0.74rem;
+  color: var(--text-dim);
+  font-style: italic;
+  padding-left: 2px;
+}
+
+/* ==========================================================================
+   RESPONSIVE QUERIES
+   ========================================================================== */
+@media (max-width: 980px) {
+  .posture-monitor-card {
+    position: static;
+    margin: 12px 20px;
+    width: auto;
+  }
+  .lab-header {
+    position: static;
+    margin: 16px 20px 0;
+  }
+  .lab-dock {
+    width: calc(100vw - 24px);
+    bottom: 12px;
+    padding: 12px 16px;
+  }
+  .dock-row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .nav-hint-badge {
+    display: none;
+  }
+}
+
+/* ==========================================================================
+   VIEW CONTROLS (BOTTOM RIGHT)
+   ========================================================================== */
+.view-controls-floating {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.hide-ui-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 1px solid rgba(190, 208, 192, 0.3);
+  background: rgba(22, 30, 24, 0.55);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  color: rgba(240, 245, 237, 0.7);
+  font-size: 15px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.2s, color 0.2s, border-color 0.2s, transform 0.2s, background 0.2s;
+  pointer-events: auto;
+}
+.hide-ui-btn:hover {
+  color: #f0f5ed;
+  border-color: rgba(190, 208, 192, 0.6);
+  background: rgba(22, 30, 24, 0.85);
+  transform: scale(1.06);
+}
+
+.hide-ui-btn.labels-btn.labels-off {
+  opacity: 0.55;
+  filter: grayscale(1);
+  border-color: rgba(239, 68, 68, 0.4);
+}
+
+/* When UI is hidden, fade every overlay except the canvas and the controls itself */
+body.ui-hidden .lab-header,
+body.ui-hidden .posture-monitor-card,
+body.ui-hidden .nav-hint-badge,
+body.ui-hidden .lab-dock,
+body.ui-hidden .mist-vignette {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.35s ease;
+}
+
+/* When UI is hidden OR labels are toggled off: hide all 3D floating labels completely */
+body.ui-hidden .flower-name-tag,
+body.labels-hidden .flower-name-tag {
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+  transform: translateX(-50%) scale(0.6) !important;
+  transition: opacity 0.25s ease, transform 0.25s ease !important;
+}
+
+/* Make button visible when UI is hidden so user can find it to toggle back */
+body.ui-hidden .hide-ui-btn {
+  opacity: 0.35;
+  border-color: rgba(190, 208, 192, 0.25);
+}
+body.ui-hidden .hide-ui-btn:hover {
+  opacity: 0.95;
+  color: #f0f5ed;
+  border-color: rgba(190, 208, 192, 0.7);
+}
+
+.toggle-labels-btn {
+  cursor: pointer;
+  border: 1px solid rgba(190, 208, 192, 0.35);
+  background: rgba(22, 30, 24, 0.65);
+}
+
+.toggle-labels-btn:hover {
+  background: rgba(30, 42, 33, 0.85);
+  border-color: rgba(190, 208, 192, 0.6);
+}
+
+.toggle-labels-btn.labels-off {
+  color: #fca5a5;
+  border-color: rgba(248, 113, 113, 0.4);
+}
+
+.flower-chip.label-toggle-chip {
+  background: rgba(45, 60, 50, 0.75);
+  border-color: rgba(140, 200, 160, 0.5);
+  color: #d1fae5;
+  margin-left: 6px;
+}
+
+.flower-chip.label-toggle-chip.labels-off {
+  background: rgba(60, 30, 30, 0.65);
+  border-color: rgba(248, 113, 113, 0.45);
+  color: #fca5a5;
+}
+
+/* ==========================================================================
+   FLOWER NAME TAGS  (CSS2DRenderer objects)
+   ========================================================================== */
+.flower-name-tag {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: #f0f5ed;
+  background: rgba(22, 30, 24, 0.62);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(190, 208, 192, 0.28);
+  border-radius: 20px;
+  padding: 3px 9px;
+  white-space: nowrap;
+  pointer-events: none;
+  transform: translateX(-50%);
+  transition: opacity 0.25s ease, transform 0.25s ease, background 0.2s, border-color 0.2s;
+  user-select: none;
+
+  /* Hidden by default — only shown on search match */
+  opacity: 0;
+  visibility: hidden;
+}
+
+/* Highlighted (search match) — tag appears */
+.flower-name-tag.tag-match {
+  opacity: 1;
+  visibility: visible;
+  background: rgba(99, 114, 184, 0.88);
+  border-color: #8794d6;
+  color: #fff;
+  transform: translateX(-50%) scale(1.18);
+  box-shadow: 0 0 16px rgba(99, 114, 184, 0.6);
+}
+
+/* User-planted flower tag styling */
+.flower-name-tag.tag-planted {
+  opacity: 0.90;
+  visibility: visible;
+  background: rgba(30, 60, 40, 0.75);
+  border-color: rgba(74, 222, 128, 0.6);
+  color: #e6fced;
+  box-shadow: 0 0 12px rgba(74, 222, 128, 0.35);
+}
+
+.flower-name-tag.tag-planted .tag-badge {
+  margin-right: 4px;
+}
+
+.flower-name-tag.tag-planted .tag-author {
+  font-size: 0.78em;
+  opacity: 0.80;
+  margin-left: 6px;
+  border-left: 1px solid rgba(255, 255, 255, 0.3);
+  padding-left: 6px;
+}
+
+.flower-name-tag.tag-planted.tag-match {
+  opacity: 1;
+  visibility: visible;
+  background: rgba(22, 101, 52, 0.95);
+  border-color: #4ade80;
+  color: #fff;
+  box-shadow: 0 0 22px rgba(74, 222, 128, 0.75);
+  transform: translateX(-50%) scale(1.24);
+}
+
+/* Dimmed state — stays hidden (non-matching during search) */
+.flower-name-tag.tag-dimmed {
+  opacity: 0;
+  visibility: hidden;
+}
+
+/* ==========================================================================
+   FLOWER SEARCH BAR
+   ========================================================================== */
+.flower-search-bar {
+  position: fixed;
+  top: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  pointer-events: auto;
+}
+
+.search-inner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(22, 30, 24, 0.72);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(190, 208, 192, 0.26);
+  border-radius: 28px;
+  padding: 7px 14px;
+  box-shadow: 0 8px 24px rgba(16, 24, 18, 0.22);
+  transition: border-color 0.2s;
+}
+
+.search-inner:focus-within {
+  border-color: rgba(135, 148, 214, 0.6);
+  box-shadow: 0 0 0 2px rgba(99, 114, 184, 0.2), 0 8px 24px rgba(16, 24, 18, 0.22);
+}
+
+.search-icon {
+  font-size: 14px;
+  line-height: 1;
+  opacity: 0.8;
+}
+
+.search-input {
+  background: transparent;
+  border: none;
+  outline: none;
+  color: #f0f5ed;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  width: 190px;
+  caret-color: #8794d6;
+}
+
+.search-input::placeholder {
+  color: rgba(176, 194, 178, 0.5);
+}
+
+.search-clear {
+  background: none;
+  border: none;
+  color: rgba(176, 194, 178, 0.5);
+  font-size: 11px;
+  cursor: pointer;
+  padding: 0 2px;
+  line-height: 1;
+  transition: color 0.15s;
+  display: none;
+}
+.search-clear.visible {
+  display: inline;
+}
+.search-clear:hover {
+  color: #f0f5ed;
+}
+
+.search-result-count {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 10px;
+  font-weight: 500;
+  color: rgba(135, 148, 214, 0.9);
+  letter-spacing: 0.04em;
+  height: 14px;
+}
+
+/* Quick Select Flower Chips */
+.flower-quick-select {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  max-width: 480px;
+}
+
+.flower-chip {
+  background: rgba(22, 30, 24, 0.65);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(190, 208, 192, 0.22);
+  color: #d8e5d9;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 3px 9px;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.flower-chip:hover {
+  background: rgba(99, 114, 184, 0.5);
+  border-color: rgba(135, 148, 214, 0.6);
+  color: #ffffff;
+  transform: translateY(-1px);
+}
+
+.flower-chip.active {
+  background: rgba(99, 114, 184, 0.85);
+  border-color: #8794d6;
+  color: #ffffff;
+  box-shadow: 0 0 10px rgba(99, 114, 184, 0.5);
+}
+
+.flower-chip.planted-chip {
+  background: rgba(22, 101, 52, 0.45);
+  border-color: rgba(74, 222, 128, 0.55);
+  color: #dcfce7;
+}
+
+.flower-chip.planted-chip:hover {
+  background: rgba(22, 101, 52, 0.75);
+  border-color: #4ade80;
+  color: #ffffff;
+}
+
+.flower-chip.planted-chip.active {
+  background: rgba(34, 197, 94, 0.85);
+  border-color: #86efac;
+  color: #ffffff;
+  box-shadow: 0 0 12px rgba(74, 222, 128, 0.6);
+}
+
+/* Search bar always stays visible, even when UI is hidden */

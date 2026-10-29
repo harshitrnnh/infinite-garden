@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Symbiosis — Meadow Visual Language Lab (Body Choreography)</title>
+  <meta name="description" content="Visual language laboratory exploring semi-bright aesthetic, curved organic wildflower morphology, and simulated human body movement choreography.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;1,9..144,300;1,9..144,400&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./src/meadow-lab/lab-style.css">
+</head>
+<body>
+  <!-- 3D Canvas Mount Point -->
+  <div id="canvas-container"></div>
+
+  <!-- Soft Atmospheric Vignette -->
+  <div class="mist-vignette"></div>
+
+  <!-- Floating View Control Buttons (Bottom Right) -->
+  <div class="view-controls-floating">
+    <button id="btn-hide-ui" class="hide-ui-btn" title="Toggle UI visibility (Zen mode)">⊠</button>
+  </div>
+
+  <!-- Flower Name Search -->
+  <div class="flower-search-bar" id="flower-search-bar">
+    <div class="search-inner">
+      <span class="search-icon">🌸</span>
+      <input
+        type="text"
+        id="flower-search-input"
+        class="search-input"
+        placeholder="Search flower (e.g. Luna Bloom)…"
+        autocomplete="off"
+        spellcheck="false"
+      >
+      <button id="flower-search-clear" class="search-clear" title="Clear">✕</button>
+    </div>
+    <span class="search-result-count" id="search-result-count"></span>
+  </div>
+
+  <!-- Top Header HUD -->
+  <header class="lab-header">
+    <div class="title-card">
+      <span class="lab-badge">🎨 Visual Language & Choreography Lab</span>
+      <h1 class="lab-title">Wild Meadow <em>(Gesture & Petal)</em></h1>
+      <p class="lab-subtitle">
+        100-flower botanical garden mix of Periwinkle, Poppy, Meadow Chalice & Chamomile — each with independent random simulated movement.
+      </p>
+    </div>
+
+    <!-- Laptop Capacity & Stress Test Monitor Card -->
+    <div class="capacity-card" id="capacity-card">
+      <div class="capacity-header">
+        <span class="capacity-tag">💻 Laptop Capacity</span>
+        <div class="fps-pill" id="fps-pill">
+          <span class="fps-dot" id="fps-dot"></span>
+          <span id="fps-val">60</span> <span class="fps-unit">FPS</span>
+          <span class="ms-val" id="ms-val">(16.6ms)</span>
+        </div>
+      </div>
+      <div class="capacity-body">
+        <span class="count-caption">Meadow Density:</span>
+        <div class="count-selector">
+          <button class="count-pill" data-count="50" title="50 blooming flowers">50</button>
+          <button class="count-pill" data-count="100" title="100 flowers standard meadow">100</button>
+          <button class="count-pill" data-count="200" title="200 flowers — dense meadow bloom">200 🌸</button>
+          <button class="count-pill active highlight-stress" data-count="2000" title="Simulate expansive living garden with 2,000 flowers">2000 🌊 (Simulated Garden)</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="header-actions">
+      <a href="./flower-geometries.html" class="return-btn" title="Explore All 3D Flower Geometries & Morphologies">
+        <span>🔬</span>
+        <span>3D Geometries Lab</span>
+      </a>
+      <a href="./index.html" class="return-btn" title="Back to Full Interactive Installation">
+        <span>🌱</span>
+        <span>Main Installation</span>
+      </a>
+    </div>
+  </header>
+
+  <!-- Live Human Posture & Botanical Kinematics Card (Top Right) -->
+  <aside class="posture-monitor-card" id="posture-monitor">
+    <div class="monitor-header">
+      <div class="monitor-indicator">
+        <span class="live-pulse"></span>
+        <span class="monitor-title">Human Gesture → Flower Kinematics</span>
+      </div>
+      <span class="live-action-tag" id="live-posture-text">Sunburst Reach</span>
+    </div>
+
+    <div class="monitor-body">
+      <!-- Animated Human Silhouette SVG -->
+      <div class="dancer-svg-wrap">
+        <svg id="dancer-svg" viewBox="0 0 100 100" width="80" height="80">
+          <!-- Ground line -->
+          <line x1="20" y1="88" x2="80" y2="88" stroke="rgba(190, 208, 192, 0.25)" stroke-width="2" stroke-dasharray="3 3"/>
+          <!-- Legs -->
+          <line x1="50" y1="75" x2="38" y2="88" stroke="#8da08e" stroke-width="2.5" stroke-linecap="round"/>
+          <line x1="50" y1="75" x2="62" y2="88" stroke="#8da08e" stroke-width="2.5" stroke-linecap="round"/>
+          <!-- Spine (animated) -->
+          <line id="dancer-spine" x1="50" y1="75" x2="50" y2="45" stroke="#f0f5ed" stroke-width="3" stroke-linecap="round"/>
+          <!-- Head (animated) -->
+          <circle id="dancer-head" cx="50" cy="22" r="7" fill="#f0f5ed"/>
+          <!-- Left & Right Arms (animated) -->
+          <line id="dancer-arm-l" x1="50" y1="45" x2="25" y2="25" stroke="#e8c15a" stroke-width="2.5" stroke-linecap="round"/>
+          <line id="dancer-arm-r" x1="50" y1="45" x2="75" y2="25" stroke="#e8c15a" stroke-width="2.5" stroke-linecap="round"/>
+        </svg>
+        <span class="dancer-label">Simulated Dancer</span>
+      </div>
+
+      <!-- Real-time Botanical Metrics Gauges -->
+      <div class="metrics-grid">
+        <div class="metric-item">
+          <span class="metric-label">🌸 Bloom Chalice:</span>
+          <strong class="metric-val" id="gauge-bloom">85%</strong>
+        </div>
+        <div class="metric-item">
+          <span class="metric-label">📏 Stem Stretch:</span>
+          <strong class="metric-val" id="gauge-height">1.22x</strong>
+        </div>
+        <div class="metric-item">
+          <span class="metric-label">📐 Spine Lean:</span>
+          <strong class="metric-val" id="gauge-lean">+12°</strong>
+        </div>
+        <div class="metric-item">
+          <span class="metric-label">👐 Wingspan Spread:</span>
+          <strong class="metric-val" id="gauge-wingspan">74%</strong>
+        </div>
+      </div>
+    </div>
+
+    <!-- Timeline Progress Bar -->
+    <div class="progress-track">
+      <div class="progress-bar" id="dance-progress-bar"></div>
+    </div>
+  </aside>
+
+  <!-- Interactive Navigation Hint Badge -->
+  <div class="nav-hint-badge">
+    <span>🖱️ <strong>Left-Click Drag</strong>: Orbit camera</span>
+    <span>•</span>
+    <span><strong>Scroll Wheel</strong>: Fly / Zoom</span>
+  </div>
+
+  <!-- Bottom Floating Control Dock -->
+  <nav class="lab-dock">
+    <!-- Row 1: Simulated Human Choreography Selection & Playback Controls -->
+    <div class="dock-row">
+      <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+        <span class="section-label">Simulated Choreography:</span>
+        <div class="dance-pills-wrap">
+          <button class="dance-pill active highlight-stress-pill" data-dance="random100" title="All 100 flowers moving with completely independent random sway, bloom, stretch & leaf motions">
+            <span>🎲</span>
+            <span>100 Random Dancers</span>
+          </button>
+          <button class="dance-pill" data-dance="surya" title="Deep bow rising into radiant overhead bloom">
+            <span>☀️</span>
+            <span>Surya Namaskar</span>
+          </button>
+          <button class="dance-pill" data-dance="monsoon" title="Spirited lateral sway and alternating wing wave">
+            <span>🌧️</span>
+            <span>Monsoon Wave</span>
+          </button>
+          <button class="dance-pill" data-dance="breath" title="Hypnotic meditative breathing rhythm">
+            <span>🧘</span>
+            <span>Prana Breath</span>
+          </button>
+          <button class="dance-pill" data-dance="spiral" title="Fluid circular orbital dance">
+            <span>🌀</span>
+            <span>Whirling Spiral</span>
+          </button>
+          <button class="dance-pill highlight-pill" data-dance="chorus" title="All meadow flowers dancing together in synchronized harmonic wave!">
+            <span>👥</span>
+            <span>Meadow Chorus</span>
+          </button>
+          <button class="dance-pill" data-dance="wind" title="Gentle ambient breeze without body dance">
+            <span>🍃</span>
+            <span>Wind Only</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Playback Controls -->
+      <div class="playback-controls">
+        <button class="play-btn" id="btn-play-pause">⏸️ Pause</button>
+        <div class="speed-btn-group">
+          <button class="speed-btn" id="btn-speed-05">0.5x</button>
+          <button class="speed-btn active" id="btn-speed-1">1.0x</button>
+          <button class="speed-btn" id="btn-speed-15">1.5x</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Row 2: Camera Presets & Environmental Sliders -->
+    <div class="dock-row">
+      <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+        <span class="section-label">Camera Angle:</span>
+        <div class="cam-btn-group">
+          <button class="cam-btn active" id="btn-cam-hero-low" title="Look upward through the flowers against the sky (Matches reference artwork!)">
+            <span>🌾</span>
+            <span>Low-Angle Hero (Looking Up)</span>
+          </button>
+          <button class="cam-btn" id="btn-cam-eye" title="Walk through the meadow at eye-level">
+            <span>👁️</span>
+            <span>Eye-Level Walk</span>
+          </button>
+          <button class="cam-btn" id="btn-cam-aerial" title="High cinematic glade view">
+            <span>🕊️</span>
+            <span>Aerial Glade</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="slider-group">
+        <div class="slider-item">
+          <span>🌿 Wind:</span>
+          <input type="range" id="wind-slider" min="0" max="2.5" step="0.1" value="1.0">
+          <span class="slider-val" id="wind-val">100%</span>
+        </div>
+        <div class="slider-item">
+          <span>☀️ Sky Exposure:</span>
+          <input type="range" id="sky-slider" min="0.6" max="1.8" step="0.05" value="1.15">
+          <span class="slider-val" id="sky-val">1.15x</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Row 3: Botanical Color Palette Switcher -->
+    <div class="dock-row">
+      <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+        <span class="section-label">Hero Flower Palette:</span>
+        <div class="palette-group">
+          <button class="palette-pill active" data-palette="periwinkle" title="Indigo & Ultramarine with Lilac Undertones">
+            <span class="color-dot periwinkle"></span>
+            <span>Periwinkle Blue</span>
+          </button>
+          <button class="palette-pill" data-palette="poppyFlame" title="Vibrant Poppy Scarlet with Charcoal Eye">
+            <span class="color-dot poppy"></span>
+            <span>Poppy Flame</span>
+          </button>
+          <button class="palette-pill" data-palette="wildLavender" title="Misty Thistle & Heather Lavender">
+            <span class="color-dot lavender"></span>
+            <span>Wild Lavender</span>
+          </button>
+          <button class="palette-pill" data-palette="wheatCream" title="Sun-bleached Chamomile & Golden Core">
+            <span class="color-dot wheat"></span>
+            <span>Chamomile Wheat</span>
+          </button>
+          <button class="palette-pill" data-palette="eucalyptusJade" title="Translucent Celadon Jade & Pale Mint">
+            <span class="color-dot jade"></span>
+            <span>Celadon Jade</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="active-palette-info" id="dance-desc-text">
+        ☀️ Deep humble bow rising into a radiant sunburst reach toward the sky
+      </div>
+    </div>
+  </nav>
+
+  <!-- Script Entry Point -->
+  <script type="module" src="./src/meadow-lab/lab-main.js"></script>
+</body>
+</html>

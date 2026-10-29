@@ -1,0 +1,2107 @@
+import * as THREE from 'three';
+import { PoeticFlower, MEADOW_PALETTES } from './poetic-flower.js';
+import { LivingPlant } from '../plant.js';
+
+/**
+ * 3D BOTANICAL MORPHOLOGY & ARTICULATED KINEMATICS LAB
+ * Generates distinct 3D mathematical mesh topologies for each flower species
+ * mounted on single articulated continuous stems with branches, foliage leaves,
+ * and smaller companion flowers responding to hand and leg movements.
+ */
+
+// ============================================================================
+// PROCEDURAL FOLIAGE LEAF GEOMETRY GENERATOR
+// Sculpted natural leaf blade with curved rachis vein and arched cross-section
+// ============================================================================
+export function createSculptedFoliageLeaf(length = 0.38, width = 0.12, segs = 10) {
+  const vertices = [];
+  const uvs = [];
+  const indices = [];
+  const colors = [];
+
+  for (let i = 0; i <= segs; i++) {
+    const t = i / segs; // 0 (base) to 1 (tip)
+    // Tapering leaf envelope: narrow at base (stem attachment), swells at 0.4, pointed apex at 1.0
+    const w = width * Math.sin(Math.pow(t, 0.75) * Math.PI);
+    // Longitudinal arch curve
+    const y = Math.sin(t * Math.PI * 0.48) * length;
+    const zArch = Math.pow(t, 1.4) * (length * 0.20);
+
+    for (let u = 0; u <= 4; u++) {
+      const uNorm = (u / 4) * 2 - 1; // -1 (left edge) to 0 (midrib) to +1 (right edge)
+      const x = uNorm * w * 0.5;
+      // Transverse V-cup or downward curl
+      const vCup = Math.pow(Math.abs(uNorm), 1.6) * (w * 0.22);
+      const z = zArch - vCup;
+
+      vertices.push(x, y, z);
+      uvs.push(u / 4, t);
+
+      // Color variation from dark forest green midrib to fresh sage edge
+      const edgeFactor = Math.abs(uNorm);
+      const c = new THREE.Color(0x283b27).lerp(new THREE.Color(0x456041), edgeFactor * 0.7 + t * 0.3);
+      colors.push(c.r, c.g, c.b);
+    }
+  }
+
+  for (let i = 0; i < segs; i++) {
+    for (let u = 0; u < 4; u++) {
+      const a = i * 5 + u;
+      const b = (i + 1) * 5 + u;
+      const c = (i + 1) * 5 + (u + 1);
+      const d = i * 5 + (u + 1);
+      indices.push(a, b, d);
+      indices.push(b, c, d);
+    }
+  }
+
+  const geom = new THREE.BufferGeometry();
+  geom.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+  geom.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
+  geom.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+  geom.setIndex(indices);
+  geom.computeVertexNormals();
+  return geom;
+}
+
+// ============================================================================
+// SINGLE UNIFIED ARTICULATED BOTANICAL STEM
+// 5-segment continuous kinematic spine with branches, leaves, and companion flowers
+// ============================================================================
+export class BotanicalArticulatedStem {
+  constructor(options = {}) {
+    this.totalHeight = options.totalHeight || 1.55;
+    this.numSegments = options.numSegments || 5;
+    this.segmentHeight = this.totalHeight / this.numSegments;
+    this.stemColor = options.stemColor || 0x3d5438;
+    this.leafColor = options.leafColor || 0x314a2c;
+    this.neckTiltX = options.neckTiltX !== undefined ? options.neckTiltX : 0.06;
+    this.createFloretFn = options.createFloretFn || null;
+    this.enableBranches = options.enableBranches !== undefined ? options.enableBranches : (options.createFloretFn ? true : false);
+    this.enableStanceBalancing = options.enableStanceBalancing !== undefined ? options.enableStanceBalancing : true;
+    this.showBasalLeaves = options.showBasalLeaves !== undefined ? options.showBasalLeaves : false; // Default false to avoid odd flapping base leaves
+
+    this.group = new THREE.Group();
+    this.segments = [];
+    this.basalLeaves = [];
+    this.branchlets = [];
+    this.florets = [];
+    this.idleTime = 0;
+
+    // Kinematic smoothing state
+    this.currentLeanX = 0;
+    this.currentLeanZ = 0;
+    this.currentHeight = 1.0;
+    this.currentArmL = 0.5;
+    this.currentArmR = 0.5;
+    this.currentArmExtL = 0;
+    this.currentArmExtR = 0;
+    this.currentWingspan = 0.5;
+    this.currentLegL = 0;
+    this.currentLegR = 0;
+    this.currentBloom = 0.65;
+
+    this.initMaterials();
+    this.buildSkeleton();
+  }
+
+  initMaterials() {
+    this.stemMat = new THREE.MeshStandardMaterial({
+      color: this.stemColor,
+      roughness: 0.58,
+      metalness: 0.04
+    });
+
+    this.leafMat = new THREE.MeshStandardMaterial({
+      color: this.leafColor,
+      roughness: 0.45,
+      metalness: 0.03,
+      side: THREE.DoubleSide
+    });
+  }
+
+  buildSkeleton() {
+    let parent = this.group;
+
+    for (let i = 0; i < this.numSegments; i++) {
+      const segGroup = new THREE.Group();
+      segGroup.position.set(0, i === 0 ? 0.0 : this.segmentHeight, 0);
+
+      const t0 = i / this.numSegments;
+      const t1 = (i + 1) / this.numSegments;
+      // Natural botanical taper from base to slender tip
+      const rBottom = THREE.MathUtils.lerp(0.036, 0.012, t0);
+      const rTop = THREE.MathUtils.lerp(0.036, 0.012, t1);
+
+      const geom = new THREE.CylinderGeometry(rTop, rBottom, this.segmentHeight, 10);
+      geom.translate(0, this.segmentHeight * 0.5, 0);
+
+      const mesh = new THREE.Mesh(geom, this.stemMat);
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
+      segGroup.add(mesh);
+
+      // =====================================================================
+      // NODE 0 (GROUND BASE): Large Sculpted Basal Leaves (Leg Movement Response)
+      // =====================================================================
+      if (i === 0) {
+        // 1. Left Ground Leaf - Forward-Left (responds to left leg)
+        const pL0 = new THREE.Group();
+        pL0.position.set(-0.015, 0.03, 0.02);
+        const geoL0 = createSculptedFoliageLeaf(0.65, 0.18, 10);
+        const meshL0 = new THREE.Mesh(geoL0, this.leafMat);
+        meshL0.castShadow = true;
+        pL0.add(meshL0);
+        pL0.rotation.y = -Math.PI * 0.22;
+        pL0.rotation.z = -0.85;
+        pL0.rotation.x = 0.28;
+        segGroup.add(pL0);
+        this.basalLeaves.push({ pivot: pL0, side: -1, baseZ: -0.85, baseX: 0.28, baseY: -Math.PI * 0.22, order: 0 });
+
+        // 2. Left Ground Leaf - Lateral-Left (responds to left leg)
+        const pL1 = new THREE.Group();
+        pL1.position.set(-0.025, 0.07, -0.015);
+        const geoL1 = createSculptedFoliageLeaf(0.55, 0.16, 10);
+        const meshL1 = new THREE.Mesh(geoL1, this.leafMat);
+        meshL1.castShadow = true;
+        pL1.add(meshL1);
+        pL1.rotation.y = -Math.PI * 0.55;
+        pL1.rotation.z = -0.75;
+        pL1.rotation.x = 0.18;
+        segGroup.add(pL1);
+        this.basalLeaves.push({ pivot: pL1, side: -1, baseZ: -0.75, baseX: 0.18, baseY: -Math.PI * 0.55, order: 1 });
+
+        // 3. Right Ground Leaf - Forward-Right (responds to right leg)
+        const pR0 = new THREE.Group();
+        pR0.position.set(0.015, 0.03, 0.02);
+        const geoR0 = createSculptedFoliageLeaf(0.65, 0.18, 10);
+        const meshR0 = new THREE.Mesh(geoR0, this.leafMat);
+        meshR0.castShadow = true;
+        pR0.add(meshR0);
+        pR0.rotation.y = Math.PI * 0.22;
+        pR0.rotation.z = 0.85;
+        pR0.rotation.x = 0.28;
+        segGroup.add(pR0);
+        this.basalLeaves.push({ pivot: pR0, side: 1, baseZ: 0.85, baseX: 0.28, baseY: Math.PI * 0.22, order: 2 });
+
+        // 4. Right Ground Leaf - Lateral-Right (responds to right leg)
+        const pR1 = new THREE.Group();
+        pR1.position.set(0.025, 0.07, -0.015);
+        const geoR1 = createSculptedFoliageLeaf(0.55, 0.16, 10);
+        const meshR1 = new THREE.Mesh(geoR1, this.leafMat);
+        meshR1.castShadow = true;
+        pR1.add(meshR1);
+        pR1.rotation.y = Math.PI * 0.55;
+        pR1.rotation.z = 0.75;
+        pR1.rotation.x = 0.18;
+        segGroup.add(pR1);
+        this.basalLeaves.push({ pivot: pR1, side: 1, baseZ: 0.75, baseX: 0.18, baseY: Math.PI * 0.55, order: 3 });
+      }
+
+      // =====================================================================
+      // NODE 1 (LOWER STEM): Mid-Basal Leaves (Arching Up from Soil)
+      // =====================================================================
+      if (i === 1) {
+        // Left Mid-Basal Leaf
+        const pL2 = new THREE.Group();
+        pL2.position.set(-0.015, this.segmentHeight * 0.35, -0.015);
+        const geoL2 = createSculptedFoliageLeaf(0.48, 0.14, 10);
+        const meshL2 = new THREE.Mesh(geoL2, this.leafMat);
+        meshL2.castShadow = true;
+        pL2.add(meshL2);
+        pL2.rotation.y = -Math.PI * 0.82;
+        pL2.rotation.z = -0.68;
+        pL2.rotation.x = -0.15;
+        segGroup.add(pL2);
+        this.basalLeaves.push({ pivot: pL2, side: -1, baseZ: -0.68, baseX: -0.15, baseY: -Math.PI * 0.82, order: 4 });
+
+        // Right Mid-Basal Leaf
+        const pR2 = new THREE.Group();
+        pR2.position.set(0.015, this.segmentHeight * 0.35, -0.015);
+        const geoR2 = createSculptedFoliageLeaf(0.48, 0.14, 10);
+        const meshR2 = new THREE.Mesh(geoR2, this.leafMat);
+        meshR2.castShadow = true;
+        pR2.add(meshR2);
+        pR2.rotation.y = Math.PI * 0.82;
+        pR2.rotation.z = 0.68;
+        pR2.rotation.x = -0.15;
+        segGroup.add(pR2);
+        this.basalLeaves.push({ pivot: pR2, side: 1, baseZ: 0.68, baseX: -0.15, baseY: Math.PI * 0.82, order: 5 });
+      }
+
+      // =====================================================================
+      // NODE 2: Left Arching Branch or Cauline Stem Leaves
+      // =====================================================================
+      if (i === 2) {
+        if (this.enableBranches) {
+          const branchL = new THREE.Group();
+          branchL.position.set(-0.015, this.segmentHeight * 0.40, 0);
+          branchL.rotation.y = 0.28;
+          branchL.rotation.z = -0.75; // Outward left angle
+          branchL.rotation.x = 0.15;
+
+          const branchLen = 0.44;
+          const bStemGeo = new THREE.CylinderGeometry(0.008, 0.016, branchLen, 8);
+          bStemGeo.translate(0, branchLen * 0.5, 0);
+          const bStemMesh = new THREE.Mesh(bStemGeo, this.stemMat);
+          bStemMesh.castShadow = true;
+          branchL.add(bStemMesh);
+
+          // Small delicate foliage leaflets along left branch
+          const bLeaf1 = new THREE.Mesh(createSculptedFoliageLeaf(0.20, 0.052, 8), this.leafMat);
+          bLeaf1.position.set(-0.005, branchLen * 0.35, 0.005);
+          bLeaf1.rotation.set(0.20, -0.30, -0.32);
+          branchL.add(bLeaf1);
+
+          const bLeaf2 = new THREE.Mesh(createSculptedFoliageLeaf(0.15, 0.040, 8), this.leafMat);
+          bLeaf2.position.set(0.005, branchLen * 0.65, -0.005);
+          bLeaf2.rotation.set(-0.15, 0.25, 0.28);
+          branchL.add(bLeaf2);
+
+          const bLeaf3 = new THREE.Mesh(createSculptedFoliageLeaf(0.11, 0.030, 8), this.leafMat);
+          bLeaf3.position.set(-0.004, branchLen * 0.85, 0.004);
+          bLeaf3.rotation.set(0.15, -0.40, -0.22);
+          branchL.add(bLeaf3);
+
+          // Delicate companion smaller flower mount at branch tip (scaled down)
+          const floretMountL = new THREE.Group();
+          floretMountL.position.set(0, branchLen, 0);
+          floretMountL.rotation.z = -0.25;
+          floretMountL.rotation.x = 0.18;
+          branchL.add(floretMountL);
+
+          if (typeof this.createFloretFn === 'function') {
+            const floretL = this.createFloretFn(0.28, true);
+            if (floretL && floretL.group) {
+              floretMountL.add(floretL.group);
+              this.florets.push(floretL);
+            }
+          }
+
+          segGroup.add(branchL);
+          this.branchlets.push({
+            group: branchL,
+            mount: floretMountL,
+            side: -1,
+            baseZ: -0.75,
+            baseX: 0.15
+          });
+        } else {
+          // Single spine mode: elegant natural stem leaf hugging the central spine
+          const spineLeafL = new THREE.Mesh(createSculptedFoliageLeaf(0.42, 0.11, 8), this.leafMat);
+          spineLeafL.position.set(-0.012, this.segmentHeight * 0.35, 0.008);
+          spineLeafL.rotation.set(0.18, 0.45, -0.42);
+          spineLeafL.castShadow = true;
+          segGroup.add(spineLeafL);
+        }
+
+        // Larger cauline leaf along main stem ABOVE left branch
+        const stemLeaf2 = new THREE.Mesh(createSculptedFoliageLeaf(0.52, 0.138, 10), this.leafMat);
+        stemLeaf2.position.set(0.014, this.segmentHeight * 0.80, 0.008);
+        stemLeaf2.rotation.set(0.20, 0.55, 0.34);
+        stemLeaf2.castShadow = true;
+        segGroup.add(stemLeaf2);
+      }
+
+      // =====================================================================
+      // NODE 3: Right Arching Branch or Cauline Stem Leaves
+      // =====================================================================
+      if (i === 3) {
+        if (this.enableBranches) {
+          const branchR = new THREE.Group();
+          branchR.position.set(0.015, this.segmentHeight * 0.32, 0);
+          branchR.rotation.y = -0.28;
+          branchR.rotation.z = 0.72; // Outward right angle
+          branchR.rotation.x = 0.12;
+
+          const branchLen = 0.46;
+          const bStemGeo = new THREE.CylinderGeometry(0.008, 0.016, branchLen, 8);
+          bStemGeo.translate(0, branchLen * 0.5, 0);
+          const bStemMesh = new THREE.Mesh(bStemGeo, this.stemMat);
+          bStemMesh.castShadow = true;
+          branchR.add(bStemMesh);
+
+          // Small delicate foliage leaflets along right branch
+          const bLeaf1 = new THREE.Mesh(createSculptedFoliageLeaf(0.21, 0.054, 8), this.leafMat);
+          bLeaf1.position.set(0.005, branchLen * 0.34, 0.005);
+          bLeaf1.rotation.set(0.18, 0.28, 0.32);
+          branchR.add(bLeaf1);
+
+          const bLeaf2 = new THREE.Mesh(createSculptedFoliageLeaf(0.16, 0.042, 8), this.leafMat);
+          bLeaf2.position.set(-0.005, branchLen * 0.64, -0.005);
+          bLeaf2.rotation.set(-0.12, -0.25, -0.26);
+          branchR.add(bLeaf2);
+
+          const bLeaf3 = new THREE.Mesh(createSculptedFoliageLeaf(0.12, 0.032, 8), this.leafMat);
+          bLeaf3.position.set(0.004, branchLen * 0.86, 0.004);
+          bLeaf3.rotation.set(0.15, 0.35, 0.22);
+          branchR.add(bLeaf3);
+
+          // Delicate companion smaller flower mount at branch tip (scaled down)
+          const floretMountR = new THREE.Group();
+          floretMountR.position.set(0, branchLen, 0);
+          floretMountR.rotation.z = 0.25;
+          floretMountR.rotation.x = 0.18;
+          branchR.add(floretMountR);
+
+          if (typeof this.createFloretFn === 'function') {
+            const floretR = this.createFloretFn(0.32, false);
+            if (floretR && floretR.group) {
+              floretMountR.add(floretR.group);
+              this.florets.push(floretR);
+            }
+          }
+
+          segGroup.add(branchR);
+          this.branchlets.push({
+            group: branchR,
+            mount: floretMountR,
+            side: 1,
+            baseZ: 0.72,
+            baseX: 0.12
+          });
+        } else {
+          // Single spine mode: alternating natural stem leaf hugging the central spine
+          const spineLeafR = new THREE.Mesh(createSculptedFoliageLeaf(0.44, 0.115, 8), this.leafMat);
+          spineLeafR.position.set(0.012, this.segmentHeight * 0.30, -0.008);
+          spineLeafR.rotation.set(-0.16, -0.45, 0.40);
+          spineLeafR.castShadow = true;
+          segGroup.add(spineLeafR);
+        }
+
+        // Noticeably larger sculpted cauline leaf along main stem ABOVE right branch
+        const stemLeaf3 = new THREE.Mesh(createSculptedFoliageLeaf(0.56, 0.145, 10), this.leafMat);
+        stemLeaf3.position.set(-0.015, this.segmentHeight * 0.72, 0.010);
+        stemLeaf3.rotation.set(0.22, -0.45, -0.36);
+        stemLeaf3.castShadow = true;
+        segGroup.add(stemLeaf3);
+      }
+
+      // =====================================================================
+      // NODE 4: Upper Stem Segment (Larger Alternating Cauline Leaves)
+      // =====================================================================
+      if (i === 4) {
+        // Lower large leaf along Segment 4 pointing forward-right
+        const stemLeaf4a = new THREE.Mesh(createSculptedFoliageLeaf(0.48, 0.125, 10), this.leafMat);
+        stemLeaf4a.position.set(0.012, this.segmentHeight * 0.35, 0.012);
+        stemLeaf4a.rotation.set(0.24, 0.65, 0.32);
+        stemLeaf4a.castShadow = true;
+        segGroup.add(stemLeaf4a);
+
+        // Upper leaf along Segment 4 pointing left-backward
+        const stemLeaf4b = new THREE.Mesh(createSculptedFoliageLeaf(0.40, 0.108, 10), this.leafMat);
+        stemLeaf4b.position.set(-0.010, this.segmentHeight * 0.78, -0.012);
+        stemLeaf4b.rotation.set(0.18, -2.10, -0.28);
+        stemLeaf4b.castShadow = true;
+        segGroup.add(stemLeaf4b);
+      }
+
+      parent.add(segGroup);
+      this.segments.push({ group: segGroup, mesh: mesh });
+      parent = segGroup;
+    }
+
+    // --- TOP PEDICEL & FLOWER RECEPTACLE ---
+    // Elevated pedicel neck connecting top segment to main flower head (elevates top flower by +0.32m)
+    this.neckGroup = new THREE.Group();
+    this.neckGroup.position.set(0, this.segmentHeight, 0);
+    this.neckGroup.rotation.x = this.neckTiltX;
+    parent.add(this.neckGroup);
+
+    const pedicelH = 0.42;
+    const pedGeo = new THREE.CylinderGeometry(0.010, 0.013, pedicelH, 8);
+    pedGeo.translate(0, pedicelH * 0.5, 0);
+    const pedMesh = new THREE.Mesh(pedGeo, this.stemMat);
+    pedMesh.castShadow = true;
+    this.neckGroup.add(pedMesh);
+
+    // Larger sub-floral leaves along elevated pedicel neck leading to top flower
+    const pedLeaf1 = new THREE.Mesh(createSculptedFoliageLeaf(0.30, 0.082, 8), this.leafMat);
+    pedLeaf1.position.set(0.010, pedicelH * 0.32, 0.006);
+    pedLeaf1.rotation.set(0.20, 1.15, 0.24);
+    pedLeaf1.castShadow = true;
+    this.neckGroup.add(pedLeaf1);
+
+    const pedLeaf2 = new THREE.Mesh(createSculptedFoliageLeaf(0.24, 0.065, 8), this.leafMat);
+    pedLeaf2.position.set(-0.008, pedicelH * 0.68, 0.005);
+    pedLeaf2.rotation.set(0.18, -1.25, -0.22);
+    pedLeaf2.castShadow = true;
+    this.neckGroup.add(pedLeaf2);
+
+    // Receptacle where the species-specific 3D flower head is attached
+    this.receptacle = new THREE.Group();
+    this.receptacle.position.set(0, pedicelH, 0);
+    this.neckGroup.add(this.receptacle);
+  }
+
+  setStanceBalancing(enabled) {
+    this.enableStanceBalancing = !!enabled;
+  }
+
+  setShowBasalLeaves(enabled) {
+    this.showBasalLeaves = !!enabled;
+    this.basalLeaves.forEach(l => {
+      if (l.pivot) l.pivot.visible = this.showBasalLeaves;
+    });
+  }
+
+  applyKinematics(kinematics, dt = 0.016) {
+    this.idleTime += dt;
+
+    const rawLeanX = kinematics.spineLeanX || 0;
+    const rawLeanZ = kinematics.spineLeanZ || 0;
+    const rawHeight = kinematics.heightFactor || 1.0;
+    const rawArmL = kinematics.armHeightL !== undefined ? kinematics.armHeightL : 0.5;
+    const rawArmR = kinematics.armHeightR !== undefined ? kinematics.armHeightR : 0.5;
+    const rawWingspan = kinematics.wingspanSpread !== undefined ? kinematics.wingspanSpread : 0.5;
+    const rawLegL = kinematics.legLiftL || 0;
+    const rawLegR = kinematics.legLiftR || 0;
+    const bloom = kinematics.bloomRatio !== undefined ? kinematics.bloomRatio : this.currentBloom;
+
+    // Smooth responsive interpolation
+    this.currentLeanX += (rawLeanX - this.currentLeanX) * 0.24;
+    this.currentLeanZ += (rawLeanZ - this.currentLeanZ) * 0.24;
+    this.currentHeight += (rawHeight - this.currentHeight) * 0.18;
+    this.currentArmL += (rawArmL - this.currentArmL) * 0.24;
+    this.currentArmR += (rawArmR - this.currentArmR) * 0.24;
+    this.currentWingspan += (rawWingspan - this.currentWingspan) * 0.20;
+    this.currentLegL += (rawLegL - this.currentLegL) * 0.22;
+    this.currentLegR += (rawLegR - this.currentLegR) * 0.22;
+    this.currentBloom = bloom;
+
+    // Continuous, graceful single-spine curvature from ground anchor to apex bloom
+    const maxCurveAngle = 0.28;
+    const scaledSegH = this.segmentHeight * this.currentHeight;
+    const numSegs = this.segments.length;
+    this.segments.forEach((segObj, i) => {
+      const seg = segObj.group;
+      if (i > 0) {
+        seg.position.y = scaledSegH;
+      }
+      segObj.mesh.scale.y = this.currentHeight;
+
+      const t = (i + 1) / numSegs;
+      // Monotonic natural botanical flex: gentle at root, increasing progressively to crown
+      const flex = THREE.MathUtils.lerp(0.14, 0.28, t);
+      const legSway = this.enableStanceBalancing ? (this.currentLegL - this.currentLegR) * 0.04 * t : 0;
+
+      const rotZ = (-this.currentLeanX * maxCurveAngle) * flex + legSway;
+      const rotX = (this.currentLeanZ * maxCurveAngle) * flex;
+
+      seg.rotation.z = rotZ;
+      seg.rotation.x = rotX;
+    });
+
+    // 2. Animate Lateral Branches in Direct Response to Hands
+    // HANDS UP = BRANCHES REACH UPWARD IN WIDE V-SUNBURST (NEVER INTERSECTING MAIN FLOWER!)
+    // HANDS DOWN = BRANCHES DROOP DOWN TOWARD GROUND
+    this.branchlets.forEach(b => {
+      const isLeft = b.side === -1;
+      const armElev = isLeft ? this.currentArmL : this.currentArmR;
+      const verticalLift = THREE.MathUtils.clamp((armElev - 0.48) / 0.50, -1.0, 1.4);
+      const wingSpread = Math.max(0, this.currentWingspan - 0.40) * 0.45;
+
+      if (isLeft) {
+        // Left branch: baseZ is -0.75
+        // When hands reach UP, rotate up but enforce minimum outward angle of -0.40 rad (-23°) so it NEVER hits center flower!
+        const liftZ = verticalLift > 0 ? (verticalLift * 0.52) : (verticalLift * 0.75);
+        const targetZ = Math.min(-0.48, b.baseZ + liftZ - wingSpread);
+        b.group.rotation.z = targetZ;
+        b.group.rotation.x = b.baseX + verticalLift * 0.18;
+      } else {
+        // Right branch: baseZ is +0.72
+        // When hands reach UP, rotate up but enforce minimum outward angle of +0.40 rad (+23°)
+        const liftZ = verticalLift > 0 ? (-verticalLift * 0.52) : (-verticalLift * 0.75);
+        const targetZ = Math.max(0.48, b.baseZ + liftZ + wingSpread);
+        b.group.rotation.z = targetZ;
+        b.group.rotation.x = b.baseX + verticalLift * 0.18;
+      }
+
+      // Gentle reach scale
+      const reachScale = 1.0 + Math.max(0, verticalLift) * 0.20 + wingSpread * 0.25;
+      b.group.scale.set(reachScale, reachScale, reachScale);
+    });
+
+    // 3. Basal Bottom Leaves Move Dramatically with Leg Movements
+    const activeLegL = Math.max(this.currentLegL, Math.max(0, -(kinematics.bodyShiftX || 0)) * 0.90);
+    const activeLegR = Math.max(this.currentLegR, Math.max(0, (kinematics.bodyShiftX || 0)) * 0.90);
+
+    this.basalLeaves.forEach(leaf => {
+      leaf.pivot.visible = this.showBasalLeaves;
+      if (!this.showBasalLeaves) return;
+      const drive = leaf.side === -1 ? activeLegL : activeLegR;
+      const flutter = Math.sin(this.idleTime * 5.0 + leaf.order) * drive * 0.22;
+      const breath = Math.sin(this.idleTime * 1.5 + leaf.order) * 0.025;
+
+      if (leaf.side === -1) {
+        // Left bottom leaf: rotates UP from ground when left leg moves
+        leaf.pivot.rotation.z = leaf.baseZ + drive * 1.15 + breath;
+        leaf.pivot.rotation.x = leaf.baseX + drive * 0.60;
+        leaf.pivot.rotation.y = leaf.baseY + flutter;
+      } else {
+        // Right bottom leaf: rotates UP from ground when right leg moves
+        leaf.pivot.rotation.z = leaf.baseZ - drive * 1.15 - breath;
+        leaf.pivot.rotation.x = leaf.baseX + drive * 0.60;
+        leaf.pivot.rotation.y = leaf.baseY + flutter;
+      }
+
+      const s = 1.0 + drive * 0.55;
+      leaf.pivot.scale.set(s, s, s);
+    });
+
+    // 4. Update companion florets bloom in harmony
+    this.florets.forEach(f => {
+      if (typeof f.setBloom === 'function') {
+        f.setBloom(this.currentBloom);
+      }
+    });
+  }
+
+  setBloom(val) {
+    this.currentBloom = val;
+    this.florets.forEach(f => {
+      if (typeof f.setBloom === 'function') {
+        f.setBloom(val);
+      }
+    });
+  }
+
+  setWireframe(wire) {
+    this.stemMat.wireframe = wire;
+    this.leafMat.wireframe = wire;
+    this.florets.forEach(f => {
+      if (typeof f.setWireframe === 'function') {
+        f.setWireframe(wire);
+      }
+    });
+  }
+}
+
+// ============================================================================
+// 1. POPPY FLAME GEOMETRY (Papaver rhoeas)
+// 4 broad, ruffled/crinkled paper-thin overlapping petals + Papaver seed capsule
+// ============================================================================
+function createPoppyPetalGeometry(width = 0.38, length = 0.52, uSegs = 16, vSegs = 20) {
+  const vertices = [];
+  const uvs = [];
+  const indices = [];
+  const colors = [];
+
+  for (let v = 0; v <= vSegs; v++) {
+    const vNorm = v / vSegs;
+    const wProfile = Math.sin(Math.pow(vNorm, 0.75) * Math.PI * 0.7) * 1.35;
+    const currentW = width * wProfile;
+
+    const y = Math.sin(vNorm * Math.PI * 0.44) * length;
+    const zBase = Math.pow(vNorm, 1.4) * (length * 0.42);
+
+    for (let u = 0; u <= uSegs; u++) {
+      const uNorm = (u / uSegs) * 2 - 1;
+      const x = uNorm * currentW * 0.5;
+
+      // Authentic papery crinkles & ruffles along perimeter
+      const dish = Math.pow(Math.abs(uNorm), 1.7) * (0.05 * wProfile);
+      const ruffles = (vNorm > 0.35) 
+        ? Math.sin(uNorm * Math.PI * 4.5 + vNorm * 5.0) * (0.024 * vNorm)
+        + Math.cos(uNorm * Math.PI * 9.0) * (0.009 * vNorm)
+        : 0;
+
+      const z = zBase + dish + ruffles;
+
+      vertices.push(x, y, z);
+      uvs.push(u / uSegs, vNorm);
+
+      const c = new THREE.Color(0xd62817).lerp(new THREE.Color(0xff5733), Math.pow(vNorm, 1.1));
+      colors.push(c.r, c.g, c.b);
+    }
+  }
+
+  for (let v = 0; v < vSegs; v++) {
+    for (let u = 0; u < uSegs; u++) {
+      const a = v * (uSegs + 1) + u;
+      const b = (v + 1) * (uSegs + 1) + u;
+      const c = (v + 1) * (uSegs + 1) + (u + 1);
+      const d = v * (uSegs + 1) + (u + 1);
+      indices.push(a, b, d);
+      indices.push(b, c, d);
+    }
+  }
+
+  const geom = new THREE.BufferGeometry();
+  geom.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+  geom.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
+  geom.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+  geom.setIndex(indices);
+  geom.computeVertexNormals();
+  return geom;
+}
+
+function createPapaverCapsule(scale = 1.0) {
+  const group = new THREE.Group();
+
+  const bodyGeo = new THREE.CylinderGeometry(0.045 * scale, 0.032 * scale, 0.09 * scale, 12);
+  const bodyMat = new THREE.MeshStandardMaterial({
+    color: 0x3d4a36,
+    roughness: 0.55,
+    metalness: 0.05
+  });
+  const bodyMesh = new THREE.Mesh(bodyGeo, bodyMat);
+  bodyMesh.position.y = 0.045 * scale;
+  group.add(bodyMesh);
+
+  const crownGeo = new THREE.CylinderGeometry(0.052 * scale, 0.045 * scale, 0.015 * scale, 12);
+  const crownMat = new THREE.MeshStandardMaterial({
+    color: 0x221a18,
+    roughness: 0.45
+  });
+  const crownMesh = new THREE.Mesh(crownGeo, crownMat);
+  crownMesh.position.y = 0.092 * scale;
+  group.add(crownMesh);
+
+  const rayGeo = new THREE.CylinderGeometry(0.003 * scale, 0.003 * scale, 0.046 * scale, 3);
+  for (let i = 0; i < 10; i++) {
+    const ray = new THREE.Mesh(rayGeo, crownMat);
+    const ang = (i / 10) * Math.PI * 2;
+    ray.position.set(Math.cos(ang) * 0.024 * scale, 0.098 * scale, Math.sin(ang) * 0.024 * scale);
+    ray.rotation.y = ang;
+    ray.rotation.z = Math.PI * 0.5;
+    group.add(ray);
+  }
+
+  return group;
+}
+
+export class PoppyMorphology {
+  constructor() {
+    this.name = 'Wild Poppy (Papaver rhoeas)';
+    this.family = 'Papaveraceae';
+    this.tagline = '4 Ruffled Crinkled Petals • Velvet Stigmatic Capsule';
+    this.petalHolders = [];
+    this.currentBloom = 0.65;
+
+    // Build articulated botanical stem with companion poppy florets on lateral branches
+    this.stem = new BotanicalArticulatedStem({
+      totalHeight: 1.50,
+      stemColor: 0x5a6349,
+      leafColor: 0x3a4f37,
+      neckTiltX: 0.08, // Subtle natural poppy poise
+      createFloretFn: (scale) => this.createFloret(scale)
+    });
+
+    this.group = this.stem.group;
+    this.initMainHead();
+  }
+
+  initMainHead() {
+    this.headGroup = new THREE.Group();
+
+    // Papaver Seed Capsule
+    this.capsule = createPapaverCapsule(1.0);
+    this.headGroup.add(this.capsule);
+
+    // Ring of velvety dark stamens
+    const stamenMat = new THREE.MeshStandardMaterial({ color: 0x1f1917, roughness: 0.4 });
+    const stamenGeo = new THREE.CylinderGeometry(0.002, 0.002, 0.075, 4);
+    for (let i = 0; i < 28; i++) {
+      const ang = (i / 28) * Math.PI * 2;
+      const st = new THREE.Mesh(stamenGeo, stamenMat);
+      st.position.set(Math.cos(ang) * 0.065, 0.038, Math.sin(ang) * 0.065);
+      st.rotation.z = 0.25 * Math.cos(ang);
+      st.rotation.x = 0.25 * Math.sin(ang);
+      this.headGroup.add(st);
+    }
+
+    // 4 Broad Ruffled Scarlet Petals
+    this.petalMat = new THREE.MeshPhysicalMaterial({
+      color: 0xeb3823,
+      roughness: 0.38,
+      metalness: 0.04,
+      sheen: 0.5,
+      sheenColor: new THREE.Color(0xff8866),
+      side: THREE.DoubleSide
+    });
+
+    const outerGeo = createPoppyPetalGeometry(0.42, 0.56, 16, 20);
+    const innerGeo = createPoppyPetalGeometry(0.36, 0.48, 14, 18);
+
+    // 2 Outer petals (0° and 180°)
+    for (let i = 0; i < 2; i++) {
+      const holder = new THREE.Group();
+      holder.rotation.y = i * Math.PI;
+      const mesh = new THREE.Mesh(outerGeo, this.petalMat);
+      mesh.castShadow = true;
+      mesh.rotation.x = 0.75;
+      holder.add(mesh);
+      this.headGroup.add(holder);
+      this.petalHolders.push({ holder, mesh, baseAngle: 0.75 });
+    }
+
+    // 2 Inner petals (90° and 270°)
+    for (let j = 0; j < 2; j++) {
+      const holder = new THREE.Group();
+      holder.rotation.y = (j * Math.PI) + (Math.PI * 0.5);
+      const mesh = new THREE.Mesh(innerGeo, this.petalMat);
+      mesh.castShadow = true;
+      mesh.rotation.x = 0.58;
+      holder.add(mesh);
+      this.headGroup.add(holder);
+      this.petalHolders.push({ holder, mesh, baseAngle: 0.58 });
+    }
+
+    // Mount physically into the top receptacle of the articulated stem!
+    this.stem.receptacle.add(this.headGroup);
+  }
+
+  createFloret(scale = 0.65) {
+    const fGroup = new THREE.Group();
+    const fCapsule = createPapaverCapsule(scale);
+    fGroup.add(fCapsule);
+
+    const fPetalMat = new THREE.MeshPhysicalMaterial({
+      color: 0xeb3823,
+      roughness: 0.40,
+      metalness: 0.04,
+      side: THREE.DoubleSide
+    });
+
+    const fGeo = createPoppyPetalGeometry(0.36 * scale, 0.48 * scale, 12, 14);
+    const holders = [];
+
+    for (let i = 0; i < 4; i++) {
+      const holder = new THREE.Group();
+      holder.rotation.y = i * (Math.PI * 0.5);
+      const mesh = new THREE.Mesh(fGeo, fPetalMat);
+      mesh.castShadow = true;
+      mesh.rotation.x = 0.65;
+      holder.add(mesh);
+      fGroup.add(holder);
+      holders.push(mesh);
+    }
+
+    return {
+      group: fGroup,
+      setBloom: (b) => {
+        holders.forEach(m => {
+          m.rotation.x = THREE.MathUtils.lerp(0.20, 1.10, b);
+          const s = THREE.MathUtils.lerp(0.85, 1.10, b);
+          m.scale.set(s, s, s);
+        });
+      },
+      setWireframe: (w) => {
+        fPetalMat.wireframe = w;
+      }
+    };
+  }
+
+  setStanceBalancing(enabled) {
+    if (this.stem) this.stem.setStanceBalancing(enabled);
+  }
+
+  applyKinematics(kinematics, dt = 0.016) {
+    this.stem.applyKinematics(kinematics, dt);
+    const bloom = kinematics.bloomRatio !== undefined ? kinematics.bloomRatio : this.currentBloom;
+    this.setBloom(bloom);
+  }
+
+  setBloom(val) {
+    this.currentBloom = val;
+    this.petalHolders.forEach(p => {
+      p.mesh.rotation.x = THREE.MathUtils.lerp(0.20, 1.15, val);
+      const s = THREE.MathUtils.lerp(0.85, 1.12, val);
+      p.mesh.scale.set(s, s, s);
+    });
+    this.stem.setBloom(val);
+  }
+
+  setWireframe(wire) {
+    this.petalMat.wireframe = wire;
+    this.stem.setWireframe(wire);
+  }
+}
+
+// ============================================================================
+// 2. PERIWINKLE / VINCA GEOMETRY (Vinca minor)
+// 5 salverform propeller/pinwheel petals radiating from pentagonal throat
+// ============================================================================
+function createPeriwinklePetalGeometry(width = 0.22, length = 0.46, uSegs = 12, vSegs = 16) {
+  const vertices = [];
+  const uvs = [];
+  const indices = [];
+
+  for (let v = 0; v <= vSegs; v++) {
+    const vNorm = v / vSegs;
+    const currentW = width * Math.sin(vNorm * Math.PI * 0.85);
+
+    // Propeller skew: blade sweeps sideways as it extends outward
+    const skew = Math.pow(vNorm, 1.4) * (width * 0.45);
+    const y = Math.sin(vNorm * Math.PI * 0.5) * length;
+    const z = Math.pow(vNorm, 1.6) * 0.08;
+
+    for (let u = 0; u <= uSegs; u++) {
+      const uNorm = (u / uSegs) * 2 - 1;
+      const x = uNorm * currentW * 0.5 + skew;
+      vertices.push(x, y, z);
+      uvs.push(u / uSegs, vNorm);
+    }
+  }
+
+  for (let v = 0; v < vSegs; v++) {
+    for (let u = 0; u < uSegs; u++) {
+      const a = v * (uSegs + 1) + u;
+      const b = (v + 1) * (uSegs + 1) + u;
+      const c = (v + 1) * (uSegs + 1) + (u + 1);
+      const d = v * (uSegs + 1) + (u + 1);
+      indices.push(a, b, d);
+      indices.push(b, c, d);
+    }
+  }
+
+  const geom = new THREE.BufferGeometry();
+  geom.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+  geom.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
+  geom.setIndex(indices);
+  geom.computeVertexNormals();
+  return geom;
+}
+
+export class PeriwinkleMorphology {
+  constructor() {
+    this.name = 'Periwinkle (Vinca minor)';
+    this.family = 'Apocynaceae';
+    this.tagline = '5 Salverform Propeller Petals • Pentagonal Throat';
+    this.petalHolders = [];
+    this.currentBloom = 0.65;
+
+    this.stem = new BotanicalArticulatedStem({
+      totalHeight: 1.55,
+      stemColor: 0x5b6b60,
+      leafColor: 0x365239,
+      neckTiltX: 0.04,
+      createFloretFn: (scale) => this.createFloret(scale)
+    });
+
+    this.group = this.stem.group;
+    this.initMainHead();
+  }
+
+  initMainHead() {
+    this.headGroup = new THREE.Group();
+
+    // Pentagonal tubular throat
+    const throatGeo = new THREE.CylinderGeometry(0.034, 0.018, 0.08, 5);
+    const throatMat = new THREE.MeshStandardMaterial({ color: 0x3a457a });
+    const throatMesh = new THREE.Mesh(throatGeo, throatMat);
+    throatMesh.position.y = -0.04;
+    this.headGroup.add(throatMesh);
+
+    // Star-shaped white coronal eye ring
+    const eyeGeo = new THREE.RingGeometry(0.012, 0.038, 5);
+    const eyeMat = new THREE.MeshStandardMaterial({ color: 0xe0e7ff, side: THREE.DoubleSide });
+    const eyeMesh = new THREE.Mesh(eyeGeo, eyeMat);
+    eyeMesh.position.y = 0.002;
+    eyeMesh.rotation.x = -Math.PI * 0.5;
+    this.headGroup.add(eyeMesh);
+
+    // 5 Salverform Pinwheel Petals
+    this.petalMat = new THREE.MeshPhysicalMaterial({
+      color: 0x4f5ba8,
+      roughness: 0.40,
+      metalness: 0.05,
+      sheen: 0.4,
+      sheenColor: new THREE.Color(0xc4ccff),
+      side: THREE.DoubleSide
+    });
+
+    const petalGeo = createPeriwinklePetalGeometry(0.24, 0.48, 12, 16);
+    for (let i = 0; i < 5; i++) {
+      const ang = (i / 5) * Math.PI * 2;
+      const holder = new THREE.Group();
+      holder.rotation.y = ang;
+
+      const mesh = new THREE.Mesh(petalGeo, this.petalMat);
+      mesh.castShadow = true;
+      mesh.rotation.x = 0.85;
+      mesh.rotation.z = 0.12;
+      holder.add(mesh);
+      this.headGroup.add(holder);
+      this.petalHolders.push({ holder, mesh });
+    }
+
+    // Mount physically into the top receptacle of the articulated stem!
+    this.stem.receptacle.add(this.headGroup);
+  }
+
+  createFloret(scale = 0.65) {
+    const fGroup = new THREE.Group();
+
+    const fEyeGeo = new THREE.RingGeometry(0.010 * scale, 0.030 * scale, 5);
+    const fEyeMat = new THREE.MeshStandardMaterial({ color: 0xe0e7ff, side: THREE.DoubleSide });
+    const fEyeMesh = new THREE.Mesh(fEyeGeo, fEyeMat);
+    fEyeMesh.rotation.x = -Math.PI * 0.5;
+    fGroup.add(fEyeMesh);
+
+    const fPetalMat = new THREE.MeshPhysicalMaterial({
+      color: 0x4f5ba8,
+      roughness: 0.42,
+      side: THREE.DoubleSide
+    });
+
+    const fGeo = createPeriwinklePetalGeometry(0.22 * scale, 0.42 * scale, 10, 12);
+    const holders = [];
+
+    for (let i = 0; i < 5; i++) {
+      const ang = (i / 5) * Math.PI * 2;
+      const holder = new THREE.Group();
+      holder.rotation.y = ang;
+      const mesh = new THREE.Mesh(fGeo, fPetalMat);
+      mesh.castShadow = true;
+      mesh.rotation.x = 0.75;
+      mesh.rotation.z = 0.10;
+      holder.add(mesh);
+      fGroup.add(holder);
+      holders.push(mesh);
+    }
+
+    return {
+      group: fGroup,
+      setBloom: (b) => {
+        holders.forEach(m => {
+          m.rotation.x = THREE.MathUtils.lerp(0.25, 1.20, b);
+          const s = THREE.MathUtils.lerp(0.85, 1.10, b);
+          m.scale.set(s, s, s);
+        });
+      },
+      setWireframe: (w) => {
+        fPetalMat.wireframe = w;
+      }
+    };
+  }
+
+  setStanceBalancing(enabled) {
+    if (this.stem) this.stem.setStanceBalancing(enabled);
+  }
+
+  applyKinematics(kinematics, dt = 0.016) {
+    this.stem.applyKinematics(kinematics, dt);
+    const bloom = kinematics.bloomRatio !== undefined ? kinematics.bloomRatio : this.currentBloom;
+    this.setBloom(bloom);
+  }
+
+  setBloom(val) {
+    this.currentBloom = val;
+    this.petalHolders.forEach(p => {
+      p.mesh.rotation.x = THREE.MathUtils.lerp(0.25, 1.25, val);
+      const s = THREE.MathUtils.lerp(0.85, 1.10, val);
+      p.mesh.scale.set(s, s, s);
+    });
+    this.stem.setBloom(val);
+  }
+
+  setWireframe(wire) {
+    this.petalMat.wireframe = wire;
+    this.stem.setWireframe(wire);
+  }
+}
+
+// ============================================================================
+// 3. CHAMOMILE WHEAT GEOMETRY (Matricaria chamomilla)
+// 16 slender radiating ray petals surrounding a conical golden disk dome
+// ============================================================================
+function createRayPetalGeometry(width = 0.075, length = 0.42, segs = 14) {
+  const vertices = [];
+  const uvs = [];
+  const indices = [];
+
+  for (let i = 0; i <= segs; i++) {
+    const t = i / segs;
+    const w = width * Math.sin(t * Math.PI * 0.9);
+    const y = Math.sin(t * Math.PI * 0.48) * length;
+    const zArch = -Math.pow(t, 2) * (length * 0.15);
+
+    vertices.push(-w * 0.5, y, zArch);
+    uvs.push(0, t);
+    vertices.push(w * 0.5, y, zArch);
+    uvs.push(1, t);
+  }
+
+  for (let i = 0; i < segs; i++) {
+    const a = i * 2;
+    const b = i * 2 + 1;
+    const c = (i + 1) * 2;
+    const d = (i + 1) * 2 + 1;
+    indices.push(a, b, d);
+    indices.push(a, d, c);
+  }
+
+  const geom = new THREE.BufferGeometry();
+  geom.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+  geom.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
+  geom.setIndex(indices);
+  geom.computeVertexNormals();
+  return geom;
+}
+
+export class ChamomileMorphology {
+  constructor() {
+    this.name = 'Chamomile Wheat (Matricaria)';
+    this.family = 'Asteraceae';
+    this.tagline = '16 Radiating Ray Petals • Conical Golden Disk Florets';
+    this.petalHolders = [];
+    this.currentBloom = 0.65;
+
+    this.stem = new BotanicalArticulatedStem({
+      totalHeight: 1.45,
+      stemColor: 0x626651,
+      leafColor: 0x3d503b,
+      neckTiltX: 0.04,
+      createFloretFn: (scale) => this.createFloret(scale)
+    });
+
+    this.group = this.stem.group;
+    this.initMainHead();
+  }
+
+  initMainHead() {
+    this.headGroup = new THREE.Group();
+
+    // Conical Raised Golden Disk Dome
+    const diskGeo = new THREE.ConeGeometry(0.095, 0.085, 16);
+    this.diskMat = new THREE.MeshStandardMaterial({
+      color: 0xdeb82c,
+      emissive: 0xbf8513,
+      emissiveIntensity: 0.35,
+      roughness: 0.50
+    });
+    const diskMesh = new THREE.Mesh(diskGeo, this.diskMat);
+    diskMesh.position.y = 0.042;
+    this.headGroup.add(diskMesh);
+
+    // 16 Radiating Ray Petals
+    this.petalMat = new THREE.MeshStandardMaterial({
+      color: 0xf5f0dc,
+      roughness: 0.35,
+      metalness: 0.03,
+      side: THREE.DoubleSide
+    });
+
+    const rayGeo = createRayPetalGeometry(0.082, 0.44, 14);
+    const count = 16;
+    for (let i = 0; i < count; i++) {
+      const ang = (i / count) * Math.PI * 2;
+      const holder = new THREE.Group();
+      holder.rotation.y = ang;
+
+      const mesh = new THREE.Mesh(rayGeo, this.petalMat);
+      mesh.castShadow = true;
+      mesh.position.set(0, 0.012, 0.065);
+      mesh.rotation.x = 1.15;
+      holder.add(mesh);
+      this.headGroup.add(holder);
+      this.petalHolders.push({ holder, mesh });
+    }
+
+    // Mount physically into the top receptacle of the articulated stem!
+    this.stem.receptacle.add(this.headGroup);
+  }
+
+  createFloret(scale = 0.65) {
+    const fGroup = new THREE.Group();
+    const fDiskGeo = new THREE.ConeGeometry(0.075 * scale, 0.065 * scale, 12);
+    const fDiskMat = new THREE.MeshStandardMaterial({
+      color: 0xdeb82c,
+      emissive: 0xbf8513,
+      emissiveIntensity: 0.30,
+      roughness: 0.55
+    });
+    const fDiskMesh = new THREE.Mesh(fDiskGeo, fDiskMat);
+    fDiskMesh.position.y = 0.032 * scale;
+    fGroup.add(fDiskMesh);
+
+    const fPetalMat = new THREE.MeshStandardMaterial({
+      color: 0xf5f0dc,
+      roughness: 0.38,
+      side: THREE.DoubleSide
+    });
+
+    const fGeo = createRayPetalGeometry(0.070 * scale, 0.36 * scale, 10);
+    const holders = [];
+    const count = 12;
+
+    for (let i = 0; i < count; i++) {
+      const ang = (i / count) * Math.PI * 2;
+      const holder = new THREE.Group();
+      holder.rotation.y = ang;
+      const mesh = new THREE.Mesh(fGeo, fPetalMat);
+      mesh.castShadow = true;
+      mesh.position.set(0, 0.010 * scale, 0.048 * scale);
+      mesh.rotation.x = 1.10;
+      holder.add(mesh);
+      fGroup.add(holder);
+      holders.push(mesh);
+    }
+
+    return {
+      group: fGroup,
+      setBloom: (b) => {
+        holders.forEach(m => {
+          m.rotation.x = THREE.MathUtils.lerp(0.40, 1.40, b);
+          const s = THREE.MathUtils.lerp(0.85, 1.05, b);
+          m.scale.set(s, s, s);
+        });
+      },
+      setWireframe: (w) => {
+        fPetalMat.wireframe = w;
+        fDiskMat.wireframe = w;
+      }
+    };
+  }
+
+  setStanceBalancing(enabled) {
+    if (this.stem) this.stem.setStanceBalancing(enabled);
+  }
+
+  applyKinematics(kinematics, dt = 0.016) {
+    this.stem.applyKinematics(kinematics, dt);
+    const bloom = kinematics.bloomRatio !== undefined ? kinematics.bloomRatio : this.currentBloom;
+    this.setBloom(bloom);
+  }
+
+  setBloom(val) {
+    this.currentBloom = val;
+    this.petalHolders.forEach(p => {
+      p.mesh.rotation.x = THREE.MathUtils.lerp(0.45, 1.45, val);
+      const s = THREE.MathUtils.lerp(0.85, 1.05, val);
+      p.mesh.scale.set(s, s, s);
+    });
+    this.stem.setBloom(val);
+  }
+
+  setWireframe(wire) {
+    this.petalMat.wireframe = wire;
+    this.diskMat.wireframe = wire;
+    this.stem.setWireframe(wire);
+  }
+}
+
+// ============================================================================
+// 4. MEADOW CHALICE GEOMETRY (Ranunculaceae / Anemone style)
+// 6 cupped overlapping chalice petals + 3 inner protective petals,
+// central golden pollen torus, and single continuous articulated botanical spine.
+// ============================================================================
+function createChalicePetalGeometry(width = 0.28, length = 0.48, uSegs = 12, vSegs = 16) {
+  const vertices = [];
+  const uvs = [];
+  const colors = [];
+  const indices = [];
+
+  // Gradient: Tender translucent jade-white at base -> soft sage celadon rim
+  const baseColor = new THREE.Color(0xf0f7f2);
+  const tipColor = new THREE.Color(0x7ca88a);
+
+  for (let v = 0; v <= vSegs; v++) {
+    const vNorm = v / vSegs;
+
+    // Elegant chalice envelope: narrow claw at base, swells to full width at 0.65, soft rounded curve at tip
+    let wProfile;
+    if (vNorm < 0.25) {
+      wProfile = Math.sin((vNorm / 0.25) * Math.PI * 0.5) * 0.65;
+    } else {
+      wProfile = 0.65 + Math.sin(((vNorm - 0.25) / 0.75) * Math.PI) * 0.55;
+    }
+    const currentW = width * wProfile;
+
+    // Upward-cupping bowl curvature
+    const y = Math.sin(vNorm * Math.PI * 0.46) * length;
+    const zArch = Math.pow(vNorm, 1.35) * (length * 0.46);
+
+    for (let u = 0; u <= uSegs; u++) {
+      const uNorm = (u / uSegs) * 2 - 1; // -1 to 1 across width
+      const x = uNorm * currentW * 0.5;
+
+      // Bowl/spoon dish depth: center sinks back, edges curve forward
+      const dishDepth = Math.pow(Math.abs(uNorm), 1.6) * (0.045 * wProfile);
+      // Gentle subtle natural margin curl
+      const marginCurl = (vNorm > 0.6) ? Math.sin(uNorm * Math.PI * 2.5) * 0.008 : 0;
+      const z = zArch + dishDepth + marginCurl;
+
+      vertices.push(x, y, z);
+      uvs.push(u / uSegs, vNorm);
+
+      const c = baseColor.clone().lerp(tipColor, Math.pow(vNorm, 1.15));
+      colors.push(c.r, c.g, c.b);
+    }
+  }
+
+  for (let v = 0; v < vSegs; v++) {
+    for (let u = 0; u < uSegs; u++) {
+      const a = v * (uSegs + 1) + u;
+      const b = (v + 1) * (uSegs + 1) + u;
+      const c = (v + 1) * (uSegs + 1) + (u + 1);
+      const d = v * (uSegs + 1) + (u + 1);
+
+      indices.push(a, b, d);
+      indices.push(b, c, d);
+    }
+  }
+
+  const geom = new THREE.BufferGeometry();
+  geom.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+  geom.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
+  geom.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+  geom.setIndex(indices);
+  geom.computeVertexNormals();
+  return geom;
+}
+
+export class MeadowChaliceMorphology {
+  constructor() {
+    this.name = 'Meadow Chalice';
+    this.family = 'Ranunculaceae style';
+    this.tagline = '6 Cupped Overlapping Chalice Petals • Golden Pollen Torus';
+    this.outerPetalHolders = [];
+    this.innerPetalHolders = [];
+    this.currentBloom = 0.65;
+
+    // Single unified continuous botanical spine (clean graceful stem matching the other meadow flowers)
+    this.stem = new BotanicalArticulatedStem({
+      totalHeight: 1.55,
+      stemColor: 0x3d5438,
+      leafColor: 0x314a2c,
+      neckTiltX: 0.04,
+      enableBranches: false // Single spine: no branching elbows or lateral forks
+    });
+
+    this.group = this.stem.group;
+    this.initMainHead();
+  }
+
+  initMainHead() {
+    this.headGroup = new THREE.Group();
+
+    // Calyx / Receptacle base collar
+    const calyxGeo = new THREE.CylinderGeometry(0.045, 0.02, 0.05, 8);
+    const calyxMat = new THREE.MeshStandardMaterial({ color: 0x3e4e37, roughness: 0.65 });
+    const calyxMesh = new THREE.Mesh(calyxGeo, calyxMat);
+    calyxMesh.position.y = -0.025;
+    this.headGroup.add(calyxMesh);
+
+    // Golden pollen torus core
+    const torusGeo = new THREE.TorusGeometry(0.038, 0.018, 10, 20);
+    this.coreMat = new THREE.MeshStandardMaterial({
+      color: 0xe8c15a,
+      roughness: 0.45,
+      metalness: 0.08
+    });
+    const torusMesh = new THREE.Mesh(torusGeo, this.coreMat);
+    torusMesh.rotation.x = -Math.PI * 0.5;
+    torusMesh.position.y = 0.01;
+    this.headGroup.add(torusMesh);
+
+    // Central pistil dome
+    const pistilGeo = new THREE.SphereGeometry(0.028, 12, 10, 0, Math.PI * 2, 0, Math.PI * 0.5);
+    const pistilMat = new THREE.MeshStandardMaterial({ color: 0x5a7050, roughness: 0.5 });
+    const pistilMesh = new THREE.Mesh(pistilGeo, pistilMat);
+    pistilMesh.position.y = 0.01;
+    this.headGroup.add(pistilMesh);
+
+    // Chalice petal material with subtle translucency, sheen and vertex colors
+    this.petalMat = new THREE.MeshPhysicalMaterial({
+      color: 0xffffff,
+      vertexColors: true,
+      roughness: 0.35,
+      metalness: 0.02,
+      sheen: 0.35,
+      sheenColor: new THREE.Color(0xd2e3d6),
+      side: THREE.DoubleSide
+    });
+
+    // 6 Outer Cupped Chalice Petals (radial whorl forming the chalice goblet)
+    const outerGeo = createChalicePetalGeometry(0.28, 0.50, 12, 16);
+    for (let i = 0; i < 6; i++) {
+      const ang = (i / 6) * Math.PI * 2;
+      const holder = new THREE.Group();
+      holder.rotation.y = ang;
+
+      const mesh = new THREE.Mesh(outerGeo, this.petalMat);
+      mesh.castShadow = true;
+      mesh.rotation.x = 0.68;
+      holder.add(mesh);
+      this.headGroup.add(holder);
+      this.outerPetalHolders.push({ holder, mesh, baseRotX: 0.68 });
+    }
+
+    // 3 Inner Overlapping Protective Petals (slightly smaller, tighter cup)
+    const innerGeo = createChalicePetalGeometry(0.22, 0.42, 10, 14);
+    for (let i = 0; i < 3; i++) {
+      const ang = (i / 3) * Math.PI * 2 + Math.PI / 6;
+      const holder = new THREE.Group();
+      holder.rotation.y = ang;
+
+      const mesh = new THREE.Mesh(innerGeo, this.petalMat);
+      mesh.castShadow = true;
+      mesh.rotation.x = 0.45;
+      mesh.position.y = 0.015;
+      holder.add(mesh);
+      this.headGroup.add(holder);
+      this.innerPetalHolders.push({ holder, mesh, baseRotX: 0.45 });
+    }
+
+    this.stem.receptacle.add(this.headGroup);
+  }
+
+  createFloret(scale = 0.65) {
+    const fGroup = new THREE.Group();
+
+    const fCoreGeo = new THREE.SphereGeometry(0.025 * scale, 10, 8);
+    const fCoreMesh = new THREE.Mesh(fCoreGeo, this.coreMat);
+    fGroup.add(fCoreMesh);
+
+    const fGeo = createChalicePetalGeometry(0.24 * scale, 0.42 * scale, 10, 12);
+    const holders = [];
+
+    for (let i = 0; i < 6; i++) {
+      const ang = (i / 6) * Math.PI * 2;
+      const holder = new THREE.Group();
+      holder.rotation.y = ang;
+      const mesh = new THREE.Mesh(fGeo, this.petalMat);
+      mesh.castShadow = true;
+      mesh.rotation.x = 0.55;
+      holder.add(mesh);
+      fGroup.add(holder);
+      holders.push(mesh);
+    }
+
+    return {
+      group: fGroup,
+      setBloom: (b) => {
+        holders.forEach(m => {
+          m.rotation.x = THREE.MathUtils.lerp(0.30, 0.95, b);
+        });
+      }
+    };
+  }
+
+  applyKinematics(kinematics, dt = 0.016) {
+    this.stem.applyKinematics(kinematics, dt);
+    const bloom = kinematics.bloomRatio !== undefined ? kinematics.bloomRatio : this.currentBloom;
+    this.setBloom(bloom);
+  }
+
+  setBloom(val) {
+    this.currentBloom = val;
+    this.outerPetalHolders.forEach(p => {
+      p.mesh.rotation.x = THREE.MathUtils.lerp(0.35, 1.15, val);
+      const s = THREE.MathUtils.lerp(0.85, 1.05, val);
+      p.mesh.scale.set(s, s, s);
+    });
+
+    this.innerPetalHolders.forEach(p => {
+      p.mesh.rotation.x = THREE.MathUtils.lerp(0.20, 0.85, val);
+      const s = THREE.MathUtils.lerp(0.85, 1.05, val);
+      p.mesh.scale.set(s, s, s);
+    });
+
+    this.stem.setBloom(val);
+  }
+
+  setWireframe(wire) {
+    this.petalMat.wireframe = wire;
+    this.coreMat.wireframe = wire;
+    this.stem.setWireframe(wire);
+  }
+}
+
+// ============================================================================
+// 5. FESTIVE INDIAN MARIGOLD (Tagetes erecta / Genda)
+// Auspicious festive bloom with dense multi-tiered ruffled saffron-gold petals
+// ============================================================================
+function createMarigoldPetalGeometry(width = 0.16, length = 0.36, uSegs = 8, vSegs = 12) {
+  const vertices = [];
+  const uvs = [];
+  const colors = [];
+  const indices = [];
+
+  // Gradient: Deep festive saffron orange at base -> sunny marigold gold at tip
+  const baseColor = new THREE.Color(0xd94e00);
+  const tipColor = new THREE.Color(0xffb703);
+
+  for (let v = 0; v <= vSegs; v++) {
+    const vNorm = v / vSegs;
+    const currentW = width * Math.pow(vNorm, 0.65);
+    const y = Math.sin(vNorm * Math.PI * 0.5) * length;
+    const archZ = Math.pow(vNorm, 1.4) * 0.08;
+    const col = baseColor.clone().lerp(tipColor, Math.pow(vNorm, 0.9));
+
+    for (let u = 0; u <= uSegs; u++) {
+      const uNorm = (u / uSegs) * 2 - 1; // -1 to +1
+      // Scalloped / ruffled flute along petal edges
+      const flute = Math.sin(uNorm * Math.PI * 2.5) * (0.012 * vNorm);
+      // Spoon-like longitudinal cup
+      const cup = (1 - uNorm * uNorm) * (currentW * 0.25);
+      const x = uNorm * currentW * 0.5;
+      const z = archZ + cup + flute;
+
+      vertices.push(x, y, z);
+      uvs.push(u / uSegs, vNorm);
+      colors.push(col.r, col.g, col.b);
+    }
+  }
+
+  for (let v = 0; v < vSegs; v++) {
+    for (let u = 0; u < uSegs; u++) {
+      const a = v * (uSegs + 1) + u;
+      const b = (v + 1) * (uSegs + 1) + u;
+      const c = (v + 1) * (uSegs + 1) + (u + 1);
+      const d = v * (uSegs + 1) + (u + 1);
+      indices.push(a, b, d);
+      indices.push(b, c, d);
+    }
+  }
+
+  const geom = new THREE.BufferGeometry();
+  geom.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+  geom.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
+  geom.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+  geom.setIndex(indices);
+  geom.computeVertexNormals();
+  return geom;
+}
+
+export class MarigoldMorphology {
+  constructor() {
+    this.name = 'Festive Marigold (Tagetes erecta)';
+    this.family = 'Asteraceae (Genda)';
+    this.tagline = 'Concentric Ruffled Rosette • Golden Saffron Pom-Pom';
+    this.petalHolders = [];
+    this.currentBloom = 0.65;
+
+    this.stem = new BotanicalArticulatedStem({
+      totalHeight: 1.50,
+      stemColor: 0x485a3c,
+      leafColor: 0x344d2d,
+      neckTiltX: 0.04,
+      createFloretFn: (scale) => this.createFloret(scale)
+    });
+
+    this.group = this.stem.group;
+    this.initMainHead();
+  }
+
+  initMainHead() {
+    this.headGroup = new THREE.Group();
+
+    // 1. Dark roasted saffron / mossy calyx base cup
+    const cupGeo = new THREE.CylinderGeometry(0.048, 0.024, 0.07, 14);
+    this.cupMat = new THREE.MeshStandardMaterial({
+      color: 0x3a4c2f,
+      roughness: 0.6
+    });
+    const cupMesh = new THREE.Mesh(cupGeo, this.cupMat);
+    cupMesh.position.y = -0.02;
+    this.headGroup.add(cupMesh);
+
+    // 2. Central golden pollen core dome
+    const coreGeo = new THREE.SphereGeometry(0.048, 14, 10, 0, Math.PI * 2, 0, Math.PI * 0.5);
+    this.coreMat = new THREE.MeshStandardMaterial({
+      color: 0xe67e00,
+      emissive: 0xb35300,
+      emissiveIntensity: 0.35,
+      roughness: 0.45
+    });
+    const coreMesh = new THREE.Mesh(coreGeo, this.coreMat);
+    coreMesh.position.y = 0.015;
+    this.headGroup.add(coreMesh);
+
+    // 3. Multi-Tiered Concentric Ruffled Saffron Petals
+    this.petalMat = new THREE.MeshStandardMaterial({
+      roughness: 0.35,
+      metalness: 0.04,
+      vertexColors: true,
+      side: THREE.DoubleSide
+    });
+
+    const innerGeo = createMarigoldPetalGeometry(0.13, 0.26, 8, 10);
+    const midGeo = createMarigoldPetalGeometry(0.16, 0.34, 8, 12);
+    const outerGeo = createMarigoldPetalGeometry(0.18, 0.42, 8, 12);
+    const collarGeo = createMarigoldPetalGeometry(0.19, 0.46, 8, 12);
+
+    // Tier 1: Inner rosette (8 upright ruffled petals)
+    for (let i = 0; i < 8; i++) {
+      const ang = (i / 8) * Math.PI * 2;
+      const holder = new THREE.Group();
+      holder.rotation.y = ang;
+      const mesh = new THREE.Mesh(innerGeo, this.petalMat);
+      mesh.castShadow = true;
+      mesh.position.set(0, 0.015, 0.035);
+      mesh.rotation.x = 0.45;
+      holder.add(mesh);
+      this.headGroup.add(holder);
+      this.petalHolders.push({ holder, mesh, baseRotX: 0.45, openAngle: 0.85 });
+    }
+
+    // Tier 2: Mid rosette (10 radiating ruffled petals)
+    for (let i = 0; i < 10; i++) {
+      const ang = (i / 10) * Math.PI * 2 + 0.15;
+      const holder = new THREE.Group();
+      holder.rotation.y = ang;
+      const mesh = new THREE.Mesh(midGeo, this.petalMat);
+      mesh.castShadow = true;
+      mesh.position.set(0, 0.010, 0.050);
+      mesh.rotation.x = 0.75;
+      holder.add(mesh);
+      this.headGroup.add(holder);
+      this.petalHolders.push({ holder, mesh, baseRotX: 0.75, openAngle: 1.15 });
+    }
+
+    // Tier 3: Outer whorl (12 broad ruffled petals)
+    for (let i = 0; i < 12; i++) {
+      const ang = (i / 12) * Math.PI * 2 + 0.08;
+      const holder = new THREE.Group();
+      holder.rotation.y = ang;
+      const mesh = new THREE.Mesh(outerGeo, this.petalMat);
+      mesh.castShadow = true;
+      mesh.position.set(0, 0.005, 0.065);
+      mesh.rotation.x = 1.05;
+      holder.add(mesh);
+      this.headGroup.add(holder);
+      this.petalHolders.push({ holder, mesh, baseRotX: 1.05, openAngle: 1.45 });
+    }
+
+    // Tier 4: Base collar (12 spreading petals)
+    for (let i = 0; i < 12; i++) {
+      const ang = (i / 12) * Math.PI * 2 + 0.22;
+      const holder = new THREE.Group();
+      holder.rotation.y = ang;
+      const mesh = new THREE.Mesh(collarGeo, this.petalMat);
+      mesh.castShadow = true;
+      mesh.position.set(0, 0.000, 0.075);
+      mesh.rotation.x = 1.30;
+      holder.add(mesh);
+      this.headGroup.add(holder);
+      this.petalHolders.push({ holder, mesh, baseRotX: 1.30, openAngle: 1.65 });
+    }
+
+    this.stem.receptacle.add(this.headGroup);
+  }
+
+  createFloret(scale = 0.65) {
+    const fGroup = new THREE.Group();
+    const fGeo = createMarigoldPetalGeometry(0.12 * scale, 0.24 * scale, 6, 8);
+    const fMat = new THREE.MeshStandardMaterial({
+      roughness: 0.38,
+      vertexColors: true,
+      side: THREE.DoubleSide
+    });
+
+    const holders = [];
+    for (let i = 0; i < 8; i++) {
+      const ang = (i / 8) * Math.PI * 2;
+      const holder = new THREE.Group();
+      holder.rotation.y = ang;
+      const mesh = new THREE.Mesh(fGeo, fMat);
+      mesh.position.set(0, 0, 0.02 * scale);
+      mesh.rotation.x = 0.35;
+      holder.add(mesh);
+      fGroup.add(holder);
+      holders.push(mesh);
+    }
+
+    return {
+      group: fGroup,
+      setBloom: (b) => {
+        holders.forEach(m => {
+          m.rotation.x = THREE.MathUtils.lerp(0.25, 0.85, b);
+        });
+      },
+      setWireframe: (w) => {
+        fMat.wireframe = w;
+      }
+    };
+  }
+
+  setStanceBalancing(enabled) {
+    if (this.stem) this.stem.setStanceBalancing(enabled);
+  }
+
+  applyKinematics(kinematics, dt = 0.016) {
+    this.stem.applyKinematics(kinematics, dt);
+    const bloom = kinematics.bloomRatio !== undefined ? kinematics.bloomRatio : this.currentBloom;
+    this.setBloom(bloom);
+  }
+
+  setBloom(val) {
+    this.currentBloom = val;
+    this.petalHolders.forEach(p => {
+      const targetAngle = THREE.MathUtils.lerp(p.baseRotX * 0.45, p.openAngle, val);
+      p.mesh.rotation.x = targetAngle;
+      const s = THREE.MathUtils.lerp(0.85, 1.05, val);
+      p.mesh.scale.set(s, s, s);
+    });
+    this.stem.setBloom(val);
+  }
+
+  setWireframe(wire) {
+    this.petalMat.wireframe = wire;
+    this.cupMat.wireframe = wire;
+    this.coreMat.wireframe = wire;
+    this.stem.setWireframe(wire);
+  }
+}
+
+// Backward compatibility: Celadon Bell
+export class CeladonBellMorphology extends MarigoldMorphology {}
+
+// ============================================================================
+// 5. SACRED LOTUS GEOMETRY (Nelumbo nucifera)
+// Clean architectural lotus: 3 concentric tiers of cymbiform boat petals,
+// flat-topped golden torus seed pod, and articulated botanical spine.
+// ============================================================================
+function createLotusPetalGeometry(width = 0.22, length = 0.48, uSegs = 10, vSegs = 16) {
+  const vertices = [];
+  const uvs = [];
+  const colors = [];
+  const indices = [];
+
+  // Gradient: Sacred soft ivory at base -> radiant rose pink at tip
+  const baseColor = new THREE.Color(0xfcf7f9);
+  const tipColor = new THREE.Color(0xeb4d88);
+
+  for (let v = 0; v <= vSegs; v++) {
+    const vNorm = v / vSegs;
+
+    // Graceful boat-shaped lotus petal: narrow base, wide center (v~0.55), pointed apex
+    let widthProfile;
+    if (vNorm < 0.55) {
+      widthProfile = Math.sin((vNorm / 0.55) * (Math.PI * 0.5));
+    } else {
+      widthProfile = Math.cos(((vNorm - 0.55) / 0.45) * (Math.PI * 0.5));
+    }
+    const currentW = width * (0.16 + 0.84 * Math.pow(Math.max(0, widthProfile), 0.85));
+
+    // Longitudinal curvature: cups upward and forward
+    const y = Math.sin(vNorm * Math.PI * 0.5) * length;
+    const archZ = Math.sin(vNorm * Math.PI * 0.85) * (length * 0.12);
+
+    // Tip color blush interpolation
+    const col = baseColor.clone().lerp(tipColor, Math.pow(vNorm, 1.35));
+
+    for (let u = 0; u <= uSegs; u++) {
+      const uNorm = (u / uSegs) * 2 - 1; // -1 to +1
+      // Lateral spoon/cymbiform cupping
+      const cupZ = (1 - uNorm * uNorm) * (currentW * 0.35);
+      const x = uNorm * currentW * 0.5;
+      const z = archZ + cupZ;
+
+      vertices.push(x, y, z);
+      uvs.push(u / uSegs, vNorm);
+      colors.push(col.r, col.g, col.b);
+    }
+  }
+
+  for (let v = 0; v < vSegs; v++) {
+    for (let u = 0; u < uSegs; u++) {
+      const a = v * (uSegs + 1) + u;
+      const b = (v + 1) * (uSegs + 1) + u;
+      const c = (v + 1) * (uSegs + 1) + (u + 1);
+      const d = v * (uSegs + 1) + (u + 1);
+      indices.push(a, b, d);
+      indices.push(b, c, d);
+    }
+  }
+
+  const geom = new THREE.BufferGeometry();
+  geom.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+  geom.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
+  geom.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+  geom.setIndex(indices);
+  geom.computeVertexNormals();
+  return geom;
+}
+
+export class LotusMorphology {
+  constructor() {
+    this.name = 'Sacred Lotus (Nelumbo nucifera)';
+    this.family = 'Nelumbonaceae';
+    this.tagline = 'Multi-Tiered Rose Petals • Golden Seed Pod Torus';
+    this.petalHolders = [];
+    this.currentBloom = 0.65;
+
+    this.stem = new BotanicalArticulatedStem({
+      totalHeight: 1.55,
+      stemColor: 0x485c49,
+      leafColor: 0x364f3c,
+      neckTiltX: 0.04,
+      createFloretFn: (scale) => this.createFloret(scale)
+    });
+
+    this.group = this.stem.group;
+    this.initMainHead();
+  }
+
+  initMainHead() {
+    this.headGroup = new THREE.Group();
+
+    // 1. Central Iconic Flat-Topped Golden Lotus Torus (Seed Pod)
+    const torusGeo = new THREE.CylinderGeometry(0.065, 0.038, 0.052, 16);
+    this.torusMat = new THREE.MeshStandardMaterial({
+      color: 0xdeb82c,
+      emissive: 0xa87510,
+      emissiveIntensity: 0.28,
+      roughness: 0.45,
+      metalness: 0.08
+    });
+    const torusMesh = new THREE.Mesh(torusGeo, this.torusMat);
+    torusMesh.position.y = 0.026;
+    this.headGroup.add(torusMesh);
+
+    // Golden flat seed pod disc with carpel dots
+    const discGeo = new THREE.CircleGeometry(0.064, 16);
+    discGeo.rotateX(-Math.PI * 0.5);
+    const discMat = new THREE.MeshStandardMaterial({
+      color: 0xbf9515,
+      roughness: 0.50
+    });
+    const discMesh = new THREE.Mesh(discGeo, discMat);
+    discMesh.position.y = 0.053;
+    this.headGroup.add(discMesh);
+
+    // 2. Ring of Golden Anther Stamens around the Pod
+    const stamenMat = new THREE.MeshStandardMaterial({
+      color: 0xffd54f,
+      roughness: 0.40,
+      metalness: 0.1
+    });
+    const stamenCount = 28;
+    for (let i = 0; i < stamenCount; i++) {
+      const ang = (i / stamenCount) * Math.PI * 2;
+      const sGeo = new THREE.CylinderGeometry(0.003, 0.003, 0.035, 4);
+      const sMesh = new THREE.Mesh(sGeo, stamenMat);
+      const r = 0.072;
+      sMesh.position.set(Math.cos(ang) * r, 0.035, Math.sin(ang) * r);
+      sMesh.rotation.z = (Math.random() - 0.5) * 0.15;
+      this.headGroup.add(sMesh);
+    }
+
+    // 3. Three Concentric Tiers of Cymbiform Lotus Petals
+    this.petalMat = new THREE.MeshStandardMaterial({
+      roughness: 0.38,
+      metalness: 0.04,
+      vertexColors: true,
+      side: THREE.DoubleSide
+    });
+
+    const innerGeo = createLotusPetalGeometry(0.20, 0.38, 10, 14);
+    const midGeo = createLotusPetalGeometry(0.24, 0.46, 10, 16);
+    const outerGeo = createLotusPetalGeometry(0.26, 0.52, 10, 16);
+
+    // Tier 1: Inner Whorl (6 petals cupping close around torus pod)
+    for (let i = 0; i < 6; i++) {
+      const ang = (i / 6) * Math.PI * 2 + 0.1;
+      const holder = new THREE.Group();
+      holder.rotation.y = ang;
+
+      const mesh = new THREE.Mesh(innerGeo, this.petalMat);
+      mesh.castShadow = true;
+      mesh.position.set(0, 0.015, 0.065);
+      mesh.rotation.x = 0.55;
+      holder.add(mesh);
+      this.headGroup.add(holder);
+      this.petalHolders.push({ holder, mesh, tier: 'inner', baseRotX: 0.55, openAngle: 0.95 });
+    }
+
+    // Tier 2: Mid Whorl (8 petals radiating outward)
+    for (let i = 0; i < 8; i++) {
+      const ang = (i / 8) * Math.PI * 2 + (Math.PI / 8);
+      const holder = new THREE.Group();
+      holder.rotation.y = ang;
+
+      const mesh = new THREE.Mesh(midGeo, this.petalMat);
+      mesh.castShadow = true;
+      mesh.position.set(0, 0.010, 0.085);
+      mesh.rotation.x = 0.85;
+      holder.add(mesh);
+      this.headGroup.add(holder);
+      this.petalHolders.push({ holder, mesh, tier: 'mid', baseRotX: 0.85, openAngle: 1.25 });
+    }
+
+    // Tier 3: Outer Whorl (8 broad outer petals floating gracefully)
+    for (let i = 0; i < 8; i++) {
+      const ang = (i / 8) * Math.PI * 2;
+      const holder = new THREE.Group();
+      holder.rotation.y = ang;
+
+      const mesh = new THREE.Mesh(outerGeo, this.petalMat);
+      mesh.castShadow = true;
+      mesh.position.set(0, 0.005, 0.095);
+      mesh.rotation.x = 1.15;
+      holder.add(mesh);
+      this.headGroup.add(holder);
+      this.petalHolders.push({ holder, mesh, tier: 'outer', baseRotX: 1.15, openAngle: 1.55 });
+    }
+
+    // Mount physically into the top receptacle of the articulated stem!
+    this.stem.receptacle.add(this.headGroup);
+  }
+
+  createFloret(scale = 0.65) {
+    const fGroup = new THREE.Group();
+    const fGeo = createLotusPetalGeometry(0.14 * scale, 0.32 * scale, 8, 12);
+    const fMat = new THREE.MeshStandardMaterial({
+      roughness: 0.40,
+      vertexColors: true,
+      side: THREE.DoubleSide
+    });
+
+    const holders = [];
+    const count = 6;
+    for (let i = 0; i < count; i++) {
+      const ang = (i / count) * Math.PI * 2;
+      const holder = new THREE.Group();
+      holder.rotation.y = ang;
+
+      const mesh = new THREE.Mesh(fGeo, fMat);
+      mesh.position.set(0, 0, 0.035 * scale);
+      mesh.rotation.x = 0.35; // tightly folded bud
+      holder.add(mesh);
+      fGroup.add(holder);
+      holders.push(mesh);
+    }
+
+    return {
+      group: fGroup,
+      setBloom: (b) => {
+        holders.forEach(m => {
+          m.rotation.x = THREE.MathUtils.lerp(0.25, 0.75, b);
+        });
+      },
+      setWireframe: (w) => {
+        fMat.wireframe = w;
+      }
+    };
+  }
+
+  setStanceBalancing(enabled) {
+    if (this.stem) this.stem.setStanceBalancing(enabled);
+  }
+
+  applyKinematics(kinematics, dt = 0.016) {
+    this.stem.applyKinematics(kinematics, dt);
+    const bloom = kinematics.bloomRatio !== undefined ? kinematics.bloomRatio : this.currentBloom;
+    this.setBloom(bloom);
+  }
+
+  setBloom(val) {
+    this.currentBloom = val;
+    this.petalHolders.forEach(p => {
+      const targetAngle = THREE.MathUtils.lerp(p.baseRotX * 0.45, p.openAngle, val);
+      p.mesh.rotation.x = targetAngle;
+      const s = THREE.MathUtils.lerp(0.90, 1.05, val);
+      p.mesh.scale.set(s, s, s);
+    });
+    this.stem.setBloom(val);
+  }
+
+  setWireframe(wire) {
+    this.petalMat.wireframe = wire;
+    this.torusMat.wireframe = wire;
+    this.stem.setWireframe(wire);
+  }
+}
+
+// ============================================================================
+// 6. ROYAL HIBISCUS GEOMETRY (Hibiscus rosa-sinensis)
+// 5 broad radiant trumpet petals with projecting staminal column
+// ============================================================================
+function createHibiscusPetalGeometry(width = 0.30, length = 0.48, uSegs = 10, vSegs = 14) {
+  const vertices = [];
+  const uvs = [];
+  const indices = [];
+
+  for (let v = 0; v <= vSegs; v++) {
+    const vNorm = v / vSegs;
+    const currentW = width * Math.pow(vNorm, 0.75);
+    const y = Math.sin(vNorm * Math.PI * 0.5) * length;
+    const z = Math.pow(vNorm, 1.35) * 0.10;
+
+    for (let u = 0; u <= uSegs; u++) {
+      const uNorm = (u / uSegs) * 2 - 1;
+      const ripple = Math.sin(uNorm * Math.PI * 3.0) * (0.015 * vNorm);
+      const x = uNorm * currentW * 0.5;
+      vertices.push(x, y, z + ripple);
+      uvs.push(u / uSegs, vNorm);
+    }
+  }
+
+  for (let v = 0; v < vSegs; v++) {
+    for (let u = 0; u < uSegs; u++) {
+      const a = v * (uSegs + 1) + u;
+      const b = (v + 1) * (uSegs + 1) + u;
+      const c = (v + 1) * (uSegs + 1) + (u + 1);
+      const d = v * (uSegs + 1) + (u + 1);
+      indices.push(a, b, d);
+      indices.push(b, c, d);
+    }
+  }
+
+  const geom = new THREE.BufferGeometry();
+  geom.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+  geom.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
+  geom.setIndex(indices);
+  geom.computeVertexNormals();
+  return geom;
+}
+
+export class HibiscusMorphology {
+  constructor() {
+    this.name = 'Royal Hibiscus (Hibiscus rosa-sinensis)';
+    this.family = 'Malvaceae';
+    this.tagline = 'Flared Scarlet Trumpet Petals • Projecting Staminal Column';
+    this.petalHolders = [];
+    this.currentBloom = 0.65;
+
+    this.stem = new BotanicalArticulatedStem({
+      totalHeight: 1.55,
+      stemColor: 0x5a5445,
+      leafColor: 0x364f34,
+      neckTiltX: 0.06,
+      createFloretFn: (scale) => this.createFloret(scale)
+    });
+
+    this.group = this.stem.group;
+    this.initMainHead();
+  }
+
+  initMainHead() {
+    this.headGroup = new THREE.Group();
+
+    // 1. Projecting Staminal Column (Iconic Hibiscus feature)
+    const colGeo = new THREE.CylinderGeometry(0.010, 0.018, 0.38, 12);
+    colGeo.translate(0, 0.19, 0);
+    this.colMat = new THREE.MeshStandardMaterial({
+      color: 0xd92626,
+      roughness: 0.35
+    });
+    this.columnMesh = new THREE.Mesh(colGeo, this.colMat);
+    this.columnMesh.rotation.x = 0.15;
+    this.headGroup.add(this.columnMesh);
+
+    // Golden anthers dusting the upper column
+    const antherMat = new THREE.MeshStandardMaterial({
+      color: 0xf5b041,
+      emissive: 0xd97706,
+      emissiveIntensity: 0.35,
+      roughness: 0.40
+    });
+    const antherCount = 20;
+    for (let i = 0; i < antherCount; i++) {
+      const aGeo = new THREE.SphereGeometry(0.009, 6, 6);
+      const aMesh = new THREE.Mesh(aGeo, antherMat);
+      const y = 0.22 + Math.random() * 0.12;
+      const ang = Math.random() * Math.PI * 2;
+      const r = 0.016 + Math.random() * 0.014;
+      aMesh.position.set(Math.cos(ang) * r, y, Math.sin(ang) * r);
+      this.columnMesh.add(aMesh);
+    }
+
+    // 5 velvety red stigmatic pads at the top tip
+    const tipPadMat = new THREE.MeshStandardMaterial({ color: 0x991b1b, roughness: 0.6 });
+    for (let i = 0; i < 5; i++) {
+      const ang = (i / 5) * Math.PI * 2;
+      const padGeo = new THREE.SphereGeometry(0.008, 6, 6);
+      const padMesh = new THREE.Mesh(padGeo, tipPadMat);
+      padMesh.position.set(Math.cos(ang) * 0.018, 0.385, Math.sin(ang) * 0.018);
+      this.columnMesh.add(padMesh);
+    }
+
+    // 2. 5 Radiant Scarlet Flared Trumpet Petals
+    this.petalMat = new THREE.MeshStandardMaterial({
+      color: 0xeb2f2f,
+      roughness: 0.38,
+      metalness: 0.04,
+      side: THREE.DoubleSide
+    });
+
+    const petalGeo = createHibiscusPetalGeometry(0.32, 0.48, 12, 16);
+    for (let i = 0; i < 5; i++) {
+      const ang = (i / 5) * Math.PI * 2;
+      const holder = new THREE.Group();
+      holder.rotation.y = ang;
+
+      const mesh = new THREE.Mesh(petalGeo, this.petalMat);
+      mesh.castShadow = true;
+      mesh.position.set(0, 0.012, 0.05);
+      mesh.rotation.x = 0.95;
+      holder.add(mesh);
+      this.headGroup.add(holder);
+      this.petalHolders.push({ holder, mesh });
+    }
+
+    this.stem.receptacle.add(this.headGroup);
+  }
+
+  createFloret(scale = 0.65) {
+    const fGroup = new THREE.Group();
+    const fGeo = createHibiscusPetalGeometry(0.18 * scale, 0.32 * scale, 8, 10);
+    const fMat = new THREE.MeshStandardMaterial({
+      color: 0xeb2f2f,
+      roughness: 0.40,
+      side: THREE.DoubleSide
+    });
+
+    const holders = [];
+    for (let i = 0; i < 5; i++) {
+      const ang = (i / 5) * Math.PI * 2;
+      const holder = new THREE.Group();
+      holder.rotation.y = ang;
+
+      const mesh = new THREE.Mesh(fGeo, fMat);
+      mesh.position.set(0, 0, 0.03 * scale);
+      mesh.rotation.x = 0.45;
+      holder.add(mesh);
+      fGroup.add(holder);
+      holders.push(mesh);
+    }
+
+    return {
+      group: fGroup,
+      setBloom: (b) => {
+        holders.forEach(m => {
+          m.rotation.x = THREE.MathUtils.lerp(0.35, 0.95, b);
+        });
+      },
+      setWireframe: (w) => {
+        fMat.wireframe = w;
+      }
+    };
+  }
+
+  setStanceBalancing(enabled) {
+    if (this.stem) this.stem.setStanceBalancing(enabled);
+  }
+
+  applyKinematics(kinematics, dt = 0.016) {
+    this.stem.applyKinematics(kinematics, dt);
+    const bloom = kinematics.bloomRatio !== undefined ? kinematics.bloomRatio : this.currentBloom;
+    this.setBloom(bloom);
+  }
+
+  setBloom(val) {
+    this.currentBloom = val;
+    this.petalHolders.forEach(p => {
+      p.mesh.rotation.x = THREE.MathUtils.lerp(0.55, 1.25, val);
+      const s = THREE.MathUtils.lerp(0.85, 1.05, val);
+      p.mesh.scale.set(s, s, s);
+    });
+    this.stem.setBloom(val);
+  }
+
+  setWireframe(wire) {
+    this.petalMat.wireframe = wire;
+    this.colMat.wireframe = wire;
+    this.stem.setWireframe(wire);
+  }
+}
+
+// Backward compatibility aliases
+export const OriginalLotusMorphology = LotusMorphology;
+export const OriginalHibiscusMorphology = HibiscusMorphology;
