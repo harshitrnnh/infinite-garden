@@ -188,7 +188,7 @@ export class InstagramPostcardGenerator {
     ctx.fillText(flowerTitle, cardX + 24, cardY + 70);
 
     // Choreographer & Species
-    const dancer = meta.choreographer || 'Devcon Dancer';
+    const dancer = meta.choreographer || 'Devcon Gardener';
     const species = meta.speciesName || 'Botanical Wildflower';
     ctx.font = '500 13px system-ui, -apple-system, sans-serif';
     ctx.fillStyle = '#8eb697';

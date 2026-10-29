@@ -107,7 +107,7 @@ export async function saveChoreographyToCloud(flowerData, videoBlob = null) {
     const payload = {
       id: flowerData.id || `flower_${Date.now()}`,
       name: flowerData.name,
-      choreographer: flowerData.choreographer || 'Devcon Dancer',
+      choreographer: flowerData.choreographer || 'Devcon Gardener',
       species: flowerData.species || 'periwinkle',
       duration: flowerData.duration || 10.0,
       fps: flowerData.fps || 20,
@@ -219,3 +219,4 @@ export function subscribeToNewBlooms(onNewBloomCallback) {
     return null;
   }
 }
+

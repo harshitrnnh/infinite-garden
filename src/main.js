@@ -510,7 +510,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const speciesMeta = CHOREOGRAPHY_SPECIES_META[currentSpecies] || FLOWER_SPECIES[currentSpecies] || {};
     return {
       flowerName: flowerNameInput?.value.trim().slice(0, 20) || 'Luna Bloom',
-      choreographer: choreographerInput?.value.trim() || 'Devcon Dancer',
+      choreographer: choreographerInput?.value.trim() || 'Devcon Gardener',
       speciesName: speciesMeta.name || 'Botanical Wildflower',
       artworkTitle: 'Infinite Garden',
       artistName: 'Harshit Agrawal',
@@ -552,7 +552,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     flowerNameInput.value = getRandomPoeticName().slice(0, 20);
     updateTitleCharCount();
     if (!choreographerInput.value) {
-      choreographerInput.value = 'Devcon Dancer';
+      choreographerInput.value = 'Devcon Gardener';
     }
     speciesPillName.textContent = meta ? meta.name : 'Living Flower';
     speciesPillIcon.textContent =
