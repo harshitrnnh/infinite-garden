@@ -405,20 +405,20 @@ document.addEventListener('DOMContentLoaded', async () => {
   const isTabletBloom = window.location.pathname.includes('tablet-bloom') || document.body.classList.contains('tablet-bloom-view');
 
   if (isTabletBloom) {
-    // Elevated top-three-quarter view zoomed out so the entire flower (petals, stem, shadow) is fully visible
+    // Elevated top-down perspective so the flower top/petals are beautifully visible from above
     if (garden && garden.studioSpherical) {
       garden.studioSpherical.radius = 4.85; // Zoomed out so bloom and root are fully visible with comfortable margins
       garden.targetStudioSpherical.radius = 4.85;
-      garden.studioSpherical.phi = 1.15; // Elevated 3/4 angle looking into petals
-      garden.targetStudioSpherical.phi = 1.15;
+      garden.studioSpherical.phi = 0.95; // Elevated top-down angle showing the flower top & petals
+      garden.targetStudioSpherical.phi = 0.95;
       garden.studioSpherical.theta = 0.04; // Centered
       garden.targetStudioSpherical.theta = 0.04;
 
       if (garden.studioLookAt) {
-        garden.studioLookAt.set(0, 1.05, 0); // Center upper flower so bloom petals clear header
+        garden.studioLookAt.set(0, 0.95, 0); // Framed on flower center looking into the petals
       }
       if (garden.currentStudioLook) {
-        garden.currentStudioLook.set(0, 1.05, 0);
+        garden.currentStudioLook.set(0, 0.95, 0);
       }
     }
 
@@ -426,9 +426,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     const resetFlowerView = () => {
       if (garden && garden.targetStudioSpherical) {
         garden.targetStudioSpherical.radius = 4.85;
-        garden.targetStudioSpherical.phi = 1.15;
+        garden.targetStudioSpherical.phi = 0.95;
         garden.targetStudioSpherical.theta = 0.04;
-        if (garden.studioLookAt) garden.studioLookAt.set(0, 1.05, 0);
+        if (garden.studioLookAt) garden.studioLookAt.set(0, 0.95, 0);
       }
     };
 
