@@ -64,6 +64,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   const sendEmailToggle = document.getElementById('send-email-toggle');
   const emailInputContainer = document.getElementById('email-input-container');
   const visitorEmailInput = document.getElementById('visitor-email-input');
+  const plantingEmailBtn = document.getElementById('planting-email-btn');
 
   const deliveryToast = document.getElementById('delivery-toast');
   const toastMessage = document.getElementById('toast-message');
@@ -714,6 +715,85 @@ document.addEventListener('DOMContentLoaded', async () => {
       downloadToDisk(jsonStr, jsonFileName, 'application/json');
     }, 350);
   };
+
+  // Direct "Send Email" Button in Modal
+  const dispatchVisitorEmail = async (flowerName, choreographerName, visitorEmail) => {
+    if (!visitorEmail || !visitorEmail.includes('@') || !lastRecordedChoreography) {
+      alert('Please enter a valid email address.');
+      if (visitorEmailInput) visitorEmailInput.focus();
+      return false;
+    }
+
+    try {
+      const blobToBase64 = (blob) => {
+        return new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result);
+          reader.readAsDataURL(blob);
+        });
+      };
+
+      let rawVideoBase64 = null;
+      let postcardVideoBase64 = null;
+
+      if (lastRecordedChoreography.videoBlob) {
+        rawVideoBase64 = await blobToBase64(lastRecordedChoreography.videoBlob);
+        try {
+          const meta = getPostcardMeta();
+          const postcardResult = await instagramPostcard.compositeVideoFromBlob(
+            lastRecordedChoreography.videoBlob,
+            meta,
+            currentQrDownloadUrl
+          );
+          if (postcardResult && postcardResult.videoBlob) {
+            postcardVideoBase64 = await blobToBase64(postcardResult.videoBlob);
+          }
+        } catch (_) {}
+      }
+
+      const response = await fetch('/api/send-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          toEmail: visitorEmail,
+          flowerName,
+          choreographer: choreographerName,
+          species: currentSpecies,
+          videoBase64: rawVideoBase64,
+          postcardBase64: postcardVideoBase64
+        })
+      });
+
+      return response.ok;
+    } catch (err) {
+      console.warn('Email dispatch failed:', err);
+      return false;
+    }
+  };
+
+  if (plantingEmailBtn) {
+    plantingEmailBtn.addEventListener('click', async () => {
+      if (!lastRecordedChoreography) return;
+      const flowerName = flowerNameInput.value.trim().slice(0, 20) || 'Luna Bloom';
+      const choreographerName = choreographerInput.value.trim() || 'Devcon Gardener';
+      const visitorEmail = visitorEmailInput ? visitorEmailInput.value.trim() : '';
+
+      const origText = plantingEmailBtn.textContent;
+      plantingEmailBtn.textContent = '⏳ Sending...';
+      plantingEmailBtn.disabled = true;
+
+      const ok = await dispatchVisitorEmail(flowerName, choreographerName, visitorEmail);
+      if (ok) {
+        plantingEmailBtn.textContent = '✅ Email Sent!';
+      } else {
+        plantingEmailBtn.textContent = '⚠️ Check Email';
+      }
+      setTimeout(() => {
+        plantingEmailBtn.textContent = origText;
+        plantingEmailBtn.disabled = false;
+      }, 2500);
+    });
+  }
 
   if (plantingDownloadBtn) {
     plantingDownloadBtn.addEventListener('click', () => {

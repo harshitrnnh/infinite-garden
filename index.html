@@ -169,7 +169,7 @@
 
         <div class="form-group">
           <div class="form-label-row">
-            <label for="flower-name-input">Title or Message:</label>
+            <label for="flower-name-input">Title or Message (Tag):</label>
             <span class="char-counter" id="title-char-count"><span id="char-num">0</span>/20</span>
           </div>
           <div class="input-with-button">
@@ -179,48 +179,8 @@
         </div>
 
         <div class="form-group">
-          <label for="choreographer-input">Choreographer:</label>
+          <label for="choreographer-input">Name (Choreographer):</label>
           <input type="text" id="choreographer-input" placeholder="e.g. Devcon Gardener" maxlength="25">
-        </div>
-
-        <!-- Instagram Story 9:16 Postcard & Mobile QR Scan Card -->
-        <div class="postcard-feature-card" id="postcard-feature-card">
-          <div class="postcard-feature-header">
-            <div class="postcard-feature-title">
-              <span class="ig-icon">📱</span>
-              <strong>Instagram Story Postcard (9:16)</strong>
-            </div>
-            <span class="artist-badge">Infinite Garden • Harshit Agrawal</span>
-          </div>
-
-          <div class="postcard-feature-body">
-            <!-- 9:16 Mini Postcard Canvas Preview -->
-            <div class="postcard-canvas-wrap">
-              <canvas id="postcard-preview-canvas" width="135" height="240" class="postcard-preview-thumb"></canvas>
-              <div class="postcard-ratio-tag">9:16 Story</div>
-            </div>
-
-            <!-- QR Code & Direct Mobile Download Section -->
-            <div class="postcard-qr-panel">
-              <div class="postcard-qr-box">
-                <img id="postcard-qr-img" class="postcard-qr-img" alt="Scan with Phone Camera" />
-                <span class="qr-scan-badge">📷 Scan on 5G/Mobile</span>
-              </div>
-              <div class="postcard-instructions">
-                <p class="postcard-instructions-lead">Scan with your phone camera to download directly to your mobile device.</p>
-                <p class="postcard-instructions-sub">Includes <em>Devcon, Mumbai 2026</em> takeaway quote, your choreographed bloom, and artist attribution.</p>
-                
-                <div class="postcard-btn-row">
-                  <button type="button" class="postcard-btn ig-video" id="planting-instagram-btn" title="Download 9:16 vertical video formatted for Instagram Stories">
-                    <span>📱</span> <span id="ig-btn-label">Instagram Story (9:16)</span>
-                  </button>
-                  <button type="button" class="postcard-btn ig-still" id="planting-postcard-btn" title="Save high-resolution 9:16 image postcard">
-                    <span>📸</span> <span>Save Postcard (PNG)</span>
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
         </div>
 
         <!-- Email Option for 10s Animation Delivery -->
@@ -229,7 +189,7 @@
             <label class="custom-checkbox-label" for="send-email-toggle">
               <input type="checkbox" id="send-email-toggle" checked>
               <span class="custom-checkbox-box"></span>
-              <span class="checkbox-label-text">Send 10s animation video to my email</span>
+              <span class="checkbox-label-text">Send 10s MP4 animation video to my email</span>
             </label>
             <span class="animation-duration-badge">🎬 10s Video</span>
           </div>
@@ -238,7 +198,7 @@
               <span class="email-prefix-icon">✉️</span>
               <input type="email" id="visitor-email-input" placeholder="Enter your email (e.g. dancer@ethereum.org)" autocomplete="email">
             </div>
-            <p class="email-subtext">You will receive a 10-second animation of your choreographed flower blooming with your title or message.</p>
+            <p class="email-subtext">You will receive the 10-second MP4 dance video and 9:16 Instagram postcard blooming in the meadow.</p>
           </div>
         </div>
 
@@ -249,10 +209,10 @@
         </div>
       </div>
 
-      <div class="modal-footer">
-        <button class="hud-btn" id="planting-rerecord-btn">🔁 Re-record [R]</button>
-        <button class="hud-btn download-btn" id="planting-download-btn" type="button" title="Save recording video and motion file to local disk">💾 Download to Disk</button>
-        <button class="hud-btn primary glow-btn" id="planting-submit-btn">🌱 Plant & Save to Disk [ENTER]</button>
+      <div class="modal-footer modal-footer-three-btn">
+        <button class="hud-btn" id="planting-rerecord-btn" type="button">🔁 Re-record [R]</button>
+        <button class="hud-btn email-send-btn" id="planting-email-btn" type="button">✉️ Send Email</button>
+        <button class="hud-btn primary glow-btn" id="planting-submit-btn" type="button">🌱 Plant in Garden [ENTER]</button>
       </div>
     </div>
   </div>

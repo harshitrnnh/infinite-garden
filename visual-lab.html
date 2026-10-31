@@ -28,7 +28,7 @@
     <button id="btn-hide-ui" class="hide-ui-btn" title="Toggle UI visibility (Zen mode)">⊠</button>
   </div>
 
-  <!-- Flower Name Search -->
+  <!-- Flower Name Search with Multi-Match Cycle Controls -->
   <div class="flower-search-bar" id="flower-search-bar">
     <div class="search-inner">
       <span class="search-icon">🌸</span>
@@ -36,10 +36,15 @@
         type="text"
         id="flower-search-input"
         class="search-input"
-        placeholder="Search flower (e.g. Luna Bloom)…"
+        placeholder="Search flower (e.g. Crimson Shakti)…"
         autocomplete="off"
         spellcheck="false"
       >
+      <div class="search-cycle-controls hidden" id="search-cycle-controls">
+        <span class="cycle-index-label" id="cycle-index-label">1/1</span>
+        <button id="search-prev-btn" class="search-cycle-btn" title="Previous flower match">◀</button>
+        <button id="search-next-btn" class="search-cycle-btn" title="Next flower match">▶</button>
+      </div>
       <button id="flower-search-clear" class="search-clear" title="Clear">✕</button>
     </div>
     <span class="search-result-count" id="search-result-count"></span>

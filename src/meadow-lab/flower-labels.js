@@ -81,7 +81,7 @@ export class FlowerLabelSystem {
     this.labels    = [];   // { css2dObj, pill, name, flowerGroup, highlighted }
     this.visible   = false;
 
-    // CSS2D renderer layered on top of the WebGL canvas (hidden by default)
+    // CSS2D renderer layered on top of the WebGL canvas
     this.css2dRenderer = new CSS2DRenderer();
     this.css2dRenderer.setSize(container.clientWidth || window.innerWidth,
                                container.clientHeight || window.innerHeight);
@@ -90,8 +90,7 @@ export class FlowerLabelSystem {
       top: '0',
       left: '0',
       pointerEvents: 'none',
-      zIndex: '5',
-      display: 'none'
+      zIndex: '5'
     });
     container.appendChild(this.css2dRenderer.domElement);
 
@@ -103,7 +102,6 @@ export class FlowerLabelSystem {
 
   /** Attach a floating label to a Three.js Group (flower.group) */
   addLabel(flowerGroup, name = null, metadata = {}) {
-    if (!this.visible) return name || '';
     const tagName = name || nextName();
     const choreographer = metadata.choreographer || '';
     const species = metadata.species || '';
@@ -125,7 +123,7 @@ export class FlowerLabelSystem {
     obj.position.set(0, 2.3, 0);
     flowerGroup.add(obj);
 
-    this.labels.push({
+    const record = {
       css2dObj: obj,
       pill,
       name: tagName,
@@ -134,7 +132,9 @@ export class FlowerLabelSystem {
       flowerGroup,
       isPlanted,
       highlighted: false
-    });
+    };
+
+    this.labels.push(record);
     return tagName;
   }
 

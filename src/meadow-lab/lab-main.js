@@ -193,6 +193,15 @@ class MeadowVisualLab {
     this.currentFps = 60;
     this.currentMs = 16.6;
 
+    // Active Spotlight Focus Timer & Glow Object
+    this.spotlightTimeout = null;
+    this.spotlightLight = null;
+    this.activeCelebratedFlower = null;
+
+    // Search Multi-Match Cycling State
+    this.searchMatches = [];
+    this.searchMatchIndex = 0;
+
     this.initMeadow(this.flowerCount);
     this.initControls();
     this.initSearch();
@@ -349,6 +358,14 @@ class MeadowVisualLab {
       plantedFlower.setPosition(slot.x, groundY, slot.z);
       this.sceneEnv.scene.add(plantedFlower.group);
       this.flowers.push(plantedFlower);
+
+      if (this.labelSystem) {
+        this.labelSystem.addLabel(plantedFlower.group, pData.name, {
+          choreographer: pData.choreographer,
+          species: pData.species,
+          isPlanted: true
+        });
+      }
     });
 
     // 2. Compose procedural meadow flowers with all 7 bespoke botanical morphologies:
@@ -421,6 +438,14 @@ class MeadowVisualLab {
           flower.setRotationY(flowerIdx * 1.37);
           this.sceneEnv.scene.add(flower.group);
           this.flowers.push(flower);
+
+          if (this.labelSystem) {
+            this.labelSystem.addLabel(flower.group, flowerName, {
+              choreographer: 'Devcon Botanical Lab',
+              species: species,
+              isPlanted: false
+            });
+          }
         } else {
           // Instanced botanical flower definition
           const instData = {
@@ -479,8 +504,65 @@ class MeadowVisualLab {
     container.innerHTML = '';
   }
 
-  bindChipEvents() {
-    // Quick-select chips removed per user request
+  /**
+   * Focuses the camera directly on a flower, attaches a subtle celestial glow light,
+   * highlights its tag above it, and maintains celebration focus for the given duration (e.g. 20s).
+   */
+  focusOnFlowerWithGlow(flower, durationSeconds = 20) {
+    if (!flower) return;
+
+    if (this.spotlightTimeout) {
+      clearTimeout(this.spotlightTimeout);
+      this.spotlightTimeout = null;
+    }
+
+    // Clean up previous glow light if any
+    if (this.spotlightLight) {
+      this.sceneEnv.scene.remove(this.spotlightLight);
+      if (this.spotlightLight.dispose) this.spotlightLight.dispose();
+      this.spotlightLight = null;
+    }
+
+    // Clear previous glow class from pills
+    document.querySelectorAll('.flower-name-tag.tag-celebrate-glow').forEach((el) => {
+      el.classList.remove('tag-celebrate-glow');
+    });
+
+    const pos = flower.group ? flower.group.position : flower.position;
+    if (!pos) return;
+
+    // 1. Smoothly glide camera toward flower
+    this.sceneEnv.targetLookAt.set(pos.x, (pos.y || 0) + 1.25, pos.z);
+    this.sceneEnv.targetSpherical.radius = 2.3;
+
+    // 2. Add subtle warm cyan/gold spotlight glow directly above bloom
+    const glow = new THREE.PointLight(0x67e8f9, 2.5, 6.0, 1.2);
+    glow.position.set(pos.x, (pos.y || 0) + 2.0, pos.z);
+    this.sceneEnv.scene.add(glow);
+    this.spotlightLight = glow;
+    this.activeCelebratedFlower = flower;
+
+    // 3. Highlight this flower's tag above it
+    if (this.labelSystem) {
+      const matchLabel = this.labelSystem.labels.find(l => {
+        return l.flowerGroup === flower.group || (flower.name && l.name && l.name.toLowerCase() === flower.name.toLowerCase());
+      });
+      if (matchLabel && matchLabel.pill) {
+        matchLabel.pill.classList.add('tag-celebrate-glow');
+      }
+    }
+
+    // 4. Fade spotlight & restore default state after 20 seconds
+    this.spotlightTimeout = setTimeout(() => {
+      if (this.spotlightLight) {
+        this.sceneEnv.scene.remove(this.spotlightLight);
+        this.spotlightLight = null;
+      }
+      document.querySelectorAll('.flower-name-tag.tag-celebrate-glow').forEach((el) => {
+        el.classList.remove('tag-celebrate-glow');
+      });
+      this.activeCelebratedFlower = null;
+    }, durationSeconds * 1000);
   }
 
   findClearPlantedSlot(minDist = 2.4) {
@@ -537,6 +619,15 @@ class MeadowVisualLab {
       this.flowers.unshift(planted);
       this.heroFlower = planted;
 
+      // Register label with FlowerLabelSystem so search and tags work on planted blooms
+      if (this.labelSystem) {
+        this.labelSystem.addLabel(planted.group, flowerData.name, {
+          choreographer: flowerData.choreographer,
+          species: flowerData.species,
+          isPlanted: true
+        });
+      }
+
       // Cache locally on device so reloads retain cloud plants even offline
       try {
         const userPlants = JSON.parse(localStorage.getItem('botanical_garden_user_plants') || '[]');
@@ -547,16 +638,12 @@ class MeadowVisualLab {
       } catch (_) {}
 
       if (isLiveAlert) {
-        // Fly camera to celebrate the new bloom!
-        const wp = new THREE.Vector3();
-        planted.group.getWorldPosition(wp);
-        this.sceneEnv.targetLookAt.set(wp.x, wp.y + 1.1, wp.z);
-        this.sceneEnv.targetSpherical.radius = 2.2;
+        // Spotlight celebrate this planted flower for 20 seconds!
+        this.focusOnFlowerWithGlow(planted, 20);
 
         const input = document.getElementById('flower-search-input');
         if (input) {
           input.value = flowerData.name;
-          this.doSearch(flowerData.name);
         }
       }
     };
@@ -856,18 +943,50 @@ class MeadowVisualLab {
   }
 
   initSearch() {
-    const input     = document.getElementById('flower-search-input');
-    const clearBtn  = document.getElementById('flower-search-clear');
-    const countEl   = document.getElementById('search-result-count');
+    const input         = document.getElementById('flower-search-input');
+    const clearBtn      = document.getElementById('flower-search-clear');
+    const countEl       = document.getElementById('search-result-count');
+    const cycleControls = document.getElementById('search-cycle-controls');
+    const cycleLabel    = document.getElementById('cycle-index-label');
+    const prevBtn       = document.getElementById('search-prev-btn');
+    const nextBtn       = document.getElementById('search-next-btn');
 
     if (!input) return;
+
+    const navigateMatch = (delta) => {
+      if (!this.searchMatches || this.searchMatches.length === 0) return;
+      const total = this.searchMatches.length;
+      this.searchMatchIndex = (this.searchMatchIndex + delta + total) % total;
+
+      if (cycleLabel) {
+        cycleLabel.textContent = `${this.searchMatchIndex + 1}/${total}`;
+      }
+
+      const activeFlower = this.searchMatches[this.searchMatchIndex];
+      if (activeFlower) {
+        this.focusOnFlowerWithGlow(activeFlower, 20);
+      }
+    };
+
+    if (prevBtn) {
+      prevBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        navigateMatch(-1);
+      });
+    }
+
+    if (nextBtn) {
+      nextBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        navigateMatch(1);
+      });
+    }
 
     this.updateChipActive = (query) => {
       const q = (query || '').trim().toLowerCase();
       const chips = document.querySelectorAll('.flower-chip');
       chips.forEach(chip => {
         const name = (chip.dataset.name || '').toLowerCase();
-        // Fully case-agnostic: match exact or substring either way
         const isMatch = q.length > 0 && (name === q || name.includes(q) || q.includes(name));
         chip.classList.toggle('active', isMatch);
       });
@@ -881,17 +1000,26 @@ class MeadowVisualLab {
 
       if (q.length === 0) {
         this.labelSystem.clearSearch();
+        this.searchMatches = [];
+        this.searchMatchIndex = 0;
         if (countEl) countEl.textContent = '';
+        if (cycleControls) cycleControls.classList.add('hidden');
         clearBtn && clearBtn.classList.remove('visible');
         return;
       }
 
       clearBtn && clearBtn.classList.add('visible');
-      // Case-agnostic search across all flower tags and all 2,000 flowers in meadow
-      const n = this.labelSystem.search(q);
+
+      // 1. Gather all matched flowers across both articulated/planted flowers and proxies
       const qLower = q.toLowerCase();
-      const matchedData = this.flowers.filter(f => (f.name || '').toLowerCase().includes(qLower));
-      const totalMatches = Math.max(n, matchedData.length);
+      const matchedFlowers = this.flowers.filter(f => (f.name || '').toLowerCase().includes(qLower));
+      this.searchMatches = matchedFlowers;
+      this.searchMatchIndex = 0;
+
+      // 2. Highlight tags in 3D scene
+      this.labelSystem.search(q);
+
+      const totalMatches = matchedFlowers.length;
 
       if (countEl) {
         countEl.textContent = totalMatches === 0
@@ -899,26 +1027,21 @@ class MeadowVisualLab {
           : `${totalMatches} flower${totalMatches === 1 ? '' : 's'} found in meadow`;
       }
 
-      // Fly camera toward the matched flower
-      if (totalMatches > 0) {
-        const match = this.labelSystem.firstMatch(q);
-        if (match && match.flowerGroup) {
-          const wp = new THREE.Vector3();
-          match.flowerGroup.getWorldPosition(wp);
-          this.sceneEnv.targetLookAt.set(wp.x, wp.y + 1.2, wp.z);
-          this.sceneEnv.targetSpherical.radius = 2.4;
-        } else if (matchedData.length > 0) {
-          const m = matchedData[0];
-          const pos = m.group ? m.group.position : m.position;
-          if (pos) {
-            this.sceneEnv.targetLookAt.set(pos.x, (pos.y || 0) + 1.2, pos.z);
-            this.sceneEnv.targetSpherical.radius = 2.4;
-          }
+      // 3. Multi-match cycle controls
+      if (cycleControls && cycleLabel) {
+        if (totalMatches > 1) {
+          cycleControls.classList.remove('hidden');
+          cycleLabel.textContent = `1/${totalMatches}`;
+        } else {
+          cycleControls.classList.add('hidden');
         }
       }
-    };
 
-    this.bindChipEvents();
+      // 4. Immediately spotlight & focus the first matched flower for 20 seconds!
+      if (totalMatches > 0) {
+        this.focusOnFlowerWithGlow(matchedFlowers[0], 20);
+      }
+    };
 
     input.addEventListener('input', (e) => this.doSearch(e.target.value));
 
@@ -927,6 +1050,8 @@ class MeadowVisualLab {
         input.value = '';
         this.doSearch('');
         input.blur();
+      } else if (e.key === 'Enter') {
+        navigateMatch(1);
       }
     });
 
