@@ -397,7 +397,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       document.exitFullscreen();
     }
   };
-  fullscreenBtn.addEventListener('click', toggleFullScreen);
+  if (fullscreenBtn) {
+    fullscreenBtn.addEventListener('click', toggleFullScreen);
+  }
 
   // -----------------------------------------------------------------------------------
   // TABLET BLOOM VIEWPORT & INLET CONTROLS (Vertical iPad Fullscreen Flower + Inlet Skeleton)
@@ -1035,6 +1037,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     const wantEmail = sendEmailToggle ? sendEmailToggle.checked : true;
     const visitorEmail = visitorEmailInput ? visitorEmailInput.value.trim() : '';
 
+    if (wantEmail && (!visitorEmail || !visitorEmail.includes('@'))) {
+      alert('Please enter a valid email address to receive your 10-second video, or uncheck the email checkbox to plant without email.');
+      if (visitorEmailInput) visitorEmailInput.focus();
+      return;
+    }
+
     // ALWAYS save every choreography recording to local disk!
     downloadChoreographyToLocalDisk(flowerName, currentSpecies, lastRecordedChoreography);
 
@@ -1134,11 +1142,15 @@ document.addEventListener('DOMContentLoaded', async () => {
       });
 
       if (toastMessage) {
-        toastMessage.innerHTML = `Saved recording to disk & emailed 10-second animation video and postcard of "<strong>${flowerName}</strong>" to <strong>${visitorEmail}</strong>.`;
+        toastMessage.innerHTML = isTabletBloom
+          ? `Your living bloom "<strong>${flowerName}</strong>" has sprouted in Collective Bloom! Videos emailed to <strong>${visitorEmail}</strong>.`
+          : `Saved recording to disk & emailed 10-second animation video and postcard of "<strong>${flowerName}</strong>" to <strong>${visitorEmail}</strong>.`;
       }
     } else {
       if (toastMessage) {
-        toastMessage.innerHTML = `Your flower "<strong>${flowerName}</strong>" has been planted in the meadow and downloaded to your disk!`;
+        toastMessage.innerHTML = isTabletBloom
+          ? `Your living bloom "<strong>${flowerName}</strong>" has sprouted in Collective Bloom!`
+          : `Your flower "<strong>${flowerName}</strong>" has been planted in Collective Bloom!`;
       }
     }
 
@@ -1146,11 +1158,11 @@ document.addEventListener('DOMContentLoaded', async () => {
       deliveryToast.classList.remove('hidden');
     }
 
-    // Auto-dismiss confirmation toast after 8 seconds
+    // Auto-dismiss confirmation toast (3.5s for tablet bloom, 8.5s for lab)
     if (toastDismissTimer) clearTimeout(toastDismissTimer);
     toastDismissTimer = setTimeout(() => {
       if (deliveryToast) deliveryToast.classList.add('hidden');
-    }, 8500);
+    }, isTabletBloom ? 3500 : 8500);
 
     // Spore burst & breeze celebration
     garden.addSporeBurst(80);

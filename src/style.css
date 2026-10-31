@@ -859,18 +859,20 @@ body.clean-view .indian-flower-dock {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  width: 220px;
-  height: 220px;
+  width: 230px;
+  height: 230px;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(235, 77, 136, 0.25), rgba(10, 20, 16, 0.85));
-  border: 2px solid rgba(255, 128, 171, 0.65);
-  box-shadow: 0 0 60px rgba(235, 77, 136, 0.35);
+  background: radial-gradient(circle, rgba(235, 77, 136, 0.28), rgba(10, 20, 16, 0.90));
+  border: 2px solid rgba(255, 128, 171, 0.75);
+  box-shadow: 0 0 60px rgba(235, 77, 136, 0.4);
   animation: countPulse 1s infinite ease-in-out;
+  padding: 16px;
+  box-sizing: border-box;
 }
 
 .countdown-num {
   font-family: var(--font-display);
-  font-size: 5.5rem;
+  font-size: 5.0rem;
   font-weight: 700;
   color: #fff;
   text-shadow: 0 0 25px rgba(255, 128, 171, 0.9);
@@ -878,11 +880,15 @@ body.clean-view .indian-flower-dock {
 }
 
 .countdown-text {
-  font-size: 0.95rem;
-  color: var(--text-secondary);
-  margin-top: 6px;
-  letter-spacing: 0.05em;
+  font-size: 0.70rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.85);
+  margin-top: 5px;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
+  max-width: 160px;
+  text-align: center;
+  line-height: 1.25;
 }
 
 @keyframes countPulse {
@@ -3129,43 +3135,73 @@ body.choreography-split-view {
   justify-content: space-between;
 }
 
+.tablet-bloom-view .tablet-studio-header {
+  display: none !important;
+}
+
+/* Stacking 7 flowers directly above recording button */
+.tablet-bloom-view .tablet-studio-footer {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100vw;
+  padding: 18px 20px 32px 20px;
+  display: flex;
+  justify-content: center;
+  z-index: 35;
+  pointer-events: none;
+  background: linear-gradient(0deg, rgba(6, 12, 9, 0.90) 0%, rgba(6, 12, 9, 0.45) 60%, rgba(6, 12, 9, 0) 100%);
+}
+
+.tablet-bloom-view .record-center-dock {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  max-width: 680px;
+  pointer-events: none;
+}
+
 .tablet-bloom-view .tablet-species-strip {
   display: flex !important;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: nowrap;
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
-  max-width: 55vw;
-  padding: 4px 8px;
+  max-width: 95vw;
+  padding: 6px 10px;
   gap: 6px;
   scrollbar-width: none;
+  background: rgba(14, 24, 18, 0.78);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
+  pointer-events: auto;
 }
 
 .tablet-bloom-view .tablet-species-strip::-webkit-scrollbar {
   display: none;
 }
 
-.split-nav-btn {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(255, 255, 255, 0.2);
+.tablet-bloom-view .tablet-species-strip .species-pill {
+  padding: 7px 13px;
+  font-size: 0.85rem;
+  border-radius: 9999px;
+  white-space: nowrap;
 }
 
-/* Bottom Recording Controls for Tablet */
-.tablet-studio-footer {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  width: 100vw;
-  padding: 24px 20px 36px 20px;
-  display: flex;
-  justify-content: center;
-  z-index: 35;
-  pointer-events: none;
-  background: linear-gradient(0deg, rgba(6, 12, 9, 0.85) 0%, rgba(6, 12, 9, 0) 100%);
+.tablet-bloom-view .tablet-species-strip .species-pill kbd {
+  display: none;
 }
 
 .tablet-bloom-view .tablet-record-btn {
   pointer-events: auto;
   font-size: 1.15rem;
-  padding: 16px 42px;
+  padding: 16px 44px;
   border-radius: 9999px;
   box-shadow: 0 12px 35px rgba(224, 109, 83, 0.5), 0 0 0 2px rgba(255, 255, 255, 0.3);
   cursor: pointer;
@@ -3178,14 +3214,60 @@ body.choreography-split-view {
   transform: translateY(2px) scale(0.97);
 }
 
+.tablet-bloom-view .record-hint {
+  font-size: 0.82rem;
+  color: rgba(255, 255, 255, 0.65);
+  margin-top: 2px;
+}
+
+/* Two-button modal footer */
+.modal-footer-two-btn {
+  display: grid;
+  grid-template-columns: 1fr 1.6fr;
+  gap: 12px;
+  width: 100%;
+}
+
+.modal-footer-two-btn button {
+  padding: 14px 18px;
+  font-size: 1.0rem;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+/* Clean post-recording notification: no QR, no download buttons */
+.tablet-bloom-view .toast-qr-row,
+.tablet-bloom-view .toast-actions,
+.tablet-bloom-view #toast-qr-row,
+.tablet-bloom-view #toast-download-btn,
+.tablet-bloom-view #toast-postcard-btn {
+  display: none !important;
+}
+
+/* Tablet Bloom: Clean Dancer Inlet and Pure Canvas */
+.tablet-bloom-view .tablet-camera-inlet {
+  top: 18px !important;
+  right: 18px !important;
+  border-radius: 18px !important;
+  overflow: hidden;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.12) !important;
+}
+
+.tablet-bloom-view .inlet-action-group,
+.tablet-bloom-view .inlet-bottom-footer,
+.tablet-bloom-view .tablet-flower-badge,
+.tablet-bloom-view .tablet-orbit-hint {
+  display: none !important;
+}
+
 @media (max-width: 600px) {
   .tablet-bloom-view .tablet-camera-inlet {
     width: 180px !important;
     height: 240px !important;
-    top: 68px;
-    right: 12px;
-  }
-  .tablet-bloom-view .tablet-species-strip {
-    max-width: 45vw;
+    top: 14px !important;
+    right: 12px !important;
   }
 }

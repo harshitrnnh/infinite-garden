@@ -126,91 +126,54 @@
     <div class="split-divider" style="display:none !important;"></div>
   </main>
 
-  <!-- TOP MINIMAL HEADER BAR -->
-  <header class="studio-header tablet-studio-header">
-    <div class="brand-group">
-      <h1 class="brand-title">Collective Bloom</h1>
-      <span class="brand-sep">•</span>
-      <span class="brand-sub">Tablet Bloom</span>
-    </div>
-
-    <!-- 7 BOTANICAL FLOWER SPECIES SELECTOR (Scrollable & Touch-Friendly) -->
-    <div class="species-selector-strip tablet-species-strip" id="species-selector-strip">
-      <button class="flower-card species-pill active" data-species="periwinkle" title="Periwinkle (Key 1)">
-        <span class="pill-dot periwinkle-dot"></span>
-        <span class="pill-name">Periwinkle</span>
-        <kbd>1</kbd>
-      </button>
-
-      <button class="flower-card species-pill" data-species="poppy" title="Wild Poppy (Key 2)">
-        <span class="pill-dot poppy-dot"></span>
-        <span class="pill-name">Poppy</span>
-        <kbd>2</kbd>
-      </button>
-
-      <button class="flower-card species-pill" data-species="chamomile" title="Chamomile Wheat (Key 3)">
-        <span class="pill-dot chamomile-dot"></span>
-        <span class="pill-name">Chamomile</span>
-        <kbd>3</kbd>
-      </button>
-
-      <button class="flower-card species-pill" data-species="meadow" title="Meadow Chalice (Key 4)">
-        <span class="pill-dot meadow-dot"></span>
-        <span class="pill-name">Meadow</span>
-        <kbd>4</kbd>
-      </button>
-
-      <button class="flower-card species-pill" data-species="marigold" title="Festive Marigold (Key 5)">
-        <span class="pill-dot marigold-dot"></span>
-        <span class="pill-name">Marigold</span>
-        <kbd>5</kbd>
-      </button>
-
-      <button class="flower-card species-pill" data-species="lotus" title="Sacred Lotus (Key 6)">
-        <span class="pill-dot lotus-dot"></span>
-        <span class="pill-name">Lotus</span>
-        <kbd>6</kbd>
-      </button>
-
-      <button class="flower-card species-pill" data-species="hibiscus" title="Royal Hibiscus (Key 7)">
-        <span class="pill-dot hibiscus-dot"></span>
-        <span class="pill-name">Hibiscus</span>
-        <kbd>7</kbd>
-      </button>
-    </div>
-
-    <!-- STATUS & NAVIGATION SHORTCUTS -->
-    <div class="header-right">
-      <div class="status-badge" id="tracking-status">
-        <span class="status-dot pulse"></span>
-        <span id="status-text">Starting camera...</span>
-      </div>
-
-      <a href="./visual-lab.html" class="nav-lab-btn" title="Explore Wild Meadow Visual Lab">
-        <span>🎨</span>
-        <span>Meadow</span>
-      </a>
-
-      <a href="./index.html" class="nav-lab-btn split-nav-btn" title="Switch to Split View">
-        <span>◫</span>
-        <span>Split</span>
-      </a>
-
-      <button class="icon-hud-btn" id="fullscreen-btn" title="Toggle Fullscreen (F)">
-        <span>⛶</span>
-      </button>
-    </div>
-  </header>
-
-  <!-- BOTTOM RECORDING CONTROLS DOCK -->
+  <!-- BOTTOM RECORDING CONTROLS DOCK (7 Flower Species Selector right above Record Button) -->
   <footer class="studio-footer tablet-studio-footer">
     <div class="record-center-dock">
+      <!-- 7 BOTANICAL FLOWER SPECIES SELECTOR -->
+      <div class="species-selector-strip tablet-species-strip" id="species-selector-strip">
+        <button class="flower-card species-pill active" data-species="periwinkle" title="Periwinkle">
+          <span class="pill-dot periwinkle-dot"></span>
+          <span class="pill-name">Periwinkle</span>
+        </button>
+
+        <button class="flower-card species-pill" data-species="poppy" title="Wild Poppy">
+          <span class="pill-dot poppy-dot"></span>
+          <span class="pill-name">Poppy</span>
+        </button>
+
+        <button class="flower-card species-pill" data-species="chamomile" title="Chamomile Wheat">
+          <span class="pill-dot chamomile-dot"></span>
+          <span class="pill-name">Chamomile</span>
+        </button>
+
+        <button class="flower-card species-pill" data-species="meadow" title="Chalice">
+          <span class="pill-dot meadow-dot"></span>
+          <span class="pill-name">Chalice</span>
+        </button>
+
+        <button class="flower-card species-pill" data-species="marigold" title="Festive Marigold">
+          <span class="pill-dot marigold-dot"></span>
+          <span class="pill-name">Marigold</span>
+        </button>
+
+        <button class="flower-card species-pill" data-species="lotus" title="Sacred Lotus">
+          <span class="pill-dot lotus-dot"></span>
+          <span class="pill-name">Lotus</span>
+        </button>
+
+        <button class="flower-card species-pill" data-species="hibiscus" title="Royal Hibiscus">
+          <span class="pill-dot hibiscus-dot"></span>
+          <span class="pill-name">Hibiscus</span>
+        </button>
+      </div>
+
+      <!-- MAIN RECORD DANCE BUTTON -->
       <button class="studio-record-btn tablet-record-btn" id="record-choreography-btn">
         <span class="record-pulse-dot"></span>
         <span id="choreograph-btn-label">Record Dance (10s)</span>
       </button>
       <p class="record-hint">
-        Tap or press <kbd>SPACE</kbd> • Move arms & body to shape the living bloom
+        Tap to record 10s dance • Move arms & body to shape the living bloom
       </p>
     </div>
   </footer>
@@ -241,16 +204,16 @@
     </div>
   </div>
 
-  <!-- 3. Planting Dialog Modal (After Recording Finishes) -->
+  <!-- 3. Planting Dialog Modal (After Recording Finishes - Clean 2-Button Interaction) -->
   <div class="planting-modal-backdrop hidden" id="planting-modal">
     <div class="planting-modal-card">
       <div class="modal-header">
-        <span class="modal-badge">🌸 Choreography Imprinted</span>
+        <span class="modal-badge">🌸 Choreography Recorded</span>
         <button class="modal-close-btn" id="planting-cancel-btn">&times;</button>
       </div>
 
       <div class="modal-body">
-        <h3 class="modal-title">Plant Your Bloom in the Meadow</h3>
+        <h3 class="modal-title">Plant in Collective Bloom</h3>
         <p class="modal-desc">Your 10-second physical dance has been recorded into botanical memory.</p>
 
         <div class="form-group">
@@ -277,14 +240,13 @@
               <span class="custom-checkbox-box"></span>
               <span class="checkbox-label-text">Send 10s MP4 animation video to my email</span>
             </label>
-            <span class="animation-duration-badge">🎬 10s Video</span>
           </div>
           <div class="email-input-container" id="email-input-container">
             <div class="email-input-field-wrap">
               <span class="email-prefix-icon">✉️</span>
               <input type="email" id="visitor-email-input" placeholder="Enter your email (e.g. dancer@ethereum.org)" autocomplete="email">
             </div>
-            <p class="email-subtext">You will receive the 10-second MP4 dance video and 9:16 Instagram postcard blooming in the meadow.</p>
+            <p class="email-subtext">You will receive the 10-second MP4 dance video and 9:16 video postcard.</p>
           </div>
         </div>
 
@@ -295,44 +257,28 @@
         </div>
       </div>
 
-      <div class="modal-footer modal-footer-three-btn">
-        <button class="hud-btn" id="planting-rerecord-btn" type="button">🔁 Re-record [R]</button>
-        <button class="hud-btn email-send-btn" id="planting-email-btn" type="button">✉️ Send Email</button>
+      <!-- Exactly 2 Buttons: Re-record and Plant -->
+      <div class="modal-footer modal-footer-two-btn">
+        <button class="hud-btn" id="planting-rerecord-btn" type="button">🔄 Re-record [R]</button>
         <button class="hud-btn primary glow-btn" id="planting-submit-btn" type="button">🌱 Plant in Garden [ENTER]</button>
       </div>
     </div>
   </div>
 
-  <!-- 4. Email & Animation Dispatch Notification Toast -->
+  <!-- 4. Clean Simple Confirmation Toast (No QR, No Download Buttons) -->
   <div class="delivery-toast hidden" id="delivery-toast">
-    <div class="toast-card">
+    <div class="toast-card tablet-toast-card">
       <div class="toast-header">
-        <span class="toast-icon">✉️</span>
+        <span class="toast-icon">🌱</span>
         <div class="toast-title-group">
-          <h4 class="toast-title">10-Second Animation Dispatched!</h4>
+          <h4 class="toast-title">Planted in Collective Bloom!</h4>
           <span class="toast-timestamp" id="toast-time">Just now</span>
         </div>
         <button class="toast-close-btn" id="toast-close-btn">&times;</button>
       </div>
       <p class="toast-message" id="toast-message">
-        Sent 10s animation video of "<strong>Luna Bloom</strong>" with your message to <strong>dancer@ethereum.org</strong>.
+        Your living flower has sprouted in Collective Bloom!
       </p>
-      <div class="toast-qr-row" id="toast-qr-row">
-        <img id="toast-qr-img" class="toast-qr-img" alt="Scan QR Code" />
-        <div class="toast-qr-text">
-          <strong>📱 Scan on your phone</strong>
-          <span>Save your Instagram Story postcard directly before you go.</span>
-        </div>
-      </div>
-      <div class="toast-actions">
-        <a class="toast-action-btn download-btn" id="toast-download-btn" href="#" download="flower_choreography_10s.webm" target="_blank">
-          <span>⬇️ Download Video</span>
-        </a>
-        <button class="toast-action-btn postcard-action-btn" id="toast-postcard-btn">
-          <span>📸 Postcard</span>
-        </button>
-        <button class="toast-action-btn ok-btn" id="toast-ok-btn">Done</button>
-      </div>
     </div>
   </div>
 
@@ -400,6 +346,13 @@
     <div id="fallback-hint"></div>
     <span id="story-name"></span>
     <span id="story-tagline"></span>
+    <div id="tracking-status" style="display:none;"><span id="status-text"></span></div>
+    <button id="fullscreen-btn" style="display:none;"></button>
+    <button id="planting-email-btn" style="display:none;"></button>
+    <button id="toast-download-btn" style="display:none;"></button>
+    <button id="toast-postcard-btn" style="display:none;"></button>
+    <button id="toast-ok-btn" style="display:none;"></button>
+    <div id="toast-qr-row" style="display:none;"><img id="toast-qr-img" /></div>
     <canvas id="postcard-preview-canvas" width="1080" height="1920" style="display:none;"></canvas>
     <img id="postcard-qr-img" style="display:none;" />
     <button id="planting-instagram-btn" style="display:none;"></button>
