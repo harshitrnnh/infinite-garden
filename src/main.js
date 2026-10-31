@@ -823,6 +823,42 @@ document.addEventListener('DOMContentLoaded', async () => {
         localStorage.setItem('botanical_garden_email_dispatches', JSON.stringify(dispatches));
       } catch (_) {}
 
+      // Asynchronously trigger serverless email dispatch
+      (async () => {
+        try {
+          let videoBase64 = null;
+          if (lastRecordedChoreography.videoBlob) {
+            // Convert blob to base64 for direct inline email attachment
+            videoBase64 = await new Promise((resolve) => {
+              const reader = new FileReader();
+              reader.onloadend = () => resolve(reader.result);
+              reader.readAsDataURL(lastRecordedChoreography.videoBlob);
+            });
+          }
+
+          const response = await fetch('/api/send-email', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              toEmail: visitorEmail,
+              flowerName: flowerName,
+              choreographer: choreographerName,
+              species: currentSpecies,
+              videoBase64: videoBase64
+            })
+          });
+
+          if (!response.ok) {
+            const errData = await response.json().catch(() => ({}));
+            console.warn('Email dispatch notice:', errData.error || response.statusText);
+          } else {
+            console.log('Choreography email sent to', visitorEmail);
+          }
+        } catch (err) {
+          console.warn('Could not dispatch email:', err);
+        }
+      })();
+
       if (toastMessage) {
         toastMessage.innerHTML = `Saved recording to disk & emailed 10-second animation video of "<strong>${flowerName}</strong>" to <strong>${visitorEmail}</strong>.`;
       }
