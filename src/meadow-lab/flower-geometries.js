@@ -1233,67 +1233,90 @@ export class ChamomileMorphology {
 
 // ============================================================================
 // 4. CHAMPA (FRANGIPANI) GEOMETRY (Plumeria rubra / alba)
-// 5 broad velvety obovate pinwheel petals with signature spiraled overlap,
-// glowing golden saffron sunburst center fading into porcelain ivory white,
-// and articulated botanical stem with companion blooming Champa florets.
+// 5 broad velvety obovate pinwheel petals with organic biological asymmetry,
+// natural leading-edge flare, feathered golden-saffron heart, and gentle reflex.
 // ============================================================================
-function createChampaPetalGeometry(width = 0.32, length = 0.52, uSegs = 14, vSegs = 18) {
+function createChampaPetalGeometry(width = 0.33, length = 0.52, uSegs = 16, vSegs = 20) {
   const vertices = [];
   const uvs = [];
   const colors = [];
   const indices = [];
 
-  // Plumeria signature colors:
-  // Deep saffron amber core -> radiant golden yellow -> velvety porcelain ivory
-  const cAmber = new THREE.Color(0xff8c00);
-  const cGold = new THREE.Color(0xffc107);
-  const cIvory = new THREE.Color(0xfcfaf7);
+  // Authentic Plumeria palette:
+  // Deep saffron amber throat -> warm golden yolk -> butter yellow -> velvety warm ivory with delicate blush
+  const cAmber = new THREE.Color(0xff8000);   // Deep saffron core
+  const cGold = new THREE.Color(0xffbe0b);    // Warm sunny gold
+  const cButter = new THREE.Color(0xfff1b8);  // Soft creamy butter
+  const cIvory = new THREE.Color(0xfcfaf6);   // Velvet porcelain white
+  const cBlush = new THREE.Color(0xfcf2ec);   // Delicate petal margin blush
 
   for (let v = 0; v <= vSegs; v++) {
     const vNorm = v / vSegs;
 
-    // Natural Plumeria petal outline: narrow base tube, swelling smoothly into broad paddle, rounded tip
+    // Organic obovate paddle profile:
+    // Narrow tapering claw at base, swells into wide generous blade at 0.55-0.70,
+    // and rounds with a soft organic curve toward the tip
     let wFactor;
-    if (vNorm < 0.20) {
-      wFactor = 0.22 + Math.sin((vNorm / 0.20) * Math.PI * 0.5) * 0.45;
-    } else if (vNorm < 0.70) {
-      wFactor = 0.67 + Math.sin(((vNorm - 0.20) / 0.50) * Math.PI * 0.5) * 0.33;
+    if (vNorm < 0.18) {
+      wFactor = 0.20 + Math.sin((vNorm / 0.18) * Math.PI * 0.5) * 0.42;
+    } else if (vNorm < 0.68) {
+      const t = (vNorm - 0.18) / 0.50;
+      wFactor = 0.62 + Math.sin(t * Math.PI * 0.5) * 0.38;
     } else {
-      wFactor = 1.0 - Math.pow((vNorm - 0.70) / 0.30, 1.8) * 0.82;
+      const t = (vNorm - 0.68) / 0.32;
+      wFactor = 1.0 - Math.pow(t, 1.65) * 0.84;
     }
-    const currentW = Math.max(0.015, width * wFactor);
 
-    // Longitudinal arch: gentle outward reflex curve
-    const y = Math.sin(vNorm * Math.PI * 0.48) * length;
-    const zArch = Math.pow(vNorm, 1.35) * (length * 0.22);
+    // Natural longitudinal reflex curve: gentle arch outward with subtle recurve at the petal tip
+    const y = Math.sin(vNorm * Math.PI * 0.47) * length;
+    const zArch = Math.pow(vNorm, 1.30) * (length * 0.24);
+    // Tip reflex: tip relaxes slightly backward into the breeze
+    const tipReflex = Math.pow(Math.max(0, vNorm - 0.72) / 0.28, 2.2) * 0.018;
 
     for (let u = 0; u <= uSegs; u++) {
       const uNorm = (u / uSegs) * 2 - 1; // -1 to 1 across width
+
+      // Natural Botanical Asymmetry:
+      // In real Plumeria, the overlapping leading edge (u > 0) sweeps out slightly broader (+14%),
+      // giving each petal its characteristic pinwheel sickle curve
+      const asymWidth = uNorm > 0 ? (1.0 + uNorm * 0.14) : (1.0 - Math.abs(uNorm) * 0.04);
+      const currentW = Math.max(0.015, width * wFactor * asymWidth);
       const x = uNorm * currentW * 0.5;
 
-      // The signature Frangipani pinwheel curl:
-      // One edge (uNorm > 0) curls slightly upward, while other edge (uNorm < 0) curves slightly down/under
-      const pinwheelCurl = Math.sin(uNorm * Math.PI * 0.5) * (0.024 * vNorm);
-      // Subtle shallow cup/dish along centerline
-      const centerDish = -Math.cos(uNorm * Math.PI * 0.5) * (0.016 * vNorm);
-      const z = zArch + pinwheelCurl + centerDish;
+      // 1. Organic pinwheel spiral twist: leading edge curves upward, trailing edge rolls under
+      const pinwheelCurl = Math.sin(uNorm * Math.PI * 0.5) * (0.028 * Math.pow(vNorm, 0.95));
+
+      // 2. Gentle central dish / canoe concavity (midrib depth)
+      const midribDish = -Math.cos(uNorm * Math.PI * 0.5) * (0.018 * Math.sin(vNorm * Math.PI * 0.85));
+
+      // 3. Subtle organic blade undulation along margin (giving the velvety petal gentle life)
+      const edgeUndulation = (Math.abs(uNorm) > 0.6)
+        ? Math.sin(vNorm * Math.PI * 3.5 + uNorm * 1.5) * 0.005 * vNorm
+        : 0;
+
+      const z = zArch - tipReflex + pinwheelCurl + midribDish + edgeUndulation;
 
       vertices.push(x, y, z);
       uvs.push(u / uSegs, vNorm);
 
-      // Radiating golden sunburst:
-      // Amber core at base, spreading golden yellow into inner 45%, transitioning to porcelain ivory
-      const centerBoost = Math.max(0, 1.0 - Math.abs(uNorm) * 1.3) * 0.12;
-      const effV = Math.max(0, vNorm - centerBoost);
+      // Feathered organic color bleed with soft striae along petal veins
+      const centerFeather = Math.max(0, 1.0 - Math.abs(uNorm) * 1.3) * 0.14;
+      const veinStriae = Math.sin(uNorm * Math.PI * 4.0) * 0.025 * (1.0 - vNorm);
+      const effV = Math.max(0, Math.min(1.0, vNorm - (centerFeather + veinStriae)));
 
       const c = new THREE.Color();
-      if (effV < 0.18) {
-        c.copy(cAmber).lerp(cGold, effV / 0.18);
-      } else if (effV < 0.50) {
-        const t = (effV - 0.18) / 0.32;
-        c.copy(cGold).lerp(cIvory, Math.pow(t, 1.25));
+      if (effV < 0.16) {
+        c.copy(cAmber).lerp(cGold, effV / 0.16);
+      } else if (effV < 0.45) {
+        const t = (effV - 0.16) / 0.29;
+        c.copy(cGold).lerp(cButter, Math.pow(t, 1.15));
+      } else if (effV < 0.75) {
+        const t = (effV - 0.45) / 0.30;
+        c.copy(cButter).lerp(cIvory, Math.pow(t, 1.25));
       } else {
-        c.copy(cIvory);
+        // Soft outer ivory with very subtle warm blush near edges
+        const edgeT = Math.pow(Math.abs(uNorm), 2.0) * 0.35;
+        c.copy(cIvory).lerp(cBlush, edgeT);
       }
       colors.push(c.r, c.g, c.b);
     }
@@ -1375,33 +1398,49 @@ export class ChampaMorphology {
       this.headGroup.add(st);
     }
 
-    // Champa petal material with thick succulent substance, warm sheen and vertex colors
+    // Champa petal material with soft velvety texture, warm sheen and vertex colors
     this.petalMat = new THREE.MeshPhysicalMaterial({
       color: 0xffffff,
       vertexColors: true,
-      roughness: 0.28,
-      metalness: 0.02,
-      sheen: 0.55,
-      sheenColor: new THREE.Color(0xffe6a3),
-      clearcoat: 0.15,
-      clearcoatRoughness: 0.25,
+      roughness: 0.36, // Velvety soft-matte finish
+      metalness: 0.01,
+      sheen: 0.65,
+      sheenColor: new THREE.Color(0xffe8ba), // Warm golden rim glow
+      clearcoat: 0.08, // Subtle waxy natural cuticle
+      clearcoatRoughness: 0.35,
       side: THREE.DoubleSide
     });
 
-    // 5 Spirally Overlapping Pinwheel Petals
-    const petalGeo = createChampaPetalGeometry(0.32, 0.52, 14, 18);
+    // 5 Naturally Varied Pinwheel Petals (subtle biological asymmetry)
+    const petalGeo = createChampaPetalGeometry(0.33, 0.52, 16, 20);
+    const petalVariations = [
+      { rotX: 0.82, rotZ: 0.22, rotYOff: 0.000, scale: 1.00 },
+      { rotX: 0.80, rotZ: 0.24, rotYOff: 0.022, scale: 0.98 },
+      { rotX: 0.84, rotZ: 0.20, rotYOff: -0.018, scale: 1.02 },
+      { rotX: 0.81, rotZ: 0.23, rotYOff: 0.014, scale: 0.99 },
+      { rotX: 0.83, rotZ: 0.21, rotYOff: -0.016, scale: 1.01 },
+    ];
+
     for (let i = 0; i < 5; i++) {
-      const ang = (i / 5) * Math.PI * 2;
+      const v = petalVariations[i];
+      const ang = (i / 5) * Math.PI * 2 + v.rotYOff;
       const holder = new THREE.Group();
       holder.rotation.y = ang;
 
       const mesh = new THREE.Mesh(petalGeo, this.petalMat);
       mesh.castShadow = true;
-      mesh.rotation.x = 0.82;
-      mesh.rotation.z = 0.22; // Spiral pinwheel roll
+      mesh.rotation.x = v.rotX;
+      mesh.rotation.z = v.rotZ;
+      mesh.scale.set(v.scale, v.scale, v.scale);
       holder.add(mesh);
       this.headGroup.add(holder);
-      this.petalHolders.push({ holder, mesh, baseRotX: 0.82, baseRotZ: 0.22 });
+      this.petalHolders.push({
+        holder,
+        mesh,
+        baseRotX: v.rotX,
+        baseRotZ: v.rotZ,
+        baseScale: v.scale
+      });
     }
 
     this.stem.receptacle.add(this.headGroup);
@@ -1414,28 +1453,40 @@ export class ChampaMorphology {
     const fThroatMesh = new THREE.Mesh(fThroatGeo, this.throatMat);
     fGroup.add(fThroatMesh);
 
-    const fGeo = createChampaPetalGeometry(0.28 * scale, 0.44 * scale, 10, 14);
+    const fGeo = createChampaPetalGeometry(0.28 * scale, 0.44 * scale, 12, 16);
     const holders = [];
 
+    const floretVariations = [
+      { rotX: 0.78, rotZ: 0.20, rotYOff: 0.000, scale: 1.00 },
+      { rotX: 0.76, rotZ: 0.22, rotYOff: 0.020, scale: 0.97 },
+      { rotX: 0.80, rotZ: 0.18, rotYOff: -0.018, scale: 1.03 },
+      { rotX: 0.77, rotZ: 0.21, rotYOff: 0.015, scale: 0.98 },
+      { rotX: 0.79, rotZ: 0.19, rotYOff: -0.015, scale: 1.01 }
+    ];
+
     for (let i = 0; i < 5; i++) {
-      const ang = (i / 5) * Math.PI * 2;
+      const v = floretVariations[i];
+      const ang = (i / 5) * Math.PI * 2 + v.rotYOff;
       const holder = new THREE.Group();
       holder.rotation.y = ang;
       const mesh = new THREE.Mesh(fGeo, this.petalMat);
       mesh.castShadow = true;
-      mesh.rotation.x = 0.78;
-      mesh.rotation.z = 0.20;
+      mesh.rotation.x = v.rotX;
+      mesh.rotation.z = v.rotZ;
+      mesh.scale.set(v.scale, v.scale, v.scale);
       holder.add(mesh);
       fGroup.add(holder);
-      holders.push(mesh);
+      holders.push({ mesh, baseRotX: v.rotX, baseRotZ: v.rotZ, baseScale: v.scale });
     }
 
     return {
       group: fGroup,
       setBloom: (b) => {
-        holders.forEach(m => {
-          m.rotation.x = THREE.MathUtils.lerp(0.30, 1.15, b);
-          m.rotation.z = THREE.MathUtils.lerp(0.38, 0.16, b);
+        holders.forEach(h => {
+          h.mesh.rotation.x = THREE.MathUtils.lerp(h.baseRotX * 0.35, h.baseRotX * 1.45, b);
+          h.mesh.rotation.z = THREE.MathUtils.lerp(h.baseRotZ * 1.80, h.baseRotZ * 0.80, b);
+          const s = h.baseScale * THREE.MathUtils.lerp(0.85, 1.05, b);
+          h.mesh.scale.set(s, s, s);
         });
       }
     };
@@ -1450,9 +1501,9 @@ export class ChampaMorphology {
   setBloom(val) {
     this.currentBloom = val;
     this.petalHolders.forEach(p => {
-      p.mesh.rotation.x = THREE.MathUtils.lerp(0.28, 1.22, val);
-      p.mesh.rotation.z = THREE.MathUtils.lerp(0.40, 0.18, val);
-      const s = THREE.MathUtils.lerp(0.85, 1.05, val);
+      p.mesh.rotation.x = THREE.MathUtils.lerp(p.baseRotX * 0.35, p.baseRotX * 1.45, val);
+      p.mesh.rotation.z = THREE.MathUtils.lerp(p.baseRotZ * 1.80, p.baseRotZ * 0.80, val);
+      const s = p.baseScale * THREE.MathUtils.lerp(0.85, 1.05, val);
       p.mesh.scale.set(s, s, s);
     });
 
