@@ -268,14 +268,19 @@ export class InstagramPostcardGenerator {
     const stream = this.canvas.captureStream(fps);
     let mimeType = 'video/webm';
 
-    // Prioritize MP4 if supported by browser MediaRecorder
-    if (typeof MediaRecorder !== 'undefined') {
-      if (MediaRecorder.isTypeSupported('video/mp4;codecs=avc1.42E01E,mp4a.40.2')) {
-        mimeType = 'video/mp4;codecs=avc1.42E01E,mp4a.40.2';
-      } else if (MediaRecorder.isTypeSupported('video/mp4')) {
-        mimeType = 'video/mp4';
-      } else if (MediaRecorder.isTypeSupported('video/webm;codecs=vp9')) {
-        mimeType = 'video/webm;codecs=vp9';
+    // Prioritize MP4 video codecs (never audio codecs on canvas stream)
+    const codecCandidates = [
+      'video/mp4;codecs=avc1.42E01E',
+      'video/mp4;codecs=avc1',
+      'video/mp4',
+      'video/webm;codecs=vp9',
+      'video/webm;codecs=vp8',
+      'video/webm'
+    ];
+    for (const candidate of codecCandidates) {
+      if (typeof MediaRecorder !== 'undefined' && MediaRecorder.isTypeSupported(candidate)) {
+        mimeType = candidate;
+        break;
       }
     }
 
@@ -296,6 +301,11 @@ export class InstagramPostcardGenerator {
       mimeType,
       stop: () => {
         return new Promise((resolve) => {
+          try {
+            if (recorder.state === 'recording') {
+              recorder.requestData();
+            }
+          } catch (_) {}
           recorder.onstop = () => {
             const ext = mimeType.includes('mp4') ? 'mp4' : 'webm';
             const videoBlob = new Blob(chunks, { type: mimeType });

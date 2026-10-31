@@ -475,31 +475,67 @@ export class ChoreographyRecorder {
     this.startTime = performance.now();
     const intervalMs = 1000 / this.fps;
 
-    // Start WebGL Canvas MediaRecorder stream if available
-    const canvas = typeof this.canvasProvider === 'function' ? this.canvasProvider() : this.canvasProvider;
-    if (canvas && typeof canvas.captureStream === 'function' && typeof MediaRecorder !== 'undefined') {
+    // Start Canvas MediaRecorder stream if available
+    const sourceCanvas = typeof this.canvasProvider === 'function' ? this.canvasProvider() : this.canvasProvider;
+    if (sourceCanvas && typeof MediaRecorder !== 'undefined') {
       try {
-        const stream = canvas.captureStream(25);
-        let mime = 'video/webm';
-        // Check for MP4 container support first (supported natively in Safari and modern Chrome)
-        if (MediaRecorder.isTypeSupported('video/mp4;codecs=avc1.42E01E,mp4a.40.2')) {
-          mime = 'video/mp4;codecs=avc1.42E01E,mp4a.40.2';
-        } else if (MediaRecorder.isTypeSupported('video/mp4;codecs=avc1')) {
-          mime = 'video/mp4;codecs=avc1';
-        } else if (MediaRecorder.isTypeSupported('video/mp4')) {
-          mime = 'video/mp4';
-        } else if (MediaRecorder.isTypeSupported('video/webm;codecs=vp9')) {
-          mime = 'video/webm;codecs=vp9';
-        } else if (MediaRecorder.isTypeSupported('video/webm')) {
-          mime = 'video/webm';
+        // Detect portrait vs landscape
+        const isPortrait = sourceCanvas.height > sourceCanvas.width;
+        const targetWidth = isPortrait ? 720 : 1280;
+        const targetHeight = isPortrait ? 1280 : 720;
+
+        // Create standard HD recording canvas (prevents hardware encoder crashes from retina 2160p resolution on iPads)
+        this.recordCanvas = document.createElement('canvas');
+        this.recordCanvas.width = targetWidth;
+        this.recordCanvas.height = targetHeight;
+        this.recordCtx = this.recordCanvas.getContext('2d');
+
+        // Draw initial frame
+        this.recordCtx.drawImage(sourceCanvas, 0, 0, targetWidth, targetHeight);
+
+        // Capture stream from 2D canvas at 25fps
+        const stream = this.recordCanvas.captureStream(25);
+
+        // Select reliable video-only codec (never use audio codecs like mp4a on video-only streams)
+        const codecCandidates = [
+          'video/mp4;codecs=avc1.42E01E',
+          'video/mp4;codecs=avc1',
+          'video/mp4',
+          'video/webm;codecs=vp9',
+          'video/webm;codecs=vp8',
+          'video/webm'
+        ];
+        let mime = '';
+        for (const candidate of codecCandidates) {
+          if (MediaRecorder.isTypeSupported(candidate)) {
+            mime = candidate;
+            break;
+          }
         }
-        this.mediaRecorder = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: 1200000 });
+
+        const options = { videoBitsPerSecond: 1200000 };
+        if (mime) options.mimeType = mime;
+
+        this.mediaRecorder = new MediaRecorder(stream, options);
         this.mediaRecorder.ondataavailable = (e) => {
           if (e.data && e.data.size > 0) {
             this.videoChunks.push(e.data);
           }
         };
         this.mediaRecorder.start(250);
+
+        // Continuous frame pump copying WebGL frames to recording canvas
+        this.recordAnimFrame = null;
+        const pumpFrames = () => {
+          if (!this.isRecording) return;
+          try {
+            if (this.recordCtx && sourceCanvas) {
+              this.recordCtx.drawImage(sourceCanvas, 0, 0, targetWidth, targetHeight);
+            }
+          } catch (_) {}
+          this.recordAnimFrame = requestAnimationFrame(pumpFrames);
+        };
+        this.recordAnimFrame = requestAnimationFrame(pumpFrames);
       } catch (err) {
         console.warn('Canvas MediaRecorder stream capture not initialized:', err);
       }
@@ -545,6 +581,11 @@ export class ChoreographyRecorder {
     this.sampleInterval = null;
     this.isRecording = false;
 
+    if (this.recordAnimFrame) {
+      cancelAnimationFrame(this.recordAnimFrame);
+      this.recordAnimFrame = null;
+    }
+
     // Smooth loop boundary so start and end loop seamlessly
     this.smoothLoopBoundary();
 
@@ -559,10 +600,16 @@ export class ChoreographyRecorder {
     };
 
     if (this.mediaRecorder && this.mediaRecorder.state !== 'inactive') {
+      try {
+        if (this.mediaRecorder.state === 'recording') {
+          this.mediaRecorder.requestData();
+        }
+      } catch (_) {}
       this.mediaRecorder.onstop = () => {
         if (this.videoChunks.length > 0) {
-          const type = this.mediaRecorder.mimeType || 'video/webm';
+          const type = this.mediaRecorder.mimeType || 'video/mp4';
           this.recordedVideoBlob = new Blob(this.videoChunks, { type });
+          console.log(`[ChoreographyRecorder] Video capture complete: ${this.recordedVideoBlob.size} bytes (${(this.recordedVideoBlob.size / 1024 / 1024).toFixed(2)} MB), mime=${type}`);
         }
         finalize();
       };
@@ -596,6 +643,12 @@ export class ChoreographyRecorder {
   cancel() {
     if (this.countdownTimer) clearInterval(this.countdownTimer);
     if (this.sampleInterval) clearInterval(this.sampleInterval);
+    if (this.recordAnimFrame) {
+      cancelAnimationFrame(this.recordAnimFrame);
+      this.recordAnimFrame = null;
+    }
+    this.recordCanvas = null;
+    this.recordCtx = null;
     if (this.mediaRecorder && this.mediaRecorder.state !== 'inactive') {
       try { this.mediaRecorder.stop(); } catch (_) {}
     }

@@ -52,24 +52,51 @@ export default async function handler(req, res) {
 
     const attachments = [];
 
-    // 1. Raw Recorded Choreography Video (MP4)
-    if (videoBase64) {
-      const cleanBase64 = videoBase64.replace(/^data:video\/[a-z0-9]+;base64,/, '');
-      attachments.push({
-        filename: `${safeFileBase}_raw_choreography.mp4`,
-        content: Buffer.from(cleanBase64, 'base64'),
-        contentType: 'video/mp4'
-      });
+    // 1. Raw Recorded Choreography Video (MP4 / WebM)
+    if (videoBase64 && typeof videoBase64 === 'string') {
+      const isWebm = videoBase64.includes('video/webm');
+      const cleanBase64 = videoBase64.replace(/^data:[^;]+;base64,/, '');
+      const videoBuffer = Buffer.from(cleanBase64, 'base64');
+
+      // Ensure file is valid size (more than 15KB)
+      if (videoBuffer.length > 15000) {
+        attachments.push({
+          filename: `${safeFileBase}_raw_choreography.${isWebm ? 'webm' : 'mp4'}`,
+          content: videoBuffer,
+          contentType: isWebm ? 'video/webm' : 'video/mp4'
+        });
+        console.log(`Attached choreography video: ${videoBuffer.length} bytes (${(videoBuffer.length / 1024 / 1024).toFixed(2)} MB)`);
+      } else {
+        console.warn(`Skipping invalid/corrupt video attachment: only ${videoBuffer.length} bytes`);
+      }
     }
 
-    // 2. Vertical 9:16 Instagram Postcard Video (MP4)
-    if (postcardBase64) {
-      const cleanPostcard = postcardBase64.replace(/^data:video\/[a-z0-9]+;base64,/, '');
-      attachments.push({
-        filename: `${safeFileBase}_instagram_postcard_9x16.mp4`,
-        content: Buffer.from(cleanPostcard, 'base64'),
-        contentType: 'video/mp4'
-      });
+    // 2. Vertical 9:16 Instagram Story Postcard (PNG Image or Video)
+    if (postcardBase64 && typeof postcardBase64 === 'string') {
+      const isImage = postcardBase64.startsWith('data:image') || !postcardBase64.includes('video');
+      const isWebm = postcardBase64.includes('video/webm');
+      const cleanPostcard = postcardBase64.replace(/^data:[^;]+;base64,/, '');
+      const postcardBuffer = Buffer.from(cleanPostcard, 'base64');
+
+      if (postcardBuffer.length > 1000) {
+        if (isImage) {
+          attachments.push({
+            filename: `${safeFileBase}_instagram_postcard_9x16.png`,
+            content: postcardBuffer,
+            contentType: 'image/png'
+          });
+          console.log(`Attached Instagram postcard image: ${postcardBuffer.length} bytes (${(postcardBuffer.length / 1024).toFixed(1)} KB)`);
+        } else {
+          attachments.push({
+            filename: `${safeFileBase}_instagram_postcard_9x16.${isWebm ? 'webm' : 'mp4'}`,
+            content: postcardBuffer,
+            contentType: isWebm ? 'video/webm' : 'video/mp4'
+          });
+          console.log(`Attached Instagram postcard video: ${postcardBuffer.length} bytes`);
+        }
+      } else {
+        console.warn(`Skipping invalid postcard attachment: only ${postcardBuffer.length} bytes`);
+      }
     }
 
     const htmlContent = `
@@ -105,10 +132,10 @@ export default async function handler(req, res) {
             Thank you for bringing your movement to the infinite meadow! Your 10-second choreography is now woven into the shared 2,000-flower living garden running live at Devcon.
           </p>
           <div style="background: rgba(56, 189, 248, 0.08); border-radius: 8px; padding: 14px 18px; margin: 18px 0; border-left: 3px solid #38bdf8;">
-            <p style="margin: 0 0 6px 0; font-weight: 600; color: #f8fafc; font-size: 14px;">Attached MP4 Videos:</p>
+            <p style="margin: 0 0 6px 0; font-weight: 600; color: #f8fafc; font-size: 14px;">Attached Files in this Email:</p>
             <ul style="margin: 0; padding-left: 18px; font-size: 13px; color: #94a3b8; line-height: 1.6;">
-              <li><strong>Raw Choreography (.mp4)</strong>: Your 10-second high-resolution 3D bloom.</li>
-              <li><strong>Instagram Story Postcard (.mp4)</strong>: Vertical 9:16 format with Devcon artwork stamp, ready for Instagram Stories, Reels, & TikTok.</li>
+              <li><strong>🎬 Raw Choreography Video (.mp4)</strong>: Your 10-second full dance animation of the living flower.</li>
+              <li><strong>🌸 Instagram Story Postcard (.png)</strong>: High-resolution vertical 9:16 botanical keepsake with Devcon artwork stamp, ready for Instagram Stories, Reels, & Status.</li>
             </ul>
           </div>
           ${videoUrl ? `<p style="font-size: 14px; color: #94a3b8;">You can also stream or download your recorded animation here: <br><a href="${videoUrl}" style="color: #38bdf8; word-break: break-all;">${videoUrl}</a></p>` : ''}

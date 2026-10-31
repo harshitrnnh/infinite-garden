@@ -394,28 +394,28 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (isTabletBloom) {
     // Elevated top-three-quarter view zoomed out so the entire flower (petals, stem, shadow) is fully visible
     if (garden && garden.studioSpherical) {
-      garden.studioSpherical.radius = 4.50; // Zoomed out more so top bloom is fully visible below header
-      garden.targetStudioSpherical.radius = 4.50;
-      garden.studioSpherical.phi = 1.08; // Elevated angle looking down into the petals
-      garden.targetStudioSpherical.phi = 1.08;
-      garden.studioSpherical.theta = 0.05; // Centered
-      garden.targetStudioSpherical.theta = 0.05;
+      garden.studioSpherical.radius = 4.85; // Zoomed out so bloom and root are fully visible with comfortable margins
+      garden.targetStudioSpherical.radius = 4.85;
+      garden.studioSpherical.phi = 1.15; // Elevated 3/4 angle looking into petals
+      garden.targetStudioSpherical.phi = 1.15;
+      garden.studioSpherical.theta = 0.04; // Centered
+      garden.targetStudioSpherical.theta = 0.04;
 
       if (garden.studioLookAt) {
-        garden.studioLookAt.set(0, 0.76, 0); // Lowered center so bloom petals clear the header bar
+        garden.studioLookAt.set(0, 1.05, 0); // Center upper flower so bloom petals clear header
       }
       if (garden.currentStudioLook) {
-        garden.currentStudioLook.set(0, 0.76, 0);
+        garden.currentStudioLook.set(0, 1.05, 0);
       }
     }
 
     // Reset view helper
     const resetFlowerView = () => {
       if (garden && garden.targetStudioSpherical) {
-        garden.targetStudioSpherical.radius = 4.50;
-        garden.targetStudioSpherical.phi = 1.08;
-        garden.targetStudioSpherical.theta = 0.05;
-        if (garden.studioLookAt) garden.studioLookAt.set(0, 0.76, 0);
+        garden.targetStudioSpherical.radius = 4.85;
+        garden.targetStudioSpherical.phi = 1.15;
+        garden.targetStudioSpherical.theta = 0.04;
+        if (garden.studioLookAt) garden.studioLookAt.set(0, 1.05, 0);
       }
     };
 
@@ -884,13 +884,25 @@ document.addEventListener('DOMContentLoaded', async () => {
       };
 
       let rawVideoBase64 = null;
-      let postcardVideoBase64 = null;
+      let postcardImageBase64 = null;
 
       if (lastRecordedChoreography.videoBlob) {
         rawVideoBase64 = await blobToBase64(lastRecordedChoreography.videoBlob);
       }
 
-      // First attempt: Send with both or raw video
+      // Generate high-resolution 9:16 vertical Instagram Story Postcard image
+      try {
+        const meta = getPostcardMeta();
+        instagramPostcard.renderFrame(garden.renderer?.domElement, meta, currentQrImageElement);
+        const still = await instagramPostcard.exportStillPostcardPNG();
+        if (still && still.dataUrl) {
+          postcardImageBase64 = still.dataUrl;
+        }
+      } catch (postErr) {
+        console.warn('Postcard generation for email warning:', postErr);
+      }
+
+      // First attempt: Send with both raw video and 9:16 postcard
       let response = await fetch('/api/send-email', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -900,13 +912,13 @@ document.addEventListener('DOMContentLoaded', async () => {
           choreographer: choreographerName,
           species: currentSpecies,
           videoBase64: rawVideoBase64,
-          postcardBase64: postcardVideoBase64
+          postcardBase64: postcardImageBase64
         })
       });
 
-      // Fallback: If payload exceeded Vercel 4.5MB threshold, send immediate email with confirmation & link
+      // Fallback: If payload exceeded Vercel 4.5MB threshold, send postcard or video
       if (response.status === 413 || !response.ok) {
-        console.warn('Retrying email dispatch in compact stream mode...');
+        console.warn('Retrying email dispatch in optimized mode...');
         response = await fetch('/api/send-email', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -914,9 +926,23 @@ document.addEventListener('DOMContentLoaded', async () => {
             toEmail: visitorEmail,
             flowerName,
             choreographer: choreographerName,
-            species: currentSpecies
+            species: currentSpecies,
+            postcardBase64: postcardImageBase64,
+            videoBase64: rawVideoBase64 ? rawVideoBase64 : undefined
           })
         });
+        if (!response.ok) {
+          response = await fetch('/api/send-email', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              toEmail: visitorEmail,
+              flowerName,
+              choreographer: choreographerName,
+              species: currentSpecies
+            })
+          });
+        }
       }
 
       return response.ok;
@@ -1060,58 +1086,17 @@ document.addEventListener('DOMContentLoaded', async () => {
         localStorage.setItem('botanical_garden_email_dispatches', JSON.stringify(dispatches));
       } catch (_) {}
 
-      // Asynchronously trigger serverless email dispatch with video
-      (async () => {
-        try {
-          const blobToBase64 = (blob) => {
-            return new Promise((resolve) => {
-              const reader = new FileReader();
-              reader.onloadend = () => resolve(reader.result);
-              reader.readAsDataURL(blob);
-            });
-          };
-
-          let rawVideoBase64 = null;
-          if (lastRecordedChoreography.videoBlob) {
-            rawVideoBase64 = await blobToBase64(lastRecordedChoreography.videoBlob);
-          }
-
-          let response = await fetch('/api/send-email', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              toEmail: visitorEmail,
-              flowerName: flowerName,
-              choreographer: choreographerName,
-              species: currentSpecies,
-              videoBase64: rawVideoBase64
-            })
-          });
-
-          if (response.status === 413 || !response.ok) {
-            console.warn('Retrying email dispatch without large attachment...');
-            response = await fetch('/api/send-email', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                toEmail: visitorEmail,
-                flowerName: flowerName,
-                choreographer: choreographerName,
-                species: currentSpecies
-              })
-            });
-          }
-
-          if (response.ok) {
-            console.log('Choreography email sent successfully to', visitorEmail);
-          }
-        } catch (err) {
-          console.warn('Could not dispatch email:', err);
+      // Asynchronously trigger serverless email dispatch with raw video and 9:16 postcard
+      dispatchVisitorEmail(flowerName, choreographerName, visitorEmail).then((ok) => {
+        if (ok) {
+          console.log('Choreography email sent successfully to', visitorEmail);
+        } else {
+          console.warn('Choreography email dispatch failed for', visitorEmail);
         }
-      })();
+      });
 
       if (toastMessage) {
-        toastMessage.innerHTML = `Saved recording to disk & emailed 10-second animation video of "<strong>${flowerName}</strong>" to <strong>${visitorEmail}</strong>.`;
+        toastMessage.innerHTML = `Saved recording to disk & emailed 10-second animation video and postcard of "<strong>${flowerName}</strong>" to <strong>${visitorEmail}</strong>.`;
       }
     } else {
       if (toastMessage) {
