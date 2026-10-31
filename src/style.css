@@ -2729,14 +2729,361 @@ body.choreography-split-view {
 
 /* RESPONSIVE HANDLING FOR SMALL SCREENS */
 @media (max-width: 860px) {
-  .split-viewport {
+  body:not(.tablet-bloom-view) .split-viewport {
     flex-direction: column;
   }
-  .split-divider {
+  body:not(.tablet-bloom-view) .split-divider {
     width: 100%;
     height: 2px;
   }
-  .species-selector-strip {
+  body:not(.tablet-bloom-view) .species-selector-strip {
     display: none;
+  }
+}
+
+/* ==========================================================================
+   TABLET BLOOM: VERTICAL TABLET / IPAD FULLSCREEN FLOWER & INLET DANCER VIEW
+   ========================================================================== */
+.tablet-bloom-view {
+  overflow: hidden;
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+}
+
+.tablet-bloom-view .tablet-main-viewport {
+  position: absolute;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  display: block !important;
+  flex-direction: unset !important;
+  background: #080c0a;
+  z-index: 1;
+}
+
+/* Fullscreen Flower Organism (100% of Viewport) */
+.tablet-bloom-view .tablet-fullscreen-flower {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  flex: unset !important;
+  z-index: 1;
+  background: radial-gradient(circle at 50% 45%, #c8dac9 0%, #9cb39d 100%);
+}
+
+.tablet-bloom-view #canvas-container {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  z-index: 1;
+}
+
+.tablet-bloom-view .tablet-flower-badge {
+  position: absolute;
+  top: 76px;
+  left: 20px;
+  z-index: 25;
+  background: rgba(14, 24, 18, 0.78);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  padding: 8px 16px;
+  border-radius: 9999px;
+  font-size: 0.82rem;
+  letter-spacing: 0.08em;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+}
+
+.tablet-bloom-view .tablet-orbit-hint {
+  position: absolute;
+  bottom: 110px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 25;
+  background: rgba(10, 18, 14, 0.65);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(8px);
+  padding: 6px 14px;
+  border-radius: 9999px;
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+/* FLOATING DANCER INLET (Picture-in-Picture) */
+.tablet-bloom-view .tablet-camera-inlet {
+  position: fixed !important;
+  top: 76px;
+  right: 20px;
+  left: auto;
+  bottom: auto;
+  width: 230px !important;
+  height: 310px !important;
+  max-width: 40vw;
+  max-height: 40vh;
+  flex: unset !important;
+  border-radius: 20px;
+  overflow: hidden;
+  background: rgba(8, 14, 10, 0.88);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1.5px solid rgba(255, 255, 255, 0.22);
+  box-shadow: 0 16px 45px rgba(0, 0, 0, 0.8), 0 0 25px rgba(115, 212, 168, 0.18);
+  z-index: 60;
+  display: flex !important;
+  flex-direction: column !important;
+  transition: width 0.28s cubic-bezier(0.16, 1, 0.3, 1),
+              height 0.28s cubic-bezier(0.16, 1, 0.3, 1),
+              top 0.28s ease, right 0.28s ease, left 0.28s ease,
+              box-shadow 0.28s ease;
+}
+
+/* Corner switch (Top-Left position) */
+.tablet-bloom-view .tablet-camera-inlet.corner-left {
+  right: auto !important;
+  left: 20px !important;
+}
+
+/* Minimized Floating Pill State */
+.tablet-bloom-view .tablet-camera-inlet.minimized {
+  height: 44px !important;
+  width: 175px !important;
+  border-radius: 9999px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+}
+
+.tablet-bloom-view .tablet-camera-inlet.minimized .inlet-camera-stage,
+.tablet-bloom-view .tablet-camera-inlet.minimized .inlet-bottom-footer,
+.tablet-bloom-view .tablet-camera-inlet.minimized .inlet-zoom-controls,
+.tablet-bloom-view .tablet-camera-inlet.minimized .inlet-text-btn,
+.tablet-bloom-view .tablet-camera-inlet.minimized #inlet-corner-toggle {
+  display: none !important;
+}
+
+/* Inlet Top Control Bar */
+.inlet-top-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background: rgba(5, 10, 7, 0.7);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  gap: 6px;
+  user-select: none;
+}
+
+.inlet-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.inlet-title {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #c8dacb;
+  white-space: nowrap;
+}
+
+.inlet-action-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Zoom Controls inside Inlet */
+.inlet-zoom-controls {
+  display: flex;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 6px;
+  padding: 1px 3px;
+  gap: 2px;
+}
+
+.inlet-zoom-label {
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: #a4ceb5;
+  min-width: 24px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.inlet-tool-btn {
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.85);
+  cursor: pointer;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 2px 5px;
+  border-radius: 4px;
+  transition: background 0.15s, color 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.inlet-tool-btn:hover {
+  background: rgba(255, 255, 255, 0.16);
+  color: #ffffff;
+}
+
+.inlet-text-btn {
+  background: rgba(92, 184, 143, 0.15);
+  border: 1px solid rgba(92, 184, 143, 0.35);
+  font-size: 0.65rem;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 5px;
+  color: #79ddae;
+}
+
+.inlet-text-btn:hover {
+  background: rgba(92, 184, 143, 0.28);
+}
+
+/* Inlet Camera Stage */
+.inlet-camera-stage {
+  position: relative;
+  flex: 1;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: #020403;
+}
+
+/* Wide-Angle Framing (object-fit: contain ensures entire head to feet are visible) */
+.tablet-bloom-view .inlet-camera-stage video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  transform: scaleX(-1) scale(var(--cam-zoom, 0.85));
+  transform-origin: center center;
+  filter: brightness(0.7) contrast(1.15) saturate(0.9);
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.tablet-bloom-view .inlet-camera-stage canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  transform: scaleX(-1) scale(var(--cam-zoom, 0.85));
+  transform-origin: center center;
+  pointer-events: none;
+  z-index: 2;
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Optional crop fill override when toggled by user */
+.tablet-bloom-view .tablet-camera-inlet.inlet-fit-cover .inlet-camera-stage video,
+.tablet-bloom-view .tablet-camera-inlet.inlet-fit-cover .inlet-camera-stage canvas {
+  object-fit: cover;
+  transform: scaleX(-1) scale(var(--cam-zoom, 1.0));
+}
+
+.inlet-bottom-footer {
+  padding: 4px 10px;
+  background: rgba(4, 8, 6, 0.75);
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  text-align: center;
+}
+
+.inlet-hint-text {
+  font-size: 0.65rem;
+  color: rgba(180, 205, 190, 0.75);
+  letter-spacing: 0.02em;
+}
+
+/* Header & Species Pill Strip for Tablet */
+.tablet-studio-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  z-index: 30;
+  padding: 14px 20px;
+  background: linear-gradient(180deg, rgba(8, 14, 10, 0.85) 0%, rgba(8, 14, 10, 0) 100%);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.tablet-bloom-view .tablet-species-strip {
+  display: flex !important;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  max-width: 55vw;
+  padding: 4px 8px;
+  gap: 6px;
+  scrollbar-width: none;
+}
+
+.tablet-bloom-view .tablet-species-strip::-webkit-scrollbar {
+  display: none;
+}
+
+.split-nav-btn {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+/* Bottom Recording Controls for Tablet */
+.tablet-studio-footer {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100vw;
+  padding: 24px 20px 36px 20px;
+  display: flex;
+  justify-content: center;
+  z-index: 35;
+  pointer-events: none;
+  background: linear-gradient(0deg, rgba(6, 12, 9, 0.85) 0%, rgba(6, 12, 9, 0) 100%);
+}
+
+.tablet-bloom-view .tablet-record-btn {
+  pointer-events: auto;
+  font-size: 1.15rem;
+  padding: 16px 42px;
+  border-radius: 9999px;
+  box-shadow: 0 12px 35px rgba(224, 109, 83, 0.5), 0 0 0 2px rgba(255, 255, 255, 0.3);
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.15s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.15s ease;
+}
+
+.tablet-bloom-view .tablet-record-btn:active {
+  transform: translateY(2px) scale(0.97);
+}
+
+@media (max-width: 600px) {
+  .tablet-bloom-view .tablet-camera-inlet {
+    width: 180px !important;
+    height: 240px !important;
+    top: 68px;
+    right: 12px;
+  }
+  .tablet-bloom-view .tablet-species-strip {
+    max-width: 45vw;
   }
 }

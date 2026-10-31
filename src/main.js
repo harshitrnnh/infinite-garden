@@ -387,6 +387,91 @@ document.addEventListener('DOMContentLoaded', async () => {
   fullscreenBtn.addEventListener('click', toggleFullScreen);
 
   // -----------------------------------------------------------------------------------
+  // TABLET BLOOM VIEWPORT & INLET CONTROLS (Vertical iPad Fullscreen Flower + Inlet Skeleton)
+  // -----------------------------------------------------------------------------------
+  const isTabletBloom = window.location.pathname.includes('tablet-bloom') || document.body.classList.contains('tablet-bloom-view');
+
+  if (isTabletBloom) {
+    // Zoom out the 3D flower camera slightly to perfectly frame the bloom in portrait mode
+    if (garden && garden.studioSpherical) {
+      garden.studioSpherical.radius = 3.35;
+      garden.targetStudioSpherical.radius = 3.35;
+    }
+
+    const cameraPane = document.getElementById('camera-pane');
+    const fovToggleBtn = document.getElementById('inlet-fov-toggle');
+    const fovLabel = document.getElementById('fov-label');
+    const cornerToggleBtn = document.getElementById('inlet-corner-toggle');
+    const minToggleBtn = document.getElementById('inlet-minimize-toggle');
+    const minIcon = document.getElementById('min-icon');
+    const zoomInBtn = document.getElementById('inlet-zoom-in');
+    const zoomOutBtn = document.getElementById('inlet-zoom-out');
+    const zoomValLabel = document.getElementById('inlet-zoom-val');
+
+    let currentZoom = 0.85; // Default wide framing for nearby full body capture
+    let isFullBodyMode = true; // Default object-fit: contain
+
+    const applyZoomStyle = () => {
+      if (cameraPane) {
+        cameraPane.style.setProperty('--cam-zoom', currentZoom);
+      }
+      if (zoomValLabel) {
+        zoomValLabel.textContent = `${Math.round(currentZoom * 100)}%`;
+      }
+    };
+    applyZoomStyle();
+
+    if (fovToggleBtn) {
+      fovToggleBtn.addEventListener('click', () => {
+        isFullBodyMode = !isFullBodyMode;
+        if (cameraPane) {
+          cameraPane.classList.toggle('inlet-fit-cover', !isFullBodyMode);
+        }
+        if (fovLabel) {
+          fovLabel.textContent = isFullBodyMode ? 'Wide' : 'Fill';
+        }
+      });
+    }
+
+    if (zoomOutBtn) {
+      zoomOutBtn.addEventListener('click', () => {
+        currentZoom = Math.max(0.60, +(currentZoom - 0.10).toFixed(2));
+        applyZoomStyle();
+        if (tracker && typeof tracker.setHardwareZoom === 'function') {
+          tracker.setHardwareZoom(currentZoom);
+        }
+      });
+    }
+
+    if (zoomInBtn) {
+      zoomInBtn.addEventListener('click', () => {
+        currentZoom = Math.min(1.40, +(currentZoom + 0.10).toFixed(2));
+        applyZoomStyle();
+        if (tracker && typeof tracker.setHardwareZoom === 'function') {
+          tracker.setHardwareZoom(currentZoom);
+        }
+      });
+    }
+
+    if (cornerToggleBtn) {
+      cornerToggleBtn.addEventListener('click', () => {
+        if (cameraPane) {
+          cameraPane.classList.toggle('corner-left');
+        }
+      });
+    }
+
+    if (minToggleBtn) {
+      minToggleBtn.addEventListener('click', () => {
+        if (cameraPane) {
+          const isMin = cameraPane.classList.toggle('minimized');
+          if (minIcon) minIcon.textContent = isMin ? '+' : '−';
+        }
+      });
+    }
+  }
+
+  // -----------------------------------------------------------------------------------
   // HEADER ACTION BUTTONS (TV LAUNCH & HOW-TO-RECORD GUIDE MODAL)
   // -----------------------------------------------------------------------------------
   const launchTvBtn = document.getElementById('launch-tv-btn');

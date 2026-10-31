@@ -128,14 +128,46 @@ export class BodyTracker {
     this.onStatusChange('prompt', 'Please allow camera access in the browser prompt...');
 
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: {
-          width: { ideal: 640 },
-          height: { ideal: 480 },
-          facingMode: 'user'
-        },
-        audio: false
-      });
+      // Request wide angle resolution (orientation-aware) to capture nearby full body
+      const isPortrait = window.innerHeight > window.innerWidth;
+      const videoConstraints = {
+        facingMode: 'user',
+        width: isPortrait ? { ideal: 720, min: 480 } : { ideal: 1280, min: 640 },
+        height: isPortrait ? { ideal: 1280, min: 480 } : { ideal: 720, min: 480 }
+      };
+
+      let stream;
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: videoConstraints,
+          audio: false
+        });
+      } catch (constraintErr) {
+        console.warn('Advanced camera constraints failed, attempting fallback:', constraintErr);
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: 'user' },
+          audio: false
+        });
+      }
+
+      this.stream = stream;
+      this.videoTrack = stream.getVideoTracks()[0] || null;
+
+      // Unclamp hardware camera zoom to minimum (widest possible angle / ultra-wide on iPad)
+      if (this.videoTrack && typeof this.videoTrack.getCapabilities === 'function') {
+        const caps = this.videoTrack.getCapabilities();
+        if (caps.zoom) {
+          try {
+            const minZoom = caps.zoom.min !== undefined ? caps.zoom.min : 1.0;
+            await this.videoTrack.applyConstraints({
+              advanced: [{ zoom: minZoom }]
+            });
+            console.log('Applied camera hardware minimum zoom (wide angle):', minZoom);
+          } catch (zoomErr) {
+            console.warn('Could not set hardware zoom:', zoomErr);
+          }
+        }
+      }
 
       this.video.srcObject = stream;
       await new Promise((resolve, reject) => {
@@ -164,6 +196,24 @@ export class BodyTracker {
         this.onStatusChange('fallback', `Camera error: ${err.message || 'Unavailable'}`);
       }
     }
+  }
+
+  async setHardwareZoom(zoomVal) {
+    if (this.videoTrack && typeof this.videoTrack.getCapabilities === 'function') {
+      const caps = this.videoTrack.getCapabilities();
+      if (caps.zoom) {
+        const clampedZoom = Math.max(caps.zoom.min, Math.min(caps.zoom.max, zoomVal));
+        try {
+          await this.videoTrack.applyConstraints({
+            advanced: [{ zoom: clampedZoom }]
+          });
+          return clampedZoom;
+        } catch (e) {
+          console.warn('Failed to apply hardware zoom:', e);
+        }
+      }
+    }
+    return null;
   }
 
   async toggleCamera() {
