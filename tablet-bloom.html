@@ -73,9 +73,51 @@
 
       <!-- Inlet Bottom Footer / iPad Center Stage Hint -->
       <div class="inlet-bottom-footer">
-        <span class="inlet-hint-text">💡 Full body • Stand 3–5 ft back</span>
+        <button class="inlet-tip-btn" id="inlet-centerstage-tip-btn" title="How to unlock ultra-wide full body view">
+          <span>⚡ Unlock Full Body (Center Stage)</span>
+        </button>
       </div>
     </aside>
+
+    <!-- Center Stage 2-Step Ultra-Wide Visual Guide Modal -->
+    <div class="centerstage-modal-backdrop hidden" id="centerstage-modal">
+      <div class="centerstage-modal-card">
+        <div class="modal-header">
+          <span class="modal-badge">📸 iPad Camera Zoom Guide</span>
+          <button class="modal-close-btn" id="centerstage-close-btn">&times;</button>
+        </div>
+        <h3 class="modal-title">Unlock 122° Ultra-Wide View</h3>
+        <p class="modal-desc">iPads automatically turn on Apple's "Center Stage", which crops in 2.5x on your face. Turn it off in 2 seconds to see your full body:</p>
+        
+        <div class="centerstage-steps">
+          <div class="cs-step">
+            <span class="cs-step-num">1</span>
+            <div class="cs-step-text">
+              <strong>Swipe down from top-right corner</strong>
+              <span>Pull down from the battery/Wi-Fi indicator to open iPad Control Center.</span>
+            </div>
+          </div>
+          <div class="cs-step">
+            <span class="cs-step-num">2</span>
+            <div class="cs-step-text">
+              <strong>Tap "Video Effects"</strong>
+              <span>At the top of Control Center, tap the Video Effects button.</span>
+            </div>
+          </div>
+          <div class="cs-step">
+            <span class="cs-step-num">3</span>
+            <div class="cs-step-text">
+              <strong>Turn "Center Stage" OFF</strong>
+              <span>Tap Center Stage to turn it OFF. Your camera will instantly zoom out to ultra-wide full body view!</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button class="hud-btn primary glow-btn" id="centerstage-gotit-btn" style="width: 100%;">Got it! ✨</button>
+        </div>
+      </div>
+    </div>
 
     <!-- Dummy divider hidden in CSS for backward-compatibility with main.js -->
     <div class="split-divider" style="display:none !important;"></div>
@@ -366,3 +408,4 @@
   <script type="module" src="./src/main.js"></script>
 </body>
 </html>
+

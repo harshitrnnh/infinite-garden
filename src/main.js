@@ -408,18 +408,22 @@ document.addEventListener('DOMContentLoaded', async () => {
     const zoomOutBtn = document.getElementById('inlet-zoom-out');
     const zoomValLabel = document.getElementById('inlet-zoom-val');
 
-    let currentZoom = 0.85; // Default wide framing for nearby full body capture
-    let isFullBodyMode = true; // Default object-fit: contain
-
-    const applyZoomStyle = () => {
-      if (cameraPane) {
-        cameraPane.style.setProperty('--cam-zoom', currentZoom);
-      }
-      if (zoomValLabel) {
-        zoomValLabel.textContent = `${Math.round(currentZoom * 100)}%`;
+    // Automatically adapt inlet stage to match camera native aspect ratio
+    const updateInletAspectRatio = () => {
+      if (tracker.video && tracker.video.videoWidth > 0 && tracker.video.videoHeight > 0) {
+        const inletStage = document.getElementById('inlet-stage');
+        if (inletStage) {
+          inletStage.style.aspectRatio = `${tracker.video.videoWidth} / ${tracker.video.videoHeight}`;
+        }
       }
     };
-    applyZoomStyle();
+    if (tracker.video) {
+      tracker.video.addEventListener('loadedmetadata', updateInletAspectRatio);
+      tracker.video.addEventListener('play', updateInletAspectRatio);
+      tracker.video.addEventListener('resize', updateInletAspectRatio);
+    }
+
+    let isFullBodyMode = true; // Default object-fit: contain (exact 1:1 skeleton alignment)
 
     if (fovToggleBtn) {
       fovToggleBtn.addEventListener('click', () => {
@@ -433,22 +437,27 @@ document.addEventListener('DOMContentLoaded', async () => {
       });
     }
 
+    let currentHardwareZoom = 1.0;
     if (zoomOutBtn) {
-      zoomOutBtn.addEventListener('click', () => {
-        currentZoom = Math.max(0.60, +(currentZoom - 0.10).toFixed(2));
-        applyZoomStyle();
+      zoomOutBtn.addEventListener('click', async () => {
+        currentHardwareZoom = Math.max(0.5, +(currentHardwareZoom - 0.2).toFixed(1));
         if (tracker && typeof tracker.setHardwareZoom === 'function') {
-          tracker.setHardwareZoom(currentZoom);
+          const applied = await tracker.setHardwareZoom(currentHardwareZoom);
+          if (applied !== null && zoomValLabel) {
+            zoomValLabel.textContent = `${applied.toFixed(1)}x`;
+          }
         }
       });
     }
 
     if (zoomInBtn) {
-      zoomInBtn.addEventListener('click', () => {
-        currentZoom = Math.min(1.40, +(currentZoom + 0.10).toFixed(2));
-        applyZoomStyle();
+      zoomInBtn.addEventListener('click', async () => {
+        currentHardwareZoom = Math.min(2.5, +(currentHardwareZoom + 0.2).toFixed(1));
         if (tracker && typeof tracker.setHardwareZoom === 'function') {
-          tracker.setHardwareZoom(currentZoom);
+          const applied = await tracker.setHardwareZoom(currentHardwareZoom);
+          if (applied !== null && zoomValLabel) {
+            zoomValLabel.textContent = `${applied.toFixed(1)}x`;
+          }
         }
       });
     }
@@ -467,6 +476,28 @@ document.addEventListener('DOMContentLoaded', async () => {
           const isMin = cameraPane.classList.toggle('minimized');
           if (minIcon) minIcon.textContent = isMin ? '+' : '−';
         }
+      });
+    }
+
+    // Center Stage Guide Modal Toggle
+    const csTipBtn = document.getElementById('inlet-centerstage-tip-btn');
+    const csModal = document.getElementById('centerstage-modal');
+    const csCloseBtn = document.getElementById('centerstage-close-btn');
+    const csGotItBtn = document.getElementById('centerstage-gotit-btn');
+
+    if (csTipBtn && csModal) {
+      csTipBtn.addEventListener('click', () => {
+        csModal.classList.remove('hidden');
+      });
+    }
+    if (csCloseBtn && csModal) {
+      csCloseBtn.addEventListener('click', () => {
+        csModal.classList.add('hidden');
+      });
+    }
+    if (csGotItBtn && csModal) {
+      csGotItBtn.addEventListener('click', () => {
+        csModal.classList.add('hidden');
       });
     }
   }

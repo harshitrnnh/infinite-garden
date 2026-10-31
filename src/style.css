@@ -2974,10 +2974,9 @@ body.choreography-split-view {
   width: 100%;
   height: 100%;
   object-fit: contain;
-  transform: scaleX(-1) scale(var(--cam-zoom, 0.85));
+  transform: scaleX(-1);
   transform-origin: center center;
   filter: brightness(0.7) contrast(1.15) saturate(0.9);
-  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .tablet-bloom-view .inlet-camera-stage canvas {
@@ -2986,31 +2985,121 @@ body.choreography-split-view {
   width: 100%;
   height: 100%;
   object-fit: contain;
-  transform: scaleX(-1) scale(var(--cam-zoom, 0.85));
+  transform: scaleX(-1);
   transform-origin: center center;
   pointer-events: none;
   z-index: 2;
-  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 /* Optional crop fill override when toggled by user */
 .tablet-bloom-view .tablet-camera-inlet.inlet-fit-cover .inlet-camera-stage video,
 .tablet-bloom-view .tablet-camera-inlet.inlet-fit-cover .inlet-camera-stage canvas {
   object-fit: cover;
-  transform: scaleX(-1) scale(var(--cam-zoom, 1.0));
+  transform: scaleX(-1);
 }
 
 .inlet-bottom-footer {
-  padding: 4px 10px;
-  background: rgba(4, 8, 6, 0.75);
+  padding: 6px 10px;
+  background: rgba(4, 8, 6, 0.85);
   border-top: 1px solid rgba(255, 255, 255, 0.06);
   text-align: center;
 }
 
-.inlet-hint-text {
-  font-size: 0.65rem;
-  color: rgba(180, 205, 190, 0.75);
-  letter-spacing: 0.02em;
+.inlet-tip-btn {
+  background: rgba(92, 184, 143, 0.15);
+  border: 1px solid rgba(92, 184, 143, 0.35);
+  color: #8ce4b7;
+  font-size: 0.68rem;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 9999px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  transition: all 0.2s ease;
+}
+
+.inlet-tip-btn:hover {
+  background: rgba(92, 184, 143, 0.28);
+  color: #ffffff;
+}
+
+/* Center Stage Modal Guide */
+.centerstage-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.centerstage-modal-backdrop.hidden {
+  display: none !important;
+}
+
+.centerstage-modal-card {
+  width: 90%;
+  max-width: 460px;
+  background: linear-gradient(165deg, rgba(20, 36, 28, 0.98), rgba(10, 18, 14, 0.98));
+  border: 1.5px solid rgba(115, 212, 168, 0.45);
+  border-radius: 20px;
+  padding: 26px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8), 0 0 35px rgba(115, 212, 168, 0.2);
+  color: #fff;
+}
+
+.centerstage-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 18px 0 24px 0;
+}
+
+.cs-step {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  padding: 10px 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.cs-step-num {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--accent-emerald);
+  color: #000;
+  font-weight: 700;
+  font-size: 0.78rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.cs-step-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.cs-step-text strong {
+  font-size: 0.82rem;
+  color: #fff;
+}
+
+.cs-step-text span {
+  font-size: 0.74rem;
+  color: var(--text-secondary);
+  line-height: 1.4;
 }
 
 /* Header & Species Pill Strip for Tablet */

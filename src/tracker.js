@@ -128,12 +128,11 @@ export class BodyTracker {
     this.onStatusChange('prompt', 'Please allow camera access in the browser prompt...');
 
     try {
-      // Request wide angle resolution (orientation-aware) to capture nearby full body
-      const isPortrait = window.innerHeight > window.innerWidth;
+      // Request full wide angle camera resolution without forced narrow portrait cropping
       const videoConstraints = {
         facingMode: 'user',
-        width: isPortrait ? { ideal: 720, min: 480 } : { ideal: 1280, min: 640 },
-        height: isPortrait ? { ideal: 1280, min: 480 } : { ideal: 720, min: 480 }
+        width: { ideal: 1920, min: 640 },
+        height: { ideal: 1440, min: 480 }
       };
 
       let stream;
@@ -177,9 +176,9 @@ export class BodyTracker {
         setTimeout(() => resolve(), 3000); // Guard timeout
       });
 
-      if (this.skeletonCanvas) {
-        this.skeletonCanvas.width = this.video.videoWidth || 640;
-        this.skeletonCanvas.height = this.video.videoHeight || 480;
+      if (this.skeletonCanvas && this.video.videoWidth > 0) {
+        this.skeletonCanvas.width = this.video.videoWidth;
+        this.skeletonCanvas.height = this.video.videoHeight;
       }
 
       this.hasCameraAccess = true;
@@ -364,6 +363,17 @@ export class BodyTracker {
     ) {
       if (this.video.currentTime !== this.lastVideoTime) {
         this.lastVideoTime = this.video.currentTime;
+
+        // Ensure skeleton canvas matches the exact video resolution every frame
+        if (this.skeletonCanvas && this.video.videoWidth > 0 && this.video.videoHeight > 0) {
+          if (
+            this.skeletonCanvas.width !== this.video.videoWidth ||
+            this.skeletonCanvas.height !== this.video.videoHeight
+          ) {
+            this.skeletonCanvas.width = this.video.videoWidth;
+            this.skeletonCanvas.height = this.video.videoHeight;
+          }
+        }
 
         // Ensure strictly increasing integer timestamps for MediaPipe graph
         let currentTimestamp = Math.floor(performance.now());
