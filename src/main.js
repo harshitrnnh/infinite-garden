@@ -796,12 +796,14 @@ document.addEventListener('DOMContentLoaded', async () => {
       localStorage.setItem('botanical_garden_user_plants', JSON.stringify(filtered.slice(0, 50)));
     } catch (_) {}
 
-    // Configure downloadable 10s video link in toast notification
+    // Configure downloadable video link in toast notification
     if (lastRecordedChoreography.videoBlob && toastDownloadBtn) {
+      const isMp4 = lastRecordedChoreography.videoBlob.type.includes('mp4');
+      const ext = isMp4 ? 'mp4' : 'mp4'; // default extension for universal mobile opening
       const safeName = flowerName.replace(/[^a-zA-Z0-9_-]/g, '_');
       const videoUrl = URL.createObjectURL(lastRecordedChoreography.videoBlob);
       toastDownloadBtn.href = videoUrl;
-      toastDownloadBtn.download = `${safeName}_10s_dance.webm`;
+      toastDownloadBtn.download = `${safeName}_10s_dance.${ext}`;
       toastDownloadBtn.style.display = 'inline-flex';
     }
 
@@ -823,17 +825,37 @@ document.addEventListener('DOMContentLoaded', async () => {
         localStorage.setItem('botanical_garden_email_dispatches', JSON.stringify(dispatches));
       } catch (_) {}
 
-      // Asynchronously trigger serverless email dispatch
+      // Asynchronously trigger serverless email dispatch with both raw video & Instagram postcard
       (async () => {
         try {
-          let videoBase64 = null;
-          if (lastRecordedChoreography.videoBlob) {
-            // Convert blob to base64 for direct inline email attachment
-            videoBase64 = await new Promise((resolve) => {
+          const blobToBase64 = (blob) => {
+            return new Promise((resolve) => {
               const reader = new FileReader();
               reader.onloadend = () => resolve(reader.result);
-              reader.readAsDataURL(lastRecordedChoreography.videoBlob);
+              reader.readAsDataURL(blob);
             });
+          };
+
+          let rawVideoBase64 = null;
+          let postcardVideoBase64 = null;
+
+          if (lastRecordedChoreography.videoBlob) {
+            rawVideoBase64 = await blobToBase64(lastRecordedChoreography.videoBlob);
+
+            // Composite 9:16 Instagram Story video postcard
+            try {
+              const meta = getPostcardMeta();
+              const postcardResult = await instagramPostcard.compositeVideoFromBlob(
+                lastRecordedChoreography.videoBlob,
+                meta,
+                currentQrDownloadUrl
+              );
+              if (postcardResult && postcardResult.videoBlob) {
+                postcardVideoBase64 = await blobToBase64(postcardResult.videoBlob);
+              }
+            } catch (errPostcard) {
+              console.warn('Could not composite postcard video for email:', errPostcard);
+            }
           }
 
           const response = await fetch('/api/send-email', {
@@ -844,7 +866,8 @@ document.addEventListener('DOMContentLoaded', async () => {
               flowerName: flowerName,
               choreographer: choreographerName,
               species: currentSpecies,
-              videoBase64: videoBase64
+              videoBase64: rawVideoBase64,
+              postcardBase64: postcardVideoBase64
             })
           });
 
@@ -852,7 +875,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             const errData = await response.json().catch(() => ({}));
             console.warn('Email dispatch notice:', errData.error || response.statusText);
           } else {
-            console.log('Choreography email sent to', visitorEmail);
+            console.log('Choreography and postcard email sent successfully to', visitorEmail);
           }
         } catch (err) {
           console.warn('Could not dispatch email:', err);

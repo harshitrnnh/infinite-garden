@@ -481,12 +481,17 @@ export class ChoreographyRecorder {
       try {
         const stream = canvas.captureStream(25);
         let mime = 'video/webm';
-        if (MediaRecorder.isTypeSupported('video/webm;codecs=vp9')) {
+        // Check for MP4 container support first (supported natively in Safari and modern Chrome)
+        if (MediaRecorder.isTypeSupported('video/mp4;codecs=avc1.42E01E,mp4a.40.2')) {
+          mime = 'video/mp4;codecs=avc1.42E01E,mp4a.40.2';
+        } else if (MediaRecorder.isTypeSupported('video/mp4;codecs=avc1')) {
+          mime = 'video/mp4;codecs=avc1';
+        } else if (MediaRecorder.isTypeSupported('video/mp4')) {
+          mime = 'video/mp4';
+        } else if (MediaRecorder.isTypeSupported('video/webm;codecs=vp9')) {
           mime = 'video/webm;codecs=vp9';
         } else if (MediaRecorder.isTypeSupported('video/webm')) {
           mime = 'video/webm';
-        } else if (MediaRecorder.isTypeSupported('video/mp4')) {
-          mime = 'video/mp4';
         }
         this.mediaRecorder = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: 2500000 });
         this.mediaRecorder.ondataavailable = (e) => {

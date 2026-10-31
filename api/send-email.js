@@ -19,7 +19,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { toEmail, flowerName, choreographer, species, videoUrl, videoBase64 } = req.body || {};
+    const { toEmail, flowerName, choreographer, species, videoUrl, videoBase64, postcardBase64 } = req.body || {};
 
     if (!toEmail || !toEmail.includes('@')) {
       return res.status(400).json({ error: 'Valid recipient email is required.' });
@@ -48,14 +48,27 @@ export default async function handler(req, res) {
     const displayChoreographer = choreographer || 'Devcon Gardener';
     const displaySpecies = species || 'Periwinkle';
     const meadowUrl = process.env.PUBLIC_SITE_URL || 'https://collective-bloom-kappa.vercel.app/visual-lab';
+    const safeFileBase = displayFlower.replace(/[^a-zA-Z0-9_-]/g, '_');
 
     const attachments = [];
+
+    // 1. Raw Recorded Choreography Video (MP4)
     if (videoBase64) {
       const cleanBase64 = videoBase64.replace(/^data:video\/[a-z0-9]+;base64,/, '');
       attachments.push({
-        filename: `${displayFlower.replace(/[^a-zA-Z0-9_-]/g, '_')}_choreography.webm`,
+        filename: `${safeFileBase}_raw_choreography.mp4`,
         content: Buffer.from(cleanBase64, 'base64'),
-        contentType: 'video/webm'
+        contentType: 'video/mp4'
+      });
+    }
+
+    // 2. Vertical 9:16 Instagram Postcard Video (MP4)
+    if (postcardBase64) {
+      const cleanPostcard = postcardBase64.replace(/^data:video\/[a-z0-9]+;base64,/, '');
+      attachments.push({
+        filename: `${safeFileBase}_instagram_postcard_9x16.mp4`,
+        content: Buffer.from(cleanPostcard, 'base64'),
+        contentType: 'video/mp4'
       });
     }
 
@@ -91,6 +104,13 @@ export default async function handler(req, res) {
           <p style="font-size: 15px; line-height: 1.6; color: #cbd5e1;">
             Thank you for bringing your movement to the infinite meadow! Your 10-second choreography is now woven into the shared 2,000-flower living garden running live at Devcon.
           </p>
+          <div style="background: rgba(56, 189, 248, 0.08); border-radius: 8px; padding: 14px 18px; margin: 18px 0; border-left: 3px solid #38bdf8;">
+            <p style="margin: 0 0 6px 0; font-weight: 600; color: #f8fafc; font-size: 14px;">Attached MP4 Videos:</p>
+            <ul style="margin: 0; padding-left: 18px; font-size: 13px; color: #94a3b8; line-height: 1.6;">
+              <li><strong>Raw Choreography (.mp4)</strong>: Your 10-second high-resolution 3D bloom.</li>
+              <li><strong>Instagram Story Postcard (.mp4)</strong>: Vertical 9:16 format with Devcon artwork stamp, ready for Instagram Stories, Reels, & TikTok.</li>
+            </ul>
+          </div>
           ${videoUrl ? `<p style="font-size: 14px; color: #94a3b8;">You can also stream or download your recorded animation here: <br><a href="${videoUrl}" style="color: #38bdf8; word-break: break-all;">${videoUrl}</a></p>` : ''}
           <div class="btn-container">
             <a href="${meadowUrl}" class="btn">Explore the Meadow & Find Your Bloom</a>
