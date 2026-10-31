@@ -407,30 +407,35 @@ document.addEventListener('DOMContentLoaded', async () => {
   const isTabletBloom = window.location.pathname.includes('tablet-bloom') || document.body.classList.contains('tablet-bloom-view');
 
   if (isTabletBloom) {
-    // Elevated top-down perspective so the flower top/petals are beautifully visible from above
+    // Elevated top-down perspective so the flower top and interior petals are beautifully visible from above
+    const TABLET_BLOOM_RADIUS = 4.85; // Zoomed out so bloom and root are fully visible with comfortable margins
+    const TABLET_BLOOM_PHI = 0.72; // Elevated top-down angle (~41° from vertical) showing the flower top & petals
+    const TABLET_BLOOM_THETA = 0.04; // Centered
+    const TABLET_BLOOM_LOOK_Y = 0.88; // Framed looking into the living petals
+
     if (garden && garden.studioSpherical) {
-      garden.studioSpherical.radius = 4.85; // Zoomed out so bloom and root are fully visible with comfortable margins
-      garden.targetStudioSpherical.radius = 4.85;
-      garden.studioSpherical.phi = 0.95; // Elevated top-down angle showing the flower top & petals
-      garden.targetStudioSpherical.phi = 0.95;
-      garden.studioSpherical.theta = 0.04; // Centered
-      garden.targetStudioSpherical.theta = 0.04;
+      garden.studioSpherical.radius = TABLET_BLOOM_RADIUS;
+      garden.targetStudioSpherical.radius = TABLET_BLOOM_RADIUS;
+      garden.studioSpherical.phi = TABLET_BLOOM_PHI;
+      garden.targetStudioSpherical.phi = TABLET_BLOOM_PHI;
+      garden.studioSpherical.theta = TABLET_BLOOM_THETA;
+      garden.targetStudioSpherical.theta = TABLET_BLOOM_THETA;
 
       if (garden.studioLookAt) {
-        garden.studioLookAt.set(0, 0.95, 0); // Framed on flower center looking into the petals
+        garden.studioLookAt.set(0, TABLET_BLOOM_LOOK_Y, 0);
       }
       if (garden.currentStudioLook) {
-        garden.currentStudioLook.set(0, 0.95, 0);
+        garden.currentStudioLook.set(0, TABLET_BLOOM_LOOK_Y, 0);
       }
     }
 
     // Reset view helper
     const resetFlowerView = () => {
       if (garden && garden.targetStudioSpherical) {
-        garden.targetStudioSpherical.radius = 4.85;
-        garden.targetStudioSpherical.phi = 0.95;
-        garden.targetStudioSpherical.theta = 0.04;
-        if (garden.studioLookAt) garden.studioLookAt.set(0, 0.95, 0);
+        garden.targetStudioSpherical.radius = TABLET_BLOOM_RADIUS;
+        garden.targetStudioSpherical.phi = TABLET_BLOOM_PHI;
+        garden.targetStudioSpherical.theta = TABLET_BLOOM_THETA;
+        if (garden.studioLookAt) garden.studioLookAt.set(0, TABLET_BLOOM_LOOK_Y, 0);
       }
     };
 
