@@ -766,6 +766,54 @@ body, html {
   gap: 8px;
 }
 
+.tv-fit-btn {
+  height: 34px;
+  padding: 0 13px;
+  border-radius: 17px;
+  border: 1px solid rgba(190, 208, 192, 0.35);
+  background: rgba(22, 30, 24, 0.65);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  color: #f0f5ed;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  pointer-events: auto;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+}
+
+.tv-fit-btn:hover {
+  background: rgba(40, 56, 44, 0.9);
+  border-color: #8794d6;
+  color: #ffffff;
+  transform: translateY(-1px);
+}
+
+.tv-fit-btn.active {
+  background: linear-gradient(135deg, #2b3a67, #4f6b57);
+  border-color: #e8c15a;
+  color: #fff;
+  box-shadow: 0 0 16px rgba(232, 193, 90, 0.45);
+}
+
+/* TV 16:9 Mode Viewport Scaling on iPad */
+body.tv-widescreen-mode #canvas-container {
+  /* Scale canvas up 133.33% (16/9 ÷ 4/3 = 1.333) so the 16:9 TV cut-off becomes edge-to-edge full bleed */
+  transform: scale(1.3333);
+  transform-origin: center center;
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+#canvas-container {
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
 .hide-ui-btn {
   width: 34px;
   height: 34px;
@@ -819,7 +867,55 @@ body.labels-hidden .flower-name-tag {
 }
 
 /* Make button visible when UI is hidden so user can find it to toggle back */
-body.ui-hidden .hide-ui-btn {
+body.ui-hidden .tv-fit-btn {
+  height: 34px;
+  padding: 0 13px;
+  border-radius: 17px;
+  border: 1px solid rgba(190, 208, 192, 0.35);
+  background: rgba(22, 30, 24, 0.65);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  color: #f0f5ed;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  pointer-events: auto;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+}
+
+.tv-fit-btn:hover {
+  background: rgba(40, 56, 44, 0.9);
+  border-color: #8794d6;
+  color: #ffffff;
+  transform: translateY(-1px);
+}
+
+.tv-fit-btn.active {
+  background: linear-gradient(135deg, #2b3a67, #4f6b57);
+  border-color: #e8c15a;
+  color: #fff;
+  box-shadow: 0 0 16px rgba(232, 193, 90, 0.45);
+}
+
+/* TV 16:9 Mode Viewport Scaling on iPad */
+body.tv-widescreen-mode #canvas-container {
+  /* Scale canvas up 133.33% (16/9 ÷ 4/3 = 1.333) so the 16:9 TV cut-off becomes edge-to-edge full bleed */
+  transform: scale(1.3333);
+  transform-origin: center center;
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+#canvas-container {
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.hide-ui-btn {
   opacity: 0.35;
   border-color: rgba(190, 208, 192, 0.25);
 }
