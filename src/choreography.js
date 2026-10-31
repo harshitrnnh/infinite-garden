@@ -506,11 +506,47 @@ export class ChoreographyRecorder {
     const sourceCanvas = typeof this.canvasProvider === 'function' ? this.canvasProvider() : this.canvasProvider;
     if (sourceCanvas && typeof MediaRecorder !== 'undefined') {
       try {
-        const isPortrait = sourceCanvas.height > sourceCanvas.width;
-        const targetWidth = isPortrait ? 720 : 1280;
-        const targetHeight = isPortrait ? 1280 : 720;
+        // Enforce 16:9 recording resolution (1280x720) centered on the flower,
+        // discarding any extra horizontal margins on widescreen displays.
+        const targetWidth = 1280;
+        const targetHeight = 720;
+        const targetAspect = 16 / 9;
 
-        // 1. Standard HD Raw Recording Canvas (mounted offscreen in DOM so Safari processes frames)
+        // Helper to draw only the 16:9 region centered on the main flower
+        const draw16to9FlowerFrame = () => {
+          if (!this.recordCtx || !sourceCanvas) return;
+          const sw = sourceCanvas.width;
+          const sh = sourceCanvas.height;
+          if (sw <= 0 || sh <= 0) return;
+
+          const srcAspect = sw / sh;
+          let sx, sy, sWidth, sHeight;
+
+          if (srcAspect >= targetAspect) {
+            // Screen is wider than 16:9 (laptops, monitors, ultra-wides, split-view).
+            // Retain full vertical framing (from soil to bloom crown),
+            // and trim off the excess horizontal space on left & right.
+            sHeight = sh;
+            sWidth = sh * targetAspect;
+            sx = (sw - sWidth) * 0.5;
+            sy = 0;
+          } else {
+            // Screen is narrower than 16:9 (tablets or portrait viewports)
+            // Fit full width and center 16:9 window vertically on the main flower
+            sWidth = sw;
+            sHeight = sw / targetAspect;
+            sx = 0;
+            sy = Math.max(0, (sh - sHeight) * 0.42);
+          }
+
+          this.recordCtx.drawImage(
+            sourceCanvas,
+            sx, sy, sWidth, sHeight,
+            0, 0, targetWidth, targetHeight
+          );
+        };
+
+        // 1. Standard 16:9 HD Recording Canvas (mounted offscreen in DOM so Safari processes frames)
         this.recordCanvas = document.createElement('canvas');
         this.recordCanvas.width = targetWidth;
         this.recordCanvas.height = targetHeight;
@@ -527,7 +563,7 @@ export class ChoreographyRecorder {
           document.body.appendChild(this.recordCanvas);
         }
         this.recordCtx = this.recordCanvas.getContext('2d');
-        this.recordCtx.drawImage(sourceCanvas, 0, 0, targetWidth, targetHeight);
+        draw16to9FlowerFrame();
 
         let stream = null;
         try {
@@ -575,9 +611,7 @@ export class ChoreographyRecorder {
         const pumpFrames = () => {
           if (!this.isRecording) return;
           try {
-            if (this.recordCtx && sourceCanvas) {
-              this.recordCtx.drawImage(sourceCanvas, 0, 0, targetWidth, targetHeight);
-            }
+            draw16to9FlowerFrame();
             if (typeof this.onPostcardFrame === 'function') {
               this.onPostcardFrame();
             }
