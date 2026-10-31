@@ -206,23 +206,23 @@ export class InstancedBotanicalMeadow {
           new THREE.Vector3(0, 1, 0)
         );
       }
-    } else if (species === 'meadow') {
-      // MEADOW CHALICE: Upright cupped bell petals in lilac and misty mauve
-      const cMauve = new THREE.Color(0xa899c7);
-      const cLilac = new THREE.Color(0xd4cce6);
-      const cBase = new THREE.Color(0x736394);
+    } else if (species === 'champa' || species === 'meadow') {
+      // CHAMPA (FRANGIPANI): 5 spiral pinwheel petals with porcelain ivory and radiant golden-amber core
+      const cAmber = new THREE.Color(0xff9900);
+      const cGold = new THREE.Color(0xffd11a);
+      const cIvory = new THREE.Color(0xfcfaf6);
 
-      for (let i = 0; i < 6; i++) {
-        const ang = (i / 6) * Math.PI * 2;
+      for (let i = 0; i < 5; i++) {
+        const ang = (i / 5) * Math.PI * 2;
         const dirX = Math.cos(ang);
         const dirZ = Math.sin(ang);
-        const base = new THREE.Vector3(dirX * 0.03, 0.01, dirZ * 0.03);
-        const midL = new THREE.Vector3(dirX * 0.16 - dirZ * 0.10, 0.15, dirZ * 0.16 + dirX * 0.10);
-        const midR = new THREE.Vector3(dirX * 0.16 + dirZ * 0.10, 0.15, dirZ * 0.16 - dirX * 0.10);
-        const tip = new THREE.Vector3(dirX * 0.24, 0.25, dirZ * 0.24);
-        const norm = new THREE.Vector3(dirX * 0.6, 0.7, dirZ * 0.6).normalize();
+        const base = new THREE.Vector3(dirX * 0.02, 0.01, dirZ * 0.02);
+        const midL = new THREE.Vector3(dirX * 0.14 - dirZ * 0.08, 0.12, dirZ * 0.14 + dirX * 0.08);
+        const midR = new THREE.Vector3(dirX * 0.14 + dirZ * 0.08, 0.14, dirZ * 0.14 - dirX * 0.08);
+        const tip = new THREE.Vector3(dirX * 0.25, 0.18, dirZ * 0.25);
+        const norm = new THREE.Vector3(dirX * 0.5, 0.8, dirZ * 0.5).normalize();
 
-        addQuad(base, midL, tip, midR, cBase, cMauve, cLilac, cMauve, norm);
+        addQuad(base, midL, tip, midR, cAmber, cGold, cIvory, cIvory, norm);
       }
     } else if (species === 'poppy') {
       // WILD POPPY: 4 broad undulating scarlet-vermilion petals with velvet dark eye

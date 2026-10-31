@@ -1232,50 +1232,69 @@ export class ChamomileMorphology {
 }
 
 // ============================================================================
-// 4. MEADOW CHALICE GEOMETRY (Ranunculaceae / Anemone style)
-// 6 cupped overlapping chalice petals + 3 inner protective petals,
-// central golden pollen torus, and single continuous articulated botanical spine.
+// 4. CHAMPA (FRANGIPANI) GEOMETRY (Plumeria rubra / alba)
+// 5 broad velvety obovate pinwheel petals with signature spiraled overlap,
+// glowing golden saffron sunburst center fading into porcelain ivory white,
+// and articulated botanical stem with companion blooming Champa florets.
 // ============================================================================
-function createChalicePetalGeometry(width = 0.28, length = 0.48, uSegs = 12, vSegs = 16) {
+function createChampaPetalGeometry(width = 0.32, length = 0.52, uSegs = 14, vSegs = 18) {
   const vertices = [];
   const uvs = [];
   const colors = [];
   const indices = [];
 
-  // Gradient: Tender translucent jade-white at base -> soft sage celadon rim
-  const baseColor = new THREE.Color(0xf0f7f2);
-  const tipColor = new THREE.Color(0x7ca88a);
+  // Plumeria signature colors:
+  // Deep saffron amber core -> radiant golden yellow -> velvety porcelain ivory
+  const cAmber = new THREE.Color(0xff8c00);
+  const cGold = new THREE.Color(0xffc107);
+  const cIvory = new THREE.Color(0xfcfaf7);
 
   for (let v = 0; v <= vSegs; v++) {
     const vNorm = v / vSegs;
 
-    // Elegant chalice envelope: narrow claw at base, swells to full width at 0.65, soft rounded curve at tip
-    let wProfile;
-    if (vNorm < 0.25) {
-      wProfile = Math.sin((vNorm / 0.25) * Math.PI * 0.5) * 0.65;
+    // Natural Plumeria petal outline: narrow base tube, swelling smoothly into broad paddle, rounded tip
+    let wFactor;
+    if (vNorm < 0.20) {
+      wFactor = 0.22 + Math.sin((vNorm / 0.20) * Math.PI * 0.5) * 0.45;
+    } else if (vNorm < 0.70) {
+      wFactor = 0.67 + Math.sin(((vNorm - 0.20) / 0.50) * Math.PI * 0.5) * 0.33;
     } else {
-      wProfile = 0.65 + Math.sin(((vNorm - 0.25) / 0.75) * Math.PI) * 0.55;
+      wFactor = 1.0 - Math.pow((vNorm - 0.70) / 0.30, 1.8) * 0.82;
     }
-    const currentW = width * wProfile;
+    const currentW = Math.max(0.015, width * wFactor);
 
-    // Upward-cupping bowl curvature
-    const y = Math.sin(vNorm * Math.PI * 0.46) * length;
-    const zArch = Math.pow(vNorm, 1.35) * (length * 0.46);
+    // Longitudinal arch: gentle outward reflex curve
+    const y = Math.sin(vNorm * Math.PI * 0.48) * length;
+    const zArch = Math.pow(vNorm, 1.35) * (length * 0.22);
 
     for (let u = 0; u <= uSegs; u++) {
       const uNorm = (u / uSegs) * 2 - 1; // -1 to 1 across width
       const x = uNorm * currentW * 0.5;
 
-      // Bowl/spoon dish depth: center sinks back, edges curve forward
-      const dishDepth = Math.pow(Math.abs(uNorm), 1.6) * (0.045 * wProfile);
-      // Gentle subtle natural margin curl
-      const marginCurl = (vNorm > 0.6) ? Math.sin(uNorm * Math.PI * 2.5) * 0.008 : 0;
-      const z = zArch + dishDepth + marginCurl;
+      // The signature Frangipani pinwheel curl:
+      // One edge (uNorm > 0) curls slightly upward, while other edge (uNorm < 0) curves slightly down/under
+      const pinwheelCurl = Math.sin(uNorm * Math.PI * 0.5) * (0.024 * vNorm);
+      // Subtle shallow cup/dish along centerline
+      const centerDish = -Math.cos(uNorm * Math.PI * 0.5) * (0.016 * vNorm);
+      const z = zArch + pinwheelCurl + centerDish;
 
       vertices.push(x, y, z);
       uvs.push(u / uSegs, vNorm);
 
-      const c = baseColor.clone().lerp(tipColor, Math.pow(vNorm, 1.15));
+      // Radiating golden sunburst:
+      // Amber core at base, spreading golden yellow into inner 45%, transitioning to porcelain ivory
+      const centerBoost = Math.max(0, 1.0 - Math.abs(uNorm) * 1.3) * 0.12;
+      const effV = Math.max(0, vNorm - centerBoost);
+
+      const c = new THREE.Color();
+      if (effV < 0.18) {
+        c.copy(cAmber).lerp(cGold, effV / 0.18);
+      } else if (effV < 0.50) {
+        const t = (effV - 0.18) / 0.32;
+        c.copy(cGold).lerp(cIvory, Math.pow(t, 1.25));
+      } else {
+        c.copy(cIvory);
+      }
       colors.push(c.r, c.g, c.b);
     }
   }
@@ -1301,22 +1320,23 @@ function createChalicePetalGeometry(width = 0.28, length = 0.48, uSegs = 12, vSe
   return geom;
 }
 
-export class MeadowChaliceMorphology {
+const createChalicePetalGeometry = createChampaPetalGeometry;
+
+export class ChampaMorphology {
   constructor() {
-    this.name = 'Meadow Chalice';
-    this.family = 'Ranunculaceae style';
-    this.tagline = '6 Cupped Overlapping Chalice Petals • Golden Pollen Torus';
-    this.outerPetalHolders = [];
-    this.innerPetalHolders = [];
+    this.name = 'Champa (Plumeria)';
+    this.family = 'Apocynaceae';
+    this.tagline = '5 Spiral Pinwheel Petals • Golden Sunlight Heart';
+    this.petalHolders = [];
     this.currentBloom = 0.65;
 
-    // Single unified continuous botanical spine (clean graceful stem matching the other meadow flowers)
+    // Articulated botanical stem with companion Champa florets on lateral branches
     this.stem = new BotanicalArticulatedStem({
-      totalHeight: 1.55,
-      stemColor: 0x3d5438,
-      leafColor: 0x314a2c,
-      neckTiltX: 0.04,
-      enableBranches: false // Single spine: no branching elbows or lateral forks
+      totalHeight: 1.52,
+      stemColor: 0x4a5d42,
+      leafColor: 0x2b4528,
+      neckTiltX: 0.06,
+      createFloretFn: (scale) => this.createFloret(scale)
     });
 
     this.group = this.stem.group;
@@ -1327,71 +1347,61 @@ export class MeadowChaliceMorphology {
     this.headGroup = new THREE.Group();
 
     // Calyx / Receptacle base collar
-    const calyxGeo = new THREE.CylinderGeometry(0.045, 0.02, 0.05, 8);
-    const calyxMat = new THREE.MeshStandardMaterial({ color: 0x3e4e37, roughness: 0.65 });
+    const calyxGeo = new THREE.CylinderGeometry(0.040, 0.022, 0.04, 8);
+    const calyxMat = new THREE.MeshStandardMaterial({ color: 0x3d5438, roughness: 0.60 });
     const calyxMesh = new THREE.Mesh(calyxGeo, calyxMat);
     calyxMesh.position.y = -0.025;
     this.headGroup.add(calyxMesh);
 
-    // Golden pollen torus core
-    const torusGeo = new THREE.TorusGeometry(0.038, 0.018, 10, 20);
-    this.coreMat = new THREE.MeshStandardMaterial({
-      color: 0xe8c15a,
-      roughness: 0.45,
-      metalness: 0.08
+    // Central floral throat tube (characteristic sunken eye of Champa)
+    const throatGeo = new THREE.CylinderGeometry(0.026, 0.014, 0.045, 12, 1, true);
+    this.throatMat = new THREE.MeshStandardMaterial({
+      color: 0xff8c00,
+      roughness: 0.35,
+      metalness: 0.05,
+      side: THREE.DoubleSide
     });
-    const torusMesh = new THREE.Mesh(torusGeo, this.coreMat);
-    torusMesh.rotation.x = -Math.PI * 0.5;
-    torusMesh.position.y = 0.01;
-    this.headGroup.add(torusMesh);
+    const throatMesh = new THREE.Mesh(throatGeo, this.throatMat);
+    throatMesh.position.y = -0.012;
+    this.headGroup.add(throatMesh);
 
-    // Central pistil dome
-    const pistilGeo = new THREE.SphereGeometry(0.028, 12, 10, 0, Math.PI * 2, 0, Math.PI * 0.5);
-    const pistilMat = new THREE.MeshStandardMaterial({ color: 0x5a7050, roughness: 0.5 });
-    const pistilMesh = new THREE.Mesh(pistilGeo, pistilMat);
-    pistilMesh.position.y = 0.01;
-    this.headGroup.add(pistilMesh);
+    // Micro-anthers ring inside throat
+    const stamenMat = new THREE.MeshStandardMaterial({ color: 0xffa000, roughness: 0.4 });
+    const stamenGeo = new THREE.SphereGeometry(0.005, 6, 6);
+    for (let s = 0; s < 5; s++) {
+      const ang = (s / 5) * Math.PI * 2;
+      const st = new THREE.Mesh(stamenGeo, stamenMat);
+      st.position.set(Math.cos(ang) * 0.012, -0.008, Math.sin(ang) * 0.012);
+      this.headGroup.add(st);
+    }
 
-    // Chalice petal material with subtle translucency, sheen and vertex colors
+    // Champa petal material with thick succulent substance, warm sheen and vertex colors
     this.petalMat = new THREE.MeshPhysicalMaterial({
       color: 0xffffff,
       vertexColors: true,
-      roughness: 0.35,
+      roughness: 0.28,
       metalness: 0.02,
-      sheen: 0.35,
-      sheenColor: new THREE.Color(0xd2e3d6),
+      sheen: 0.55,
+      sheenColor: new THREE.Color(0xffe6a3),
+      clearcoat: 0.15,
+      clearcoatRoughness: 0.25,
       side: THREE.DoubleSide
     });
 
-    // 6 Outer Cupped Chalice Petals (radial whorl forming the chalice goblet)
-    const outerGeo = createChalicePetalGeometry(0.28, 0.50, 12, 16);
-    for (let i = 0; i < 6; i++) {
-      const ang = (i / 6) * Math.PI * 2;
+    // 5 Spirally Overlapping Pinwheel Petals
+    const petalGeo = createChampaPetalGeometry(0.32, 0.52, 14, 18);
+    for (let i = 0; i < 5; i++) {
+      const ang = (i / 5) * Math.PI * 2;
       const holder = new THREE.Group();
       holder.rotation.y = ang;
 
-      const mesh = new THREE.Mesh(outerGeo, this.petalMat);
+      const mesh = new THREE.Mesh(petalGeo, this.petalMat);
       mesh.castShadow = true;
-      mesh.rotation.x = 0.68;
+      mesh.rotation.x = 0.82;
+      mesh.rotation.z = 0.22; // Spiral pinwheel roll
       holder.add(mesh);
       this.headGroup.add(holder);
-      this.outerPetalHolders.push({ holder, mesh, baseRotX: 0.68 });
-    }
-
-    // 3 Inner Overlapping Protective Petals (slightly smaller, tighter cup)
-    const innerGeo = createChalicePetalGeometry(0.22, 0.42, 10, 14);
-    for (let i = 0; i < 3; i++) {
-      const ang = (i / 3) * Math.PI * 2 + Math.PI / 6;
-      const holder = new THREE.Group();
-      holder.rotation.y = ang;
-
-      const mesh = new THREE.Mesh(innerGeo, this.petalMat);
-      mesh.castShadow = true;
-      mesh.rotation.x = 0.45;
-      mesh.position.y = 0.015;
-      holder.add(mesh);
-      this.headGroup.add(holder);
-      this.innerPetalHolders.push({ holder, mesh, baseRotX: 0.45 });
+      this.petalHolders.push({ holder, mesh, baseRotX: 0.82, baseRotZ: 0.22 });
     }
 
     this.stem.receptacle.add(this.headGroup);
@@ -1400,20 +1410,21 @@ export class MeadowChaliceMorphology {
   createFloret(scale = 0.65) {
     const fGroup = new THREE.Group();
 
-    const fCoreGeo = new THREE.SphereGeometry(0.025 * scale, 10, 8);
-    const fCoreMesh = new THREE.Mesh(fCoreGeo, this.coreMat);
-    fGroup.add(fCoreMesh);
+    const fThroatGeo = new THREE.CylinderGeometry(0.020 * scale, 0.010 * scale, 0.035 * scale, 8, 1, true);
+    const fThroatMesh = new THREE.Mesh(fThroatGeo, this.throatMat);
+    fGroup.add(fThroatMesh);
 
-    const fGeo = createChalicePetalGeometry(0.24 * scale, 0.42 * scale, 10, 12);
+    const fGeo = createChampaPetalGeometry(0.28 * scale, 0.44 * scale, 10, 14);
     const holders = [];
 
-    for (let i = 0; i < 6; i++) {
-      const ang = (i / 6) * Math.PI * 2;
+    for (let i = 0; i < 5; i++) {
+      const ang = (i / 5) * Math.PI * 2;
       const holder = new THREE.Group();
       holder.rotation.y = ang;
       const mesh = new THREE.Mesh(fGeo, this.petalMat);
       mesh.castShadow = true;
-      mesh.rotation.x = 0.55;
+      mesh.rotation.x = 0.78;
+      mesh.rotation.z = 0.20;
       holder.add(mesh);
       fGroup.add(holder);
       holders.push(mesh);
@@ -1423,7 +1434,8 @@ export class MeadowChaliceMorphology {
       group: fGroup,
       setBloom: (b) => {
         holders.forEach(m => {
-          m.rotation.x = THREE.MathUtils.lerp(0.30, 0.95, b);
+          m.rotation.x = THREE.MathUtils.lerp(0.30, 1.15, b);
+          m.rotation.z = THREE.MathUtils.lerp(0.38, 0.16, b);
         });
       }
     };
@@ -1437,14 +1449,9 @@ export class MeadowChaliceMorphology {
 
   setBloom(val) {
     this.currentBloom = val;
-    this.outerPetalHolders.forEach(p => {
-      p.mesh.rotation.x = THREE.MathUtils.lerp(0.35, 1.15, val);
-      const s = THREE.MathUtils.lerp(0.85, 1.05, val);
-      p.mesh.scale.set(s, s, s);
-    });
-
-    this.innerPetalHolders.forEach(p => {
-      p.mesh.rotation.x = THREE.MathUtils.lerp(0.20, 0.85, val);
+    this.petalHolders.forEach(p => {
+      p.mesh.rotation.x = THREE.MathUtils.lerp(0.28, 1.22, val);
+      p.mesh.rotation.z = THREE.MathUtils.lerp(0.40, 0.18, val);
       const s = THREE.MathUtils.lerp(0.85, 1.05, val);
       p.mesh.scale.set(s, s, s);
     });
@@ -1454,10 +1461,12 @@ export class MeadowChaliceMorphology {
 
   setWireframe(wire) {
     this.petalMat.wireframe = wire;
-    this.coreMat.wireframe = wire;
+    if (this.throatMat) this.throatMat.wireframe = wire;
     this.stem.setWireframe(wire);
   }
 }
+
+export const MeadowChaliceMorphology = ChampaMorphology;
 
 // ============================================================================
 // 5. FESTIVE INDIAN MARIGOLD (Tagetes erecta / Genda)

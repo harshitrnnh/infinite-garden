@@ -2588,9 +2588,14 @@ body.choreography-split-view {
   box-shadow: 0 0 8px #e8c15a;
 }
 
+.champa-dot {
+  background: #ffd166;
+  box-shadow: 0 0 8px #ffd166;
+}
+
 .meadow-dot {
-  background: #7ca88a;
-  box-shadow: 0 0 8px #7ca88a;
+  background: #ffd166;
+  box-shadow: 0 0 8px #ffd166;
 }
 
 .marigold-dot {

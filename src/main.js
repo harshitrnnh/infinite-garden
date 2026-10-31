@@ -1281,11 +1281,11 @@ document.addEventListener('DOMContentLoaded', async () => {
       return;
     }
 
-    // 4. Quick Species Switching (1–7: Periwinkle, Poppy, Chamomile Wheat, Meadow Chalice, Celadon Bell, Sacred Lotus, Royal Hibiscus)
+    // 4. Quick Species Switching (1–7: Periwinkle, Poppy, Chamomile Wheat, Champa, Festive Marigold, Sacred Lotus, Royal Hibiscus)
     if (key === '1') switchSpecies('periwinkle');
     if (key === '2') switchSpecies('poppy');
     if (key === '3') switchSpecies('chamomile');
-    if (key === '4') switchSpecies('meadow');
+    if (key === '4') switchSpecies('champa');
     if (key === '5') switchSpecies('marigold');
     if (key === '6') switchSpecies('lotus');
     if (key === '7') switchSpecies('hibiscus');

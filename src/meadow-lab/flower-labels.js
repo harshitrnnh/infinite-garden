@@ -11,7 +11,7 @@ const FIRST_NAMES = [
 ];
 
 const FLOWER_WORDS = [
-  'Bloom', 'Petal', 'Blossom', 'Drift', 'Chalice', 'Crown', 'Glow',
+  'Bloom', 'Petal', 'Blossom', 'Drift', 'Champa', 'Crown', 'Glow',
   'Reach', 'Sway', 'Whisper', 'Spark', 'Burst', 'Wave', 'Breath',
   'Rise', 'Float', 'Curl', 'Flare', 'Haze', 'Mist', 'Dew', 'Shine'
 ];

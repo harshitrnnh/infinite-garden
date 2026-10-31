@@ -47,7 +47,7 @@ export const CHOREOGRAPHY_PRESETS = {
         wingspanSpread = 0.2;
         heightFactor = 1.0 - dip * 0.08;
         bloomRatio = 0.25 + (1 - dip) * 0.20; // Bud closes in reverence
-        postureDesc = 'Humble Bow • Arms lowered, chalice resting';
+        postureDesc = 'Humble Bow • Arms lowered, petals resting';
       } else if (p < 0.65) {
         // Phase 2: Majestic Rise & Overhead Reaching
         const prog = (p - 0.28) / 0.37;
@@ -173,7 +173,7 @@ export const CHOREOGRAPHY_PRESETS = {
       const heightFactor = 1.0 + norm * 0.22;
       const bloomRatio = 0.25 + norm * 0.75;
 
-      const postureDesc = isExhaling ? 'Exhale • Settling softly into the earth' : 'Inhale • Stem stretching, chalice blooming';
+      const postureDesc = isExhaling ? 'Exhale • Settling softly into the earth' : 'Inhale • Stem stretching, flower blooming';
 
       return {
         spineLeanX,

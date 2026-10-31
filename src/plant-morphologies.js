@@ -3,6 +3,7 @@ import {
   PeriwinkleMorphology,
   PoppyMorphology,
   ChamomileMorphology,
+  ChampaMorphology,
   MeadowChaliceMorphology,
   MarigoldMorphology,
   LotusMorphology,
@@ -31,19 +32,26 @@ export const CHOREOGRAPHY_SPECIES_META = {
     tagline: '16 Radiating Ray Petals • Conical Golden Disk Dome',
     dotColor: '#e8c15a'
   },
+  champa: {
+    key: 'champa',
+    name: 'Champa (Frangipani)',
+    family: 'Apocynaceae (Plumeria)',
+    tagline: '5 Spiral Pinwheel Petals • Golden Sunlight Heart',
+    dotColor: '#ffd166'
+  },
   meadow: {
-    key: 'meadow',
-    name: 'Meadow Chalice',
-    family: 'Ranunculaceae style',
-    tagline: '6 Cupped Overlapping Chalice Petals • Golden Pollen Torus',
-    dotColor: '#7ca88a'
+    key: 'champa',
+    name: 'Champa (Frangipani)',
+    family: 'Apocynaceae (Plumeria)',
+    tagline: '5 Spiral Pinwheel Petals • Golden Sunlight Heart',
+    dotColor: '#ffd166'
   },
   chalice: {
-    key: 'chalice',
-    name: 'Meadow Chalice',
-    family: 'Ranunculaceae style',
-    tagline: '6 Cupped Overlapping Chalice Petals • Golden Pollen Torus',
-    dotColor: '#7ca88a'
+    key: 'champa',
+    name: 'Champa (Frangipani)',
+    family: 'Apocynaceae (Plumeria)',
+    tagline: '5 Spiral Pinwheel Petals • Golden Sunlight Heart',
+    dotColor: '#ffd166'
   },
   marigold: {
     key: 'marigold',
@@ -85,8 +93,7 @@ export class StudioFlowerManager {
     this.currentSpecies = initialSpecies;
     this.gustStrength = 0;
 
-    // Bespoke Meadow Cupped Chalice (6 cupped petals with unified single continuous articulated spine)
-    const meadowChalice = new MeadowChaliceMorphology();
+    const champa = new ChampaMorphology();
     const marigold = new MarigoldMorphology();
 
     // Instantiate bespoke 3D botanical morphologies from flower-geometries.js
@@ -94,8 +101,9 @@ export class StudioFlowerManager {
       periwinkle: new PeriwinkleMorphology(),
       poppy: new PoppyMorphology(),
       chamomile: new ChamomileMorphology(),
-      meadow: meadowChalice,
-      chalice: meadowChalice, // alias
+      champa: champa,
+      meadow: champa, // alias
+      chalice: champa, // alias
       marigold: marigold,
       celadon: marigold, // alias
       lotus: new LotusMorphology(),
@@ -109,7 +117,9 @@ export class StudioFlowerManager {
       if (mounted.has(morph)) return;
       mounted.add(morph);
       morph.group.position.set(0, 0, 0);
-      morph.group.visible = (key === initialSpecies || (key === 'meadow' && initialSpecies === 'chalice'));
+      const isInitialMatch = (key === initialSpecies ||
+        (['champa', 'meadow', 'chalice'].includes(initialSpecies) && ['champa', 'meadow', 'chalice'].includes(key)));
+      morph.group.visible = isInitialMatch;
       this.group.add(morph.group);
     });
 
@@ -117,7 +127,8 @@ export class StudioFlowerManager {
   }
 
   setSpecies(speciesKey) {
-    const targetKey = (speciesKey === 'chalice') ? 'meadow' : speciesKey;
+    let targetKey = speciesKey;
+    if (targetKey === 'chalice' || targetKey === 'meadow') targetKey = 'champa';
     if (!this.morphologies[targetKey]) return;
     this.currentSpecies = targetKey;
 

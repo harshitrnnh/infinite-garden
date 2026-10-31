@@ -40,7 +40,7 @@ class PlantedChoreographyFlower {
       this.morphology = new PoppyMorphology();
     } else if (this.species === 'chamomile') {
       this.morphology = new ChamomileMorphology();
-    } else if (this.species === 'meadow' || this.species === 'chalice') {
+    } else if (this.species === 'champa' || this.species === 'meadow' || this.species === 'chalice') {
       this.morphology = new MeadowChaliceMorphology();
     } else if (this.species === 'marigold' || this.species === 'celadon') {
       this.morphology = new MarigoldMorphology();

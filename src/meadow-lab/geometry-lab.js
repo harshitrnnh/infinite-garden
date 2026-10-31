@@ -3,6 +3,7 @@ import {
   PoppyMorphology,
   PeriwinkleMorphology,
   ChamomileMorphology,
+  ChampaMorphology,
   MeadowChaliceMorphology,
   MarigoldMorphology,
   CeladonBellMorphology,
@@ -195,16 +196,28 @@ class BotanicalGeometryLab {
           note: 'Iconic auspicious Indian festival bloom with warm saffron-to-gold gradient petals.'
         }
       },
-      chalice: {
-        instance: new MeadowChaliceMorphology(),
+      champa: {
+        instance: new ChampaMorphology(),
         specs: {
-          commonName: 'Meadow Cupped Chalice',
-          latinName: 'Ranunculus / Anemone style',
-          family: 'Ranunculaceae style',
-          petals: '6 cupped overlapping chalice petals + 3 inner protective petals',
-          core: 'Central golden pollen torus with surrounding anthers',
-          foliage: 'Continuous single articulated curving stem with companion chalice florets and foliage',
-          note: 'Single unified continuous spine matching the other meadow flora.'
+          commonName: 'Champa (Frangipani)',
+          latinName: 'Plumeria rubra / alba',
+          family: 'Apocynaceae',
+          petals: '5 broad velvety obovate pinwheel petals with signature spiraled overlap',
+          core: 'Sunken golden-saffron throat tube with radiating golden sunburst heart',
+          foliage: 'Articulated botanical stem with companion blooming Champa florets and foliage',
+          note: 'Iconic sacred flower with porcelain-white petals glowing with a warm saffron-gold center.'
+        }
+      },
+      chalice: {
+        instance: new ChampaMorphology(),
+        specs: {
+          commonName: 'Champa (Frangipani)',
+          latinName: 'Plumeria rubra / alba',
+          family: 'Apocynaceae',
+          petals: '5 broad velvety obovate pinwheel petals with signature spiraled overlap',
+          core: 'Sunken golden-saffron throat tube with radiating golden sunburst heart',
+          foliage: 'Articulated botanical stem with companion blooming Champa florets and foliage',
+          note: 'Iconic sacred flower with porcelain-white petals glowing with a warm saffron-gold center.'
         }
       },
       lotus: {
