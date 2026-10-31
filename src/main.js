@@ -409,9 +409,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (isTabletBloom) {
     // Natural frontal portrait view with subtle top angle into petals
     const TABLET_BLOOM_RADIUS = 4.85; // Zoomed out so bloom and root are fully visible with comfortable margins
-    const TABLET_BLOOM_PHI = 1.15; // Slightly elevated top angle (~66° from vertical / ~24° above horizontal)
+    const TABLET_BLOOM_PHI = 1.10; // Gently elevated top angle (~63° from vertical / ~27° above horizontal)
     const TABLET_BLOOM_THETA = 0.04; // Centered
-    const TABLET_BLOOM_LOOK_Y = 1.02; // Framed comfortably on flower center
+    const TABLET_BLOOM_LOOK_Y = 1.00; // Framed comfortably on flower center
 
     if (garden && garden.studioSpherical) {
       garden.studioSpherical.radius = TABLET_BLOOM_RADIUS;
