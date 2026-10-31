@@ -505,8 +505,8 @@ class MeadowVisualLab {
   }
 
   /**
-   * Focuses the camera directly on a flower, attaches a subtle celestial glow light,
-   * highlights its tag above it, and maintains celebration focus for the given duration (e.g. 20s).
+   * Focuses the camera directly on a flower, attaches a glowing celestial aura mesh,
+   * highlights its tag directly above it, and maintains celebration focus for the given duration (e.g. 20s).
    */
   focusOnFlowerWithGlow(flower, durationSeconds = 20) {
     if (!flower) return;
@@ -516,11 +516,17 @@ class MeadowVisualLab {
       this.spotlightTimeout = null;
     }
 
-    // Clean up previous glow light if any
+    // Clean up previous glow objects if any
     if (this.spotlightLight) {
       this.sceneEnv.scene.remove(this.spotlightLight);
       if (this.spotlightLight.dispose) this.spotlightLight.dispose();
       this.spotlightLight = null;
+    }
+    if (this.glowMesh) {
+      this.sceneEnv.scene.remove(this.glowMesh);
+      if (this.glowMesh.geometry) this.glowMesh.geometry.dispose();
+      if (this.glowMesh.material) this.glowMesh.material.dispose();
+      this.glowMesh = null;
     }
 
     // Clear previous glow class from pills
@@ -533,34 +539,77 @@ class MeadowVisualLab {
 
     // 1. Smoothly glide camera toward flower
     this.sceneEnv.targetLookAt.set(pos.x, (pos.y || 0) + 1.25, pos.z);
-    this.sceneEnv.targetSpherical.radius = 2.3;
+    this.sceneEnv.targetSpherical.radius = 2.4;
 
-    // 2. Add subtle warm cyan/gold spotlight glow directly above bloom
-    const glow = new THREE.PointLight(0x67e8f9, 2.5, 6.0, 1.2);
-    glow.position.set(pos.x, (pos.y || 0) + 2.0, pos.z);
+    // 2. High-intensity 3D PointLight focused on the bloom
+    const glow = new THREE.PointLight(0x38bdf8, 8.0, 10.0, 1.0);
+    glow.position.set(pos.x, (pos.y || 0) + 2.2, pos.z);
     this.sceneEnv.scene.add(glow);
     this.spotlightLight = glow;
+
+    // 3. Luminous 3D glowing aura halo mesh around the flower base & bloom
+    const glowGeo = new THREE.SphereGeometry(1.4, 32, 16);
+    const glowMat = new THREE.MeshBasicMaterial({
+      color: 0x67e8f9,
+      transparent: true,
+      opacity: 0.28,
+      blending: THREE.AdditiveBlending,
+      side: THREE.BackSide,
+      depthWrite: false
+    });
+    const halo = new THREE.Mesh(glowGeo, glowMat);
+    halo.position.set(pos.x, (pos.y || 0) + 1.2, pos.z);
+    this.sceneEnv.scene.add(halo);
+    this.glowMesh = halo;
     this.activeCelebratedFlower = flower;
 
-    // 3. Highlight this flower's tag above it
+    // 4. Highlight this flower's tag above it & ensure CSS2DRenderer is active
     if (this.labelSystem) {
-      const matchLabel = this.labelSystem.labels.find(l => {
+      this.labelSystem.setVisible(true);
+
+      let matchLabel = this.labelSystem.labels.find(l => {
         return l.flowerGroup === flower.group || (flower.name && l.name && l.name.toLowerCase() === flower.name.toLowerCase());
       });
+
+      // If flower is an instanced bloom or has no label registered, create floating label anchor on the fly
+      if (!matchLabel) {
+        let anchorGroup = flower.group;
+        if (!anchorGroup) {
+          anchorGroup = new THREE.Group();
+          anchorGroup.position.set(pos.x, pos.y || 0, pos.z);
+          this.sceneEnv.scene.add(anchorGroup);
+          flower.group = anchorGroup;
+        }
+        const createdName = this.labelSystem.addLabel(anchorGroup, flower.name, {
+          choreographer: flower.choreographer || 'Devcon Gardener',
+          species: flower.species || 'periwinkle',
+          isPlanted: !!flower.isPlanted
+        });
+        matchLabel = this.labelSystem.labels.find(l => l.name === createdName);
+      }
+
       if (matchLabel && matchLabel.pill) {
         matchLabel.pill.classList.add('tag-celebrate-glow');
+        matchLabel.highlighted = true;
       }
     }
 
-    // 4. Fade spotlight & restore default state after 20 seconds
+    // 5. Fade spotlight & restore default state after 20 seconds
     this.spotlightTimeout = setTimeout(() => {
       if (this.spotlightLight) {
         this.sceneEnv.scene.remove(this.spotlightLight);
         this.spotlightLight = null;
       }
+      if (this.glowMesh) {
+        this.sceneEnv.scene.remove(this.glowMesh);
+        this.glowMesh = null;
+      }
       document.querySelectorAll('.flower-name-tag.tag-celebrate-glow').forEach((el) => {
         el.classList.remove('tag-celebrate-glow');
       });
+      if (this.labelSystem && !this.labelsVisible) {
+        this.labelSystem.setVisible(false);
+      }
       this.activeCelebratedFlower = null;
     }, durationSeconds * 1000);
   }
