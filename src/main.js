@@ -1025,9 +1025,6 @@ document.addEventListener('DOMContentLoaded', async () => {
       return;
     }
 
-    // ALWAYS save every choreography recording to local disk!
-    downloadChoreographyToLocalDisk(flowerName, currentSpecies, lastRecordedChoreography);
-
     // Plant in Communal Garden
     const newRecord = communityManager.plantNewFlower({
       name: flowerName,
