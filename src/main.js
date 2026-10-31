@@ -470,6 +470,22 @@ document.addEventListener('DOMContentLoaded', async () => {
       });
     }
 
+    const sizeToggleBtn = document.getElementById('inlet-size-toggle');
+    const sizeClasses = ['', 'inlet-size-large', 'inlet-size-compact'];
+    let sizeIndex = 0;
+
+    if (sizeToggleBtn) {
+      sizeToggleBtn.addEventListener('click', () => {
+        sizeIndex = (sizeIndex + 1) % sizeClasses.length;
+        if (cameraPane) {
+          cameraPane.classList.remove('inlet-size-large', 'inlet-size-compact');
+          if (sizeClasses[sizeIndex]) {
+            cameraPane.classList.add(sizeClasses[sizeIndex]);
+          }
+        }
+      });
+    }
+
     if (minToggleBtn) {
       minToggleBtn.addEventListener('click', () => {
         if (cameraPane) {

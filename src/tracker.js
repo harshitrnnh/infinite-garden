@@ -128,11 +128,32 @@ export class BodyTracker {
     this.onStatusChange('prompt', 'Please allow camera access in the browser prompt...');
 
     try {
-      // Request full wide angle camera resolution without forced narrow portrait cropping
+      // 1. Enumerate available camera devices to find widest lens if device has multiple front sensors
+      let preferredDeviceId = null;
+      try {
+        if (navigator.mediaDevices && navigator.mediaDevices.enumerateDevices) {
+          const devices = await navigator.mediaDevices.enumerateDevices();
+          const videoInputs = devices.filter(d => d.kind === 'videoinput');
+          const wideFront = videoInputs.find(d => 
+            /front|user|facetime/i.test(d.label) && /wide|ultra|0/i.test(d.label)
+          );
+          if (wideFront) {
+            preferredDeviceId = wideFront.deviceId;
+            console.log('Detected preferred wide front camera:', wideFront.label);
+          }
+        }
+      } catch (e) {
+        // Safe to ignore if permissions not yet granted
+      }
+
+      // 2. Request native 4:3 camera resolution to capture 100% of the physical lens glass surface
+      // (Requesting 16:9 on an iPad cuts off top & bottom of the 4:3 sensor!)
       const videoConstraints = {
-        facingMode: 'user',
-        width: { ideal: 1920, min: 640 },
-        height: { ideal: 1440, min: 480 }
+        facingMode: preferredDeviceId ? undefined : 'user',
+        deviceId: preferredDeviceId ? { exact: preferredDeviceId } : undefined,
+        width: { ideal: 1280, min: 480 },
+        height: { ideal: 960, min: 480 },
+        aspectRatio: { ideal: 1.333333 }
       };
 
       let stream;
@@ -142,7 +163,7 @@ export class BodyTracker {
           audio: false
         });
       } catch (constraintErr) {
-        console.warn('Advanced camera constraints failed, attempting fallback:', constraintErr);
+        console.warn('Native 4:3 constraints failed, falling back to basic front camera:', constraintErr);
         stream = await navigator.mediaDevices.getUserMedia({
           video: { facingMode: 'user' },
           audio: false
@@ -454,27 +475,19 @@ export class BodyTracker {
     const midShoulderX = (lSh.x + rSh.x) * 0.5;
     const midShoulderY = (lSh.y + rSh.y) * 0.5;
 
-    // 1. SIDEWAYS SWAYING (Direct, connected Torso & Shoulder Tilt)
-    // In camera image (unmirrored video feed):
-    // Person's Left is on the Right side of image (x > 0.5)
-    // Person's Right is on the Left side of image (x < 0.5)
-    //
-    // When the user leans to screen-left (their left):
-    // - Left shoulder is lower: lSh.y > rSh.y -> (lSh.y - rSh.y) > 0
-    // - Nose shifts towards left shoulder: nose.x > midShoulderX -> (nose.x - midShoulderX) > 0
-    // - Torso shifts towards user's left: midShoulderX > 0.5 -> (midShoulderX - 0.5) > 0
+    // 1. SIDEWAYS SWAYING (Direct, connected Torso & Shoulder Tilt - Boosted for 3-5ft standing)
     const rawShoulderTilt = (lSh.y - rSh.y) / shoulderWidth;
     const rawHeadTilt = (nose.x - midShoulderX) / shoulderWidth;
-    const rawBodyShift = (midShoulderX - 0.5) * 2.2;
+    const rawBodyShift = (midShoulderX - 0.5) * 2.8;
 
     // Direct, sensitive sway combining shoulder tilt, head tilt, and lateral body sway
-    let rawSway = rawShoulderTilt * 1.5 + rawHeadTilt * 1.0 + rawBodyShift * 0.8;
+    let rawSway = rawShoulderTilt * 1.8 + rawHeadTilt * 1.2 + rawBodyShift * 1.1;
 
     // Small deadzone to prevent camera jitter when sitting still
     if (Math.abs(rawSway) < 0.02) {
       rawSway = 0.0;
     } else {
-      rawSway = rawSway > 0 ? (rawSway - 0.02) * 1.15 : (rawSway + 0.02) * 1.15;
+      rawSway = rawSway > 0 ? (rawSway - 0.02) * 1.25 : (rawSway + 0.02) * 1.25;
     }
 
     // Convention:
@@ -484,64 +497,74 @@ export class BodyTracker {
     this.targets.bodyShiftX = -Math.max(-1.0, Math.min(1.0, rawBodyShift));
 
     // 2. FORWARD BOW & BACKWARD ARCH (Bending Full Front & Back)
-    // Calibrated for both sitting close to webcam and standing full-body
+    // Optimized for 3-5ft standing: waist/hips are in frame even without knees/feet
     let rawPitch = 0.0;
-    const isFullBodyStanding = lHip && rHip && lHip.visibility > 0.65 && rHip.visibility > 0.65 && (lKnee && lKnee.visibility > 0.50);
+    const hasHipsInFrame = lHip && rHip && (lHip.visibility > 0.30 || rHip.visibility > 0.30);
 
-    if (isFullBodyStanding) {
+    if (hasHipsInFrame) {
       const midHipZ = ((lHip.z || 0) + (rHip.z || 0)) * 0.5;
       const midShoulderZ = ((lSh.z || 0) + (rSh.z || 0)) * 0.5;
       const zDiff = (midHipZ - midShoulderZ);
       const headDrop = (nose.y - midShoulderY) / shoulderWidth;
-      rawPitch = zDiff * 2.5 + (headDrop - 0.32) * 1.5;
+      rawPitch = zDiff * 2.6 + (headDrop - 0.30) * 1.6;
     } else {
-      // Sitting at desk framing (upper body / head & shoulders in frame):
-      // In neutral sitting posture, nose is ~0.45 to 0.60 above mid-shoulder in Y and slightly forward in Z.
+      // Upper-body only framing
       const midShoulderZ = ((lSh.z || 0) + (rSh.z || 0)) * 0.5;
-      const zDiff = (midShoulderZ - (nose.z || 0)); // Nose forward relative to shoulders
-      const headDrop = (nose.y - midShoulderY) / shoulderWidth; // Negative value ~ -0.45 to -0.65
-      
-      // Deliberate bow forward: nose moves closer to shoulder Y level (headDrop increases towards 0) and zDiff increases
+      const zDiff = (midShoulderZ - (nose.z || 0));
+      const headDrop = (nose.y - midShoulderY) / shoulderWidth;
       const bowForwardDelta = (zDiff - 0.14) * 2.2 + (headDrop + 0.52) * 2.0;
       rawPitch = bowForwardDelta;
     }
 
-    // Deadzone: when sitting normally, flower stands straight (spineLeanZ = 0)
-    if (Math.abs(rawPitch) < 0.12) {
+    // Deadzone: when upright normally, flower stands straight (spineLeanZ = 0)
+    if (Math.abs(rawPitch) < 0.10) {
       rawPitch = 0.0;
     } else {
-      rawPitch = (rawPitch > 0 ? rawPitch - 0.12 : rawPitch + 0.12) * 1.25;
+      rawPitch = (rawPitch > 0 ? rawPitch - 0.10 : rawPitch + 0.10) * 1.35;
     }
     this.targets.spineLeanZ = Math.max(-1.0, Math.min(1.0, rawPitch));
 
-    // 3. ARM ELEVATIONS & FLOWER HEIGHT
-    // In camera image: smaller y is HIGHER up toward ceiling.
-    const lArmElev = (lSh.y - lWr.y) / shoulderWidth;
-    const rArmElev = (rSh.y - rWr.y) / shoulderWidth;
+    // 3. ARM ELEVATIONS & FLOWER HEIGHT (Extrapolated from both wrists AND elbows for close 4ft view)
+    const lWrElev = (lSh.y - lWr.y) / shoulderWidth;
+    const rWrElev = (rSh.y - rWr.y) / shoulderWidth;
+    const lElElev = (lSh.y - lEl.y) / shoulderWidth;
+    const rElElev = (rSh.y - rEl.y) / shoulderWidth;
+
+    // If hands go above screen edge, elbows still indicate overhead reach!
+    const lArmElev = Math.max(lWrElev, lElElev * 1.35);
+    const rArmElev = Math.max(rWrElev, rElElev * 1.35);
 
     // Normalize arm heights (0.0 = resting straight down at sides, 0.5 = chest/neutral, 1.2+ = reaching overhead)
-    this.targets.armHeightL = Math.max(0, Math.min(2.0, (lArmElev + 0.45) * 1.0));
-    this.targets.armHeightR = Math.max(0, Math.min(2.0, (rArmElev + 0.45) * 1.0));
+    this.targets.armHeightL = Math.max(0, Math.min(2.0, (lArmElev + 0.45) * 1.05));
+    this.targets.armHeightR = Math.max(0, Math.min(2.0, (rArmElev + 0.45) * 1.05));
 
-    // Upward reach when either or both hands are lifted above shoulders
+    // Upward reach when either or both hands/elbows are lifted above shoulders
     const maxHandUp = Math.max(lArmElev, rArmElev);
     const avgHandUp = (lArmElev + rArmElev) * 0.5;
-    this.targets.armStretchUp = Math.max(0, Math.min(1.0, (maxHandUp - 0.12) * 1.6));
+    this.targets.armStretchUp = Math.max(0, Math.min(1.0, (maxHandUp - 0.08) * 1.7));
 
     // FLOWER HEIGHT:
-    // When hands reach straight UP, plant stretches tall into the sky (up to 1.25x)!
-    // When hands are straight DOWN: DO NOT bend or compress the flower down! Plant stays at full 1.0x height.
-    this.targets.heightFactor = 1.0 + this.targets.armStretchUp * 0.25;
+    this.targets.heightFactor = 1.0 + this.targets.armStretchUp * 0.28;
 
-    // 4. LATERAL ARM STRETCH & WINGSPAN SPREAD (HANDS SPREAD OUT = BRANCHES SPREAD OUT!)
-    const lExt = (lWr.x - lSh.x) / shoulderWidth;
-    const rExt = (rSh.x - rWr.x) / shoulderWidth;
-    this.targets.armExtensionL = Math.max(0, Math.min(1.8, (lExt - 0.15) * 1.8));
-    this.targets.armExtensionR = Math.max(0, Math.min(1.8, (rExt - 0.15) * 1.8));
+    // 4. LATERAL ARM STRETCH & WINGSPAN SPREAD (Extrapolated from both wrists AND elbows)
+    // At 4ft standing, hands might touch the left/right frame borders. Elbows ensure 100% full bloom!
+    const lWrExt = (lWr.x - lSh.x) / shoulderWidth;
+    const rWrExt = (rSh.x - rWr.x) / shoulderWidth;
+    const lElExt = (lEl.x - lSh.x) / shoulderWidth;
+    const rElExt = (rSh.x - rWr.x) / shoulderWidth;
 
-    // Total wingspan spread ratio across both arms
+    const lExt = Math.max(lWrExt, lElExt * 1.5);
+    const rExt = Math.max(rWrExt, rElExt * 1.5);
+
+    this.targets.armExtensionL = Math.max(0, Math.min(1.8, (lExt - 0.10) * 2.0));
+    this.targets.armExtensionR = Math.max(0, Math.min(1.8, (rExt - 0.10) * 2.0));
+
+    // Total wingspan spread ratio across both arms (wrists + elbows)
     const wristDist = Math.hypot(lWr.x - rWr.x, lWr.y - rWr.y);
-    const wingspanRatio = Math.max(0, Math.min(1.6, (wristDist / shoulderWidth - 1.1) / 1.5));
+    const elbowDist = Math.hypot(lEl.x - rEl.x, lEl.y - rEl.y);
+    const wingspanFromWrists = (wristDist / shoulderWidth - 1.0) / 1.35;
+    const wingspanFromElbows = (elbowDist / shoulderWidth - 0.70) * 1.6;
+    const wingspanRatio = Math.max(0, Math.min(1.6, Math.max(wingspanFromWrists, wingspanFromElbows)));
     this.targets.wingspanSpread = wingspanRatio;
 
     // 5. FLOWER BLOOMING FORMULATION:

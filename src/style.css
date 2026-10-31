@@ -2853,6 +2853,19 @@ body.choreography-split-view {
   left: 20px !important;
 }
 
+/* Inlet Size Variants */
+.tablet-bloom-view .tablet-camera-inlet.inlet-size-large {
+  width: 300px !important;
+  height: 390px !important;
+  max-width: 52vw;
+  max-height: 52vh;
+}
+
+.tablet-bloom-view .tablet-camera-inlet.inlet-size-compact {
+  width: 195px !important;
+  height: 260px !important;
+}
+
 /* Minimized Floating Pill State */
 .tablet-bloom-view .tablet-camera-inlet.minimized {
   height: 44px !important;
