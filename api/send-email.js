@@ -44,7 +44,7 @@ export default async function handler(req, res) {
       }
     });
 
-    const displayFlower = flowerName || 'Infinite Garden Bloom';
+    const displayFlower = flowerName || 'Collective Bloom Flower';
     const displayChoreographer = choreographer || 'Devcon Gardener';
     const displaySpecies = species || 'Periwinkle';
     const meadowUrl = process.env.PUBLIC_SITE_URL || 'https://collective-bloom-kappa.vercel.app/visual-lab';
@@ -121,15 +121,15 @@ export default async function handler(req, res) {
       <body>
         <div class="card">
           <div class="header">
-            <h1 class="title">Devcon Infinite Meadow</h1>
-            <p class="subtitle">Your living botanical choreography has sprouted</p>
+            <h1 class="title">Devcon Collective Bloom</h1>
+            <p class="subtitle">Your living botanical choreography has sprouted in Collective Bloom</p>
           </div>
           <div class="flower-box">
             <div class="flower-name">🌸 ${displayFlower}</div>
             <div class="flower-meta">Choreographed by ${displayChoreographer} • ${displaySpecies.toUpperCase()}</div>
           </div>
           <p style="font-size: 15px; line-height: 1.6; color: #cbd5e1;">
-            Thank you for bringing your movement to the infinite meadow! Your 10-second choreography is now woven into the shared 2,000-flower living garden running live at Devcon.
+            Thank you for bringing your movement to Collective Bloom! Your 10-second choreography is now woven into the shared 2,000-flower living artwork running live at Devcon.
           </p>
           <div style="background: rgba(56, 189, 248, 0.08); border-radius: 8px; padding: 14px 18px; margin: 18px 0; border-left: 3px solid #38bdf8;">
             <p style="margin: 0 0 6px 0; font-weight: 600; color: #f8fafc; font-size: 14px;">Attached 10-Second Videos in this Email:</p>
@@ -140,10 +140,10 @@ export default async function handler(req, res) {
           </div>
           ${videoUrl ? `<p style="font-size: 14px; color: #94a3b8;">You can also stream or download your recorded animation here: <br><a href="${videoUrl}" style="color: #38bdf8; word-break: break-all;">${videoUrl}</a></p>` : ''}
           <div class="btn-container">
-            <a href="${meadowUrl}" class="btn">Explore the Meadow & Find Your Bloom</a>
+            <a href="${meadowUrl}" class="btn">Explore Collective Bloom & Find Your Flower</a>
           </div>
           <div class="footer">
-            Devcon Southeast Asia • Infinite Living Meadow • Crafted with WebGL & Computer Vision
+            Devcon Southeast Asia • Collective Bloom • Crafted with WebGL & Computer Vision
           </div>
         </div>
       </body>
@@ -151,9 +151,9 @@ export default async function handler(req, res) {
     `;
 
     const mailOptions = {
-      from: `"Devcon Infinite Garden" <${gmailUser}>`,
+      from: `"Devcon Collective Bloom" <${gmailUser}>`,
       to: toEmail,
-      subject: `🌸 Your Devcon Flower "${displayFlower}" is Blooming!`,
+      subject: `🌸 Your Devcon Flower "${displayFlower}" is Blooming in Collective Bloom!`,
       html: htmlContent,
       attachments
     };

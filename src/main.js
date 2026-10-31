@@ -676,7 +676,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       flowerName: flowerNameInput?.value.trim().slice(0, 20) || 'Luna Bloom',
       choreographer: choreographerInput?.value.trim() || 'Devcon Gardener',
       speciesName: speciesMeta.name || 'Botanical Wildflower',
-      artworkTitle: 'Infinite Garden',
+      artworkTitle: 'Collective Bloom',
       artistName: 'Harshit Agrawal',
       eventTitle: 'Devcon, Mumbai 2026'
     };
@@ -757,7 +757,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       try {
         if (lastRecordedChoreography.postcardVideoBlob) {
           const ext = lastRecordedChoreography.postcardVideoBlob.type.includes('mp4') ? 'mp4' : 'webm';
-          const filename = `Infinite_Garden_${(meta.flowerName || 'Bloom').replace(/[^a-zA-Z0-9_-]/g, '_')}_Devcon_2026.${ext}`;
+          const filename = `Collective_Bloom_${(meta.flowerName || 'Bloom').replace(/[^a-zA-Z0-9_-]/g, '_')}_Devcon_2026.${ext}`;
           downloadToDisk(lastRecordedChoreography.postcardVideoBlob, filename, lastRecordedChoreography.postcardVideoBlob.type);
         } else if (lastRecordedChoreography.videoBlob) {
           if (igBtnLabel) igBtnLabel.textContent = 'Rendering Story...';
@@ -773,7 +773,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         } else {
           // Fallback if no video blob: export still postcard
           const still = await instagramPostcard.exportStillPostcardPNG();
-          downloadToDisk(still.blob, `Infinite_Garden_${meta.flowerName}_Story.png`, 'image/png');
+          downloadToDisk(still.blob, `Collective_Bloom_${meta.flowerName}_Story.png`, 'image/png');
         }
 
         if (igBtnLabel) igBtnLabel.textContent = '✅ Saved Story!';
@@ -794,7 +794,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const meta = getPostcardMeta();
     instagramPostcard.renderFrame(garden.renderer?.domElement, meta, currentQrImageElement);
     const still = await instagramPostcard.exportStillPostcardPNG(
-      `Infinite_Garden_Harshit_Agrawal_${meta.flowerName}_Devcon_2026.png`
+      `Collective_Bloom_Harshit_Agrawal_${meta.flowerName}_Devcon_2026.png`
     );
     downloadToDisk(still.blob, still.filename, 'image/png');
   };

@@ -2,7 +2,7 @@ import QRCode from 'qrcode';
 
 /**
  * Instagram Vertical (9:16) Postcard & Video Generator
- * Artwork: "Infinite Garden"
+ * Artwork: "Collective Bloom"
  * Artist: Harshit Agrawal
  * Event: Devcon, Mumbai 2026
  */
@@ -19,7 +19,7 @@ export class InstagramPostcardGenerator {
     this.ensureMounted();
 
     this.artistName = 'Harshit Agrawal';
-    this.artworkTitle = 'Infinite Garden';
+    this.artworkTitle = 'Collective Bloom';
     this.eventTitle = 'Devcon, Mumbai 2026';
     this.takeawayText = 'A living collective memory sculpted by human movement & generative code.';
 
@@ -265,7 +265,7 @@ export class InstagramPostcardGenerator {
   /**
    * Captures an instant high-res PNG image postcard
    */
-  exportStillPostcardPNG(filename = 'Infinite_Garden_Postcard.png') {
+  exportStillPostcardPNG(filename = 'Collective_Bloom_Postcard.png') {
     return new Promise((resolve) => {
       this.canvas.toBlob((blob) => {
         resolve({
@@ -417,7 +417,7 @@ export class InstagramPostcardGenerator {
           stop().then((result) => {
             resolve({
               ...result,
-              filename: `Infinite_Garden_${(meta.flowerName || 'Bloom').replace(/[^a-zA-Z0-9_-]/g, '_')}_Devcon_2026.${result.extension}`
+              filename: `Collective_Bloom_${(meta.flowerName || 'Bloom').replace(/[^a-zA-Z0-9_-]/g, '_')}_Devcon_2026.${result.extension}`
             });
           });
         } else {
