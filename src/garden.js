@@ -57,7 +57,7 @@ export class GardenEnvironment {
     const h = this.container.clientHeight || window.innerHeight;
 
     // 1. Perspective Camera — Curated Front View Framing
-    this.camera = new THREE.PerspectiveCamera(45, w / h, 0.1, 50);
+    this.camera = new THREE.PerspectiveCamera(45, w / h, 0.1, 350);
     this.camera.position.copy(this.cameraGardenPos);
     this.camera.lookAt(this.currentCameraLook);
 
@@ -78,7 +78,7 @@ export class GardenEnvironment {
     // 3. Atmosphere & Fog — Semi-bright eucalyptus daylight mist matching visual lab
     const fogColor = new THREE.Color(0xb6c7b7);
     this.scene.background = fogColor;
-    this.scene.fog = new THREE.FogExp2(fogColor, 0.028);
+    this.scene.fog = new THREE.FogExp2(fogColor, 0.022);
     this.renderer.setClearColor(fogColor, 1);
 
     this.setupLighting();
@@ -125,8 +125,8 @@ export class GardenEnvironment {
   }
 
   setupSkyDome() {
-    // Gradient sky hemisphere matching visual lab daylight palette
-    const skyGeo = new THREE.SphereGeometry(32, 24, 16);
+    // Expansive gradient sky dome matching visual lab daylight palette
+    const skyGeo = new THREE.SphereGeometry(260, 32, 20);
     skyGeo.scale(-1, 1, 1);
 
     const canvas = document.createElement('canvas');
@@ -148,8 +148,9 @@ export class GardenEnvironment {
   }
 
   setupGround() {
-    // Soft mossy loam meadow bed matching visual lab
-    const groundGeo = new THREE.PlaneGeometry(18, 18, 28, 28);
+    // Expansive rolling meadow ground plane - seamless horizon without visible boundaries or edges
+    const groundSize = 250;
+    const groundGeo = new THREE.PlaneGeometry(groundSize, groundSize, 72, 72);
     groundGeo.rotateX(-Math.PI / 2);
 
     const pos = groundGeo.attributes.position;
@@ -158,7 +159,7 @@ export class GardenEnvironment {
       const z = pos.getZ(i);
       // Gentle subtle undulation away from center
       const dist = Math.hypot(x, z);
-      const bump = dist > 0.6 ? Math.sin(x * 1.3) * Math.cos(z * 1.3) * 0.05 : 0;
+      const bump = dist > 0.8 ? Math.sin(x * 0.35) * Math.cos(z * 0.35) * 0.10 : 0;
       pos.setY(i, bump);
     }
     groundGeo.computeVertexNormals();

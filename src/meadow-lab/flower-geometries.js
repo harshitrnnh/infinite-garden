@@ -237,7 +237,7 @@ export class BotanicalArticulatedStem {
           const branchL = new THREE.Group();
           branchL.position.set(-0.015, this.segmentHeight * 0.40, 0);
           branchL.rotation.y = 0.28;
-          branchL.rotation.z = -0.75; // Outward left angle
+          branchL.rotation.z = -0.52; // Angled upward-left (~30° from vertical / 60° above horizontal)
           branchL.rotation.x = 0.15;
 
           const branchLen = 0.44;
@@ -266,8 +266,8 @@ export class BotanicalArticulatedStem {
           // Delicate companion smaller flower mount at branch tip (scaled down)
           const floretMountL = new THREE.Group();
           floretMountL.position.set(0, branchLen, 0);
-          floretMountL.rotation.z = -0.25;
-          floretMountL.rotation.x = 0.18;
+          floretMountL.rotation.z = -0.15;
+          floretMountL.rotation.x = 0.12;
           branchL.add(floretMountL);
 
           if (typeof this.createFloretFn === 'function') {
@@ -283,7 +283,7 @@ export class BotanicalArticulatedStem {
             group: branchL,
             mount: floretMountL,
             side: -1,
-            baseZ: -0.75,
+            baseZ: -0.52,
             baseX: 0.15
           });
         } else {
@@ -311,7 +311,7 @@ export class BotanicalArticulatedStem {
           const branchR = new THREE.Group();
           branchR.position.set(0.015, this.segmentHeight * 0.32, 0);
           branchR.rotation.y = -0.28;
-          branchR.rotation.z = 0.72; // Outward right angle
+          branchR.rotation.z = 0.62; // Angled upward-right (~35.5° from vertical / 54.5° above horizontal)
           branchR.rotation.x = 0.12;
 
           const branchLen = 0.46;
@@ -340,8 +340,8 @@ export class BotanicalArticulatedStem {
           // Delicate companion smaller flower mount at branch tip (scaled down)
           const floretMountR = new THREE.Group();
           floretMountR.position.set(0, branchLen, 0);
-          floretMountR.rotation.z = 0.25;
-          floretMountR.rotation.x = 0.18;
+          floretMountR.rotation.z = 0.16;
+          floretMountR.rotation.x = 0.14;
           branchR.add(floretMountR);
 
           if (typeof this.createFloretFn === 'function') {
@@ -357,7 +357,7 @@ export class BotanicalArticulatedStem {
             group: branchR,
             mount: floretMountR,
             side: 1,
-            baseZ: 0.72,
+            baseZ: 0.62,
             baseX: 0.12
           });
         } else {
@@ -493,8 +493,7 @@ export class BotanicalArticulatedStem {
     });
 
     // 2. Animate Lateral Branches in Direct Response to Hands
-    // HANDS UP = BRANCHES REACH UPWARD IN WIDE V-SUNBURST (NEVER INTERSECTING MAIN FLOWER!)
-    // HANDS DOWN = BRANCHES DROOP DOWN TOWARD GROUND
+    // Branches always face upward at natural asymmetrical angles, never collapsing horizontally
     this.branchlets.forEach(b => {
       const isLeft = b.side === -1;
       const armElev = isLeft ? this.currentArmL : this.currentArmR;
@@ -502,23 +501,23 @@ export class BotanicalArticulatedStem {
       const wingSpread = Math.max(0, this.currentWingspan - 0.40) * 0.45;
 
       if (isLeft) {
-        // Left branch: baseZ is -0.75
-        // When hands reach UP, rotate up but enforce minimum outward angle of -0.40 rad (-23°) so it NEVER hits center flower!
-        const liftZ = verticalLift > 0 ? (verticalLift * 0.52) : (verticalLift * 0.75);
-        const targetZ = Math.min(-0.48, b.baseZ + liftZ - wingSpread);
+        // Left branch: baseZ is -0.52 (facing upward-left)
+        // Upward reach elevates branch up towards -0.28, resting stays at gentle upward angle (never horizontal)
+        const liftZ = verticalLift > 0 ? (verticalLift * 0.22) : (verticalLift * 0.12);
+        const targetZ = Math.min(-0.28, Math.max(-0.62, b.baseZ + liftZ - wingSpread * 0.20));
         b.group.rotation.z = targetZ;
-        b.group.rotation.x = b.baseX + verticalLift * 0.18;
+        b.group.rotation.x = b.baseX + verticalLift * 0.12;
       } else {
-        // Right branch: baseZ is +0.72
-        // When hands reach UP, rotate up but enforce minimum outward angle of +0.40 rad (+23°)
-        const liftZ = verticalLift > 0 ? (-verticalLift * 0.52) : (-verticalLift * 0.75);
-        const targetZ = Math.max(0.48, b.baseZ + liftZ + wingSpread);
+        // Right branch: baseZ is +0.62 (facing upward-right at a slightly different angle)
+        // Upward reach elevates branch up towards +0.34, resting stays at gentle upward angle (never horizontal)
+        const liftZ = verticalLift > 0 ? (-verticalLift * 0.22) : (-verticalLift * 0.12);
+        const targetZ = Math.max(0.34, Math.min(0.72, b.baseZ + liftZ + wingSpread * 0.20));
         b.group.rotation.z = targetZ;
-        b.group.rotation.x = b.baseX + verticalLift * 0.18;
+        b.group.rotation.x = b.baseX + verticalLift * 0.12;
       }
 
       // Gentle reach scale
-      const reachScale = 1.0 + Math.max(0, verticalLift) * 0.20 + wingSpread * 0.25;
+      const reachScale = 1.0 + Math.max(0, verticalLift) * 0.15 + wingSpread * 0.20;
       b.group.scale.set(reachScale, reachScale, reachScale);
     });
 

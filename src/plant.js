@@ -563,14 +563,15 @@ export class LivingPlant {
     const isCommunal = this.detailLevel === 'communal';
 
     // Communal flowers use 2 expressive branches; hero full flowers use 4
+    // Angled upward at natural asymmetrical botanical angles (never horizontal)
     const branchConfigs = isCommunal ? [
-      { segIdx: 1, side: -1, len: 0.52, baseAngleZ: -0.75, baseAngleY: 0.35, baseAngleX: 0.12, floretScale: 0.74 },
-      { segIdx: 2, side: 1, len: 0.58, baseAngleZ: 0.72, baseAngleY: -0.30, baseAngleX: 0.10, floretScale: 0.80 }
+      { segIdx: 1, side: -1, len: 0.52, baseAngleZ: -0.52, baseAngleY: 0.35, baseAngleX: 0.12, floretScale: 0.74 },
+      { segIdx: 2, side: 1, len: 0.58, baseAngleZ: 0.62, baseAngleY: -0.30, baseAngleX: 0.10, floretScale: 0.80 }
     ] : [
-      { segIdx: 1, side: -1, len: 0.52, baseAngleZ: -0.75, baseAngleY: 0.35, baseAngleX: 0.12, floretScale: 0.74 },
-      { segIdx: 2, side: 1, len: 0.58, baseAngleZ: 0.72, baseAngleY: -0.30, baseAngleX: 0.10, floretScale: 0.80 },
-      { segIdx: 3, side: -1, len: 0.48, baseAngleZ: -0.66, baseAngleY: -0.35, baseAngleX: 0.16, floretScale: 0.68 },
-      { segIdx: 4, side: 1, len: 0.42, baseAngleZ: 0.60, baseAngleY: 0.28, baseAngleX: 0.14, floretScale: 0.62 }
+      { segIdx: 1, side: -1, len: 0.52, baseAngleZ: -0.52, baseAngleY: 0.35, baseAngleX: 0.12, floretScale: 0.74 },
+      { segIdx: 2, side: 1, len: 0.58, baseAngleZ: 0.62, baseAngleY: -0.30, baseAngleX: 0.10, floretScale: 0.80 },
+      { segIdx: 3, side: -1, len: 0.48, baseAngleZ: -0.46, baseAngleY: -0.35, baseAngleX: 0.16, floretScale: 0.68 },
+      { segIdx: 4, side: 1, len: 0.42, baseAngleZ: 0.56, baseAngleY: 0.28, baseAngleX: 0.14, floretScale: 0.62 }
     ];
 
     branchConfigs.forEach((cfg) => {
@@ -2191,28 +2192,24 @@ export class LivingPlant {
       let targetX = b.baseAngleX + flutter;
 
       if (isLeft) {
-        // Left branch (baseAngleZ is negative, ~ -0.75):
-        // Hands UP: elevate branch up toward sky (-0.75 -> -0.18)
-        // Hands DOWN: droop branch down toward ground (-0.75 -> -1.50)
-        const upDownZ = verticalLiftDrive > 0 ? (verticalLiftDrive * 0.55) : (verticalLiftDrive * 0.82);
-        const spreadZ = -spreadDrive * 0.50;
-        targetZ = b.baseAngleZ + upDownZ + spreadZ;
-        // Keep minimum separation from center stem
-        b.pivot.rotation.z = Math.min(-0.16, targetZ);
+        // Left branch (baseAngleZ -0.52): facing upward-left
+        // Reaching up angles up towards -0.26, resting stays at gentle upward angle (never horizontal)
+        const upDownZ = verticalLiftDrive > 0 ? (verticalLiftDrive * 0.22) : (verticalLiftDrive * 0.12);
+        const spreadZ = -spreadDrive * 0.20;
+        targetZ = Math.min(-0.26, Math.max(-0.64, b.baseAngleZ + upDownZ + spreadZ));
+        b.pivot.rotation.z = targetZ;
       } else {
-        // Right branch (baseAngleZ is positive, ~ +0.72):
-        // Hands UP: elevate branch up toward sky (+0.72 -> +0.16)
-        // Hands DOWN: droop branch down toward ground (+0.72 -> +1.48)
-        const upDownZ = verticalLiftDrive > 0 ? (-verticalLiftDrive * 0.55) : (-verticalLiftDrive * 0.82);
-        const spreadZ = spreadDrive * 0.50;
-        targetZ = b.baseAngleZ + upDownZ + spreadZ;
-        // Keep minimum separation from center stem
-        b.pivot.rotation.z = Math.max(0.16, targetZ);
+        // Right branch (baseAngleZ +0.62): facing upward-right at slightly different angle
+        // Reaching up angles up towards +0.32, resting stays at gentle upward angle (never horizontal)
+        const upDownZ = verticalLiftDrive > 0 ? (-verticalLiftDrive * 0.22) : (-verticalLiftDrive * 0.12);
+        const spreadZ = spreadDrive * 0.20;
+        targetZ = Math.max(0.32, Math.min(0.72, b.baseAngleZ + upDownZ + spreadZ));
+        b.pivot.rotation.z = targetZ;
       }
 
-      // When hands are down, branches dip down in X toward viewer's ground
+      // Gentle forward inclination
       if (verticalLiftDrive < 0) {
-        targetX += (-verticalLiftDrive) * 0.45;
+        targetX += (-verticalLiftDrive) * 0.12;
       }
       b.pivot.rotation.x = targetX;
 
