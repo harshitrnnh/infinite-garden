@@ -529,8 +529,9 @@ export class LivingPlant {
         leafPivot.rotation.z = leafSide * 0.82;
         leafPivot.rotation.x = 0.15;
 
-        const leafLength = 0.38 - i * 0.04;
-        const leafWidth = 0.10 - i * 0.01;
+        const isPoppy = this.species === 'poppy';
+        const leafLength = (0.38 - i * 0.04) * (isPoppy ? 0.45 : 1.0);
+        const leafWidth = (0.10 - i * 0.01) * (isPoppy ? 0.45 : 1.0);
         const leafGeom = this.createSculptedLeafGeometry(leafLength, leafWidth);
         const leafMesh = new THREE.Mesh(leafGeom, this.materials.leaf);
         leafMesh.castShadow = true;

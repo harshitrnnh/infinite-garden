@@ -80,6 +80,8 @@ export class BotanicalArticulatedStem {
     this.enableBranches = options.enableBranches !== undefined ? options.enableBranches : (options.createFloretFn ? true : false);
     this.enableStanceBalancing = options.enableStanceBalancing !== undefined ? options.enableStanceBalancing : true;
     this.showBasalLeaves = options.showBasalLeaves !== undefined ? options.showBasalLeaves : false; // Default false to avoid odd flapping base leaves
+    this.reduceStemLeaves = options.reduceStemLeaves !== undefined ? options.reduceStemLeaves : false;
+    this.caulineLeafScale = options.caulineLeafScale !== undefined ? options.caulineLeafScale : 1.0;
 
     this.group = new THREE.Group();
     this.segments = [];
@@ -295,12 +297,20 @@ export class BotanicalArticulatedStem {
           segGroup.add(spineLeafL);
         }
 
-        // Larger cauline leaf along main stem ABOVE left branch
-        const stemLeaf2 = new THREE.Mesh(createSculptedFoliageLeaf(0.52, 0.138, 10), this.leafMat);
-        stemLeaf2.position.set(0.014, this.segmentHeight * 0.80, 0.008);
-        stemLeaf2.rotation.set(0.20, 0.55, 0.34);
-        stemLeaf2.castShadow = true;
-        segGroup.add(stemLeaf2);
+        // Cauline leaf along main stem ABOVE left branch (scaled down in Poppy to prevent floret intersection)
+        if (this.reduceStemLeaves) {
+          const stemLeaf2 = new THREE.Mesh(createSculptedFoliageLeaf(0.18, 0.046, 8), this.leafMat);
+          stemLeaf2.position.set(0.010, this.segmentHeight * 0.72, 0.006);
+          stemLeaf2.rotation.set(0.12, 0.40, 0.18);
+          stemLeaf2.castShadow = true;
+          segGroup.add(stemLeaf2);
+        } else {
+          const stemLeaf2 = new THREE.Mesh(createSculptedFoliageLeaf(0.52, 0.138, 10), this.leafMat);
+          stemLeaf2.position.set(0.014, this.segmentHeight * 0.80, 0.008);
+          stemLeaf2.rotation.set(0.20, 0.55, 0.34);
+          stemLeaf2.castShadow = true;
+          segGroup.add(stemLeaf2);
+        }
       }
 
       // =====================================================================
@@ -369,31 +379,54 @@ export class BotanicalArticulatedStem {
           segGroup.add(spineLeafR);
         }
 
-        // Noticeably larger sculpted cauline leaf along main stem ABOVE right branch
-        const stemLeaf3 = new THREE.Mesh(createSculptedFoliageLeaf(0.56, 0.145, 10), this.leafMat);
-        stemLeaf3.position.set(-0.015, this.segmentHeight * 0.72, 0.010);
-        stemLeaf3.rotation.set(0.22, -0.45, -0.36);
-        stemLeaf3.castShadow = true;
-        segGroup.add(stemLeaf3);
+        // Cauline leaf along main stem ABOVE right branch (scaled down in Poppy to prevent floret intersection)
+        if (this.reduceStemLeaves) {
+          const stemLeaf3 = new THREE.Mesh(createSculptedFoliageLeaf(0.18, 0.046, 8), this.leafMat);
+          stemLeaf3.position.set(-0.010, this.segmentHeight * 0.68, 0.006);
+          stemLeaf3.rotation.set(0.12, -0.35, -0.16);
+          stemLeaf3.castShadow = true;
+          segGroup.add(stemLeaf3);
+        } else {
+          const stemLeaf3 = new THREE.Mesh(createSculptedFoliageLeaf(0.56, 0.145, 10), this.leafMat);
+          stemLeaf3.position.set(-0.015, this.segmentHeight * 0.72, 0.010);
+          stemLeaf3.rotation.set(0.22, -0.45, -0.36);
+          stemLeaf3.castShadow = true;
+          segGroup.add(stemLeaf3);
+        }
       }
 
       // =====================================================================
       // NODE 4: Upper Stem Segment (Larger Alternating Cauline Leaves)
       // =====================================================================
       if (i === 4) {
-        // Lower large leaf along Segment 4 pointing forward-right
-        const stemLeaf4a = new THREE.Mesh(createSculptedFoliageLeaf(0.48, 0.125, 10), this.leafMat);
-        stemLeaf4a.position.set(0.012, this.segmentHeight * 0.35, 0.012);
-        stemLeaf4a.rotation.set(0.24, 0.65, 0.32);
-        stemLeaf4a.castShadow = true;
-        segGroup.add(stemLeaf4a);
+        if (this.reduceStemLeaves) {
+          // Delicate compact sub-floral leaflets under poppy head
+          const stemLeaf4a = new THREE.Mesh(createSculptedFoliageLeaf(0.20, 0.052, 8), this.leafMat);
+          stemLeaf4a.position.set(0.010, this.segmentHeight * 0.35, 0.008);
+          stemLeaf4a.rotation.set(0.16, 0.50, 0.20);
+          stemLeaf4a.castShadow = true;
+          segGroup.add(stemLeaf4a);
 
-        // Upper leaf along Segment 4 pointing left-backward
-        const stemLeaf4b = new THREE.Mesh(createSculptedFoliageLeaf(0.40, 0.108, 10), this.leafMat);
-        stemLeaf4b.position.set(-0.010, this.segmentHeight * 0.78, -0.012);
-        stemLeaf4b.rotation.set(0.18, -2.10, -0.28);
-        stemLeaf4b.castShadow = true;
-        segGroup.add(stemLeaf4b);
+          const stemLeaf4b = new THREE.Mesh(createSculptedFoliageLeaf(0.16, 0.042, 8), this.leafMat);
+          stemLeaf4b.position.set(-0.008, this.segmentHeight * 0.75, -0.008);
+          stemLeaf4b.rotation.set(0.14, -1.80, -0.18);
+          stemLeaf4b.castShadow = true;
+          segGroup.add(stemLeaf4b);
+        } else {
+          // Lower large leaf along Segment 4 pointing forward-right
+          const stemLeaf4a = new THREE.Mesh(createSculptedFoliageLeaf(0.48, 0.125, 10), this.leafMat);
+          stemLeaf4a.position.set(0.012, this.segmentHeight * 0.35, 0.012);
+          stemLeaf4a.rotation.set(0.24, 0.65, 0.32);
+          stemLeaf4a.castShadow = true;
+          segGroup.add(stemLeaf4a);
+
+          // Upper leaf along Segment 4 pointing left-backward
+          const stemLeaf4b = new THREE.Mesh(createSculptedFoliageLeaf(0.40, 0.108, 10), this.leafMat);
+          stemLeaf4b.position.set(-0.010, this.segmentHeight * 0.78, -0.012);
+          stemLeaf4b.rotation.set(0.18, -2.10, -0.28);
+          stemLeaf4b.castShadow = true;
+          segGroup.add(stemLeaf4b);
+        }
       }
 
       parent.add(segGroup);
@@ -415,18 +448,32 @@ export class BotanicalArticulatedStem {
     pedMesh.castShadow = true;
     this.neckGroup.add(pedMesh);
 
-    // Larger sub-floral leaves along elevated pedicel neck leading to top flower
-    const pedLeaf1 = new THREE.Mesh(createSculptedFoliageLeaf(0.30, 0.082, 8), this.leafMat);
-    pedLeaf1.position.set(0.010, pedicelH * 0.32, 0.006);
-    pedLeaf1.rotation.set(0.20, 1.15, 0.24);
-    pedLeaf1.castShadow = true;
-    this.neckGroup.add(pedLeaf1);
+    // Sub-floral leaves along elevated pedicel neck leading to top flower
+    if (this.reduceStemLeaves) {
+      const pedLeaf1 = new THREE.Mesh(createSculptedFoliageLeaf(0.14, 0.038, 8), this.leafMat);
+      pedLeaf1.position.set(0.008, pedicelH * 0.32, 0.004);
+      pedLeaf1.rotation.set(0.14, 0.85, 0.16);
+      pedLeaf1.castShadow = true;
+      this.neckGroup.add(pedLeaf1);
 
-    const pedLeaf2 = new THREE.Mesh(createSculptedFoliageLeaf(0.24, 0.065, 8), this.leafMat);
-    pedLeaf2.position.set(-0.008, pedicelH * 0.68, 0.005);
-    pedLeaf2.rotation.set(0.18, -1.25, -0.22);
-    pedLeaf2.castShadow = true;
-    this.neckGroup.add(pedLeaf2);
+      const pedLeaf2 = new THREE.Mesh(createSculptedFoliageLeaf(0.11, 0.030, 8), this.leafMat);
+      pedLeaf2.position.set(-0.006, pedicelH * 0.68, 0.004);
+      pedLeaf2.rotation.set(0.12, -0.90, -0.14);
+      pedLeaf2.castShadow = true;
+      this.neckGroup.add(pedLeaf2);
+    } else {
+      const pedLeaf1 = new THREE.Mesh(createSculptedFoliageLeaf(0.30, 0.082, 8), this.leafMat);
+      pedLeaf1.position.set(0.010, pedicelH * 0.32, 0.006);
+      pedLeaf1.rotation.set(0.20, 1.15, 0.24);
+      pedLeaf1.castShadow = true;
+      this.neckGroup.add(pedLeaf1);
+
+      const pedLeaf2 = new THREE.Mesh(createSculptedFoliageLeaf(0.24, 0.065, 8), this.leafMat);
+      pedLeaf2.position.set(-0.008, pedicelH * 0.68, 0.005);
+      pedLeaf2.rotation.set(0.18, -1.25, -0.22);
+      pedLeaf2.castShadow = true;
+      this.neckGroup.add(pedLeaf2);
+    }
 
     // Receptacle where the species-specific 3D flower head is attached
     this.receptacle = new THREE.Group();
@@ -684,7 +731,9 @@ export class PoppyMorphology {
       stemColor: 0x5a6349,
       leafColor: 0x3a4f37,
       neckTiltX: 0.08, // Subtle natural poppy poise
-      createFloretFn: (scale) => this.createFloret(scale)
+      createFloretFn: (scale) => this.createFloret(scale),
+      reduceStemLeaves: true, // In Poppy alone, reduce main stem leaves so branch florets don't intersect on extension
+      caulineLeafScale: 0.35
     });
 
     this.group = this.stem.group;
