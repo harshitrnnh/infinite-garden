@@ -392,10 +392,43 @@ document.addEventListener('DOMContentLoaded', async () => {
   const isTabletBloom = window.location.pathname.includes('tablet-bloom') || document.body.classList.contains('tablet-bloom-view');
 
   if (isTabletBloom) {
-    // Zoom out the 3D flower camera slightly to perfectly frame the bloom in portrait mode
+    // Elevated top-three-quarter view looking down into the bloom petals (matches tablet-bloom reference)
     if (garden && garden.studioSpherical) {
-      garden.studioSpherical.radius = 3.35;
-      garden.targetStudioSpherical.radius = 3.35;
+      garden.studioSpherical.radius = 3.30;
+      garden.targetStudioSpherical.radius = 3.30;
+      garden.studioSpherical.phi = 1.02; // Elevated angle looking down into the petals
+      garden.targetStudioSpherical.phi = 1.02;
+      garden.studioSpherical.theta = 0.05; // Centered
+      garden.targetStudioSpherical.theta = 0.05;
+
+      if (garden.studioLookAt) {
+        garden.studioLookAt.set(0, 0.88, 0);
+      }
+      if (garden.currentStudioLook) {
+        garden.currentStudioLook.set(0, 0.88, 0);
+      }
+    }
+
+    // Reset view helper
+    const resetFlowerView = () => {
+      if (garden && garden.targetStudioSpherical) {
+        garden.targetStudioSpherical.radius = 3.30;
+        garden.targetStudioSpherical.phi = 1.02;
+        garden.targetStudioSpherical.theta = 0.05;
+        if (garden.studioLookAt) garden.studioLookAt.set(0, 0.88, 0);
+      }
+    };
+
+    const orbitHint = document.querySelector('.tablet-orbit-hint');
+    if (orbitHint) {
+      orbitHint.style.cursor = 'pointer';
+      orbitHint.style.pointerEvents = 'auto';
+      orbitHint.addEventListener('click', resetFlowerView);
+    }
+
+    const flowerCanvas = document.getElementById('canvas-container');
+    if (flowerCanvas) {
+      flowerCanvas.addEventListener('dblclick', resetFlowerView);
     }
 
     const cameraPane = document.getElementById('camera-pane');
