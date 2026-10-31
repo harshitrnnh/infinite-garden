@@ -178,7 +178,7 @@ class MeadowVisualLab {
     this.flowerNames = [];  // parallel array to this.flowers
     this.windStrength = 1.0;
     this.currentHeroPalette = 'periwinkle';
-    this.flowerCount = 2000; // Simulated grand garden with 2,000 flowers!
+    this.flowerCount = 50; // Default to 50 simulated flowers
 
     // Choreography Simulation State
     this.currentDanceId = 'random100'; // Default to 100 Random Dancers!
@@ -244,7 +244,7 @@ class MeadowVisualLab {
     return list;
   }
 
-  initMeadow(count = 2000) {
+  initMeadow(count = 50) {
     this.flowerCount = count;
 
     // Reset name deck so every initMeadow gets a fresh deterministic shuffle
@@ -933,20 +933,23 @@ class MeadowVisualLab {
       quickToggleBtn.addEventListener('click', () => this.toggleLabels());
     }
 
-    // Keyboard shortcut: Press 'L' to toggle labels (when not typing in search input)
+    // Keyboard shortcuts: Press 'L' to toggle labels, 'H' to toggle UI (when not typing in search input)
     window.addEventListener('keydown', (e) => {
+      const activeTag = document.activeElement ? document.activeElement.tagName.toLowerCase() : '';
+      if (activeTag === 'input' || activeTag === 'textarea') return;
+
       if ((e.key === 'l' || e.key === 'L') && !e.ctrlKey && !e.metaKey && !e.altKey) {
-        const activeTag = document.activeElement ? document.activeElement.tagName.toLowerCase() : '';
-        if (activeTag !== 'input' && activeTag !== 'textarea') {
-          this.toggleLabels();
-        }
+        this.toggleLabels();
+      } else if ((e.key === 'h' || e.key === 'H') && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        hideUiBtn?.click();
       }
     });
 
-    // 9. Hide / Show All UI Button (Zen mode)
+    // 9. Hide / Show All UI Button (Zen mode - default UI hidden)
     const hideUiBtn = document.getElementById('btn-hide-ui');
     if (hideUiBtn) {
-      let uiVisible = true;
+      let uiVisible = false; // Hidden by default (Zen mode)
+      hideUiBtn.title = 'Show UI';
       hideUiBtn.addEventListener('click', () => {
         uiVisible = !uiVisible;
         document.body.classList.toggle('ui-hidden', !uiVisible);

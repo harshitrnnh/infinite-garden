@@ -1048,13 +1048,13 @@ body.ui-hidden .hide-ui-btn:hover {
 .search-inner {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   background: rgba(22, 30, 24, 0.72);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   border: 1px solid rgba(190, 208, 192, 0.26);
   border-radius: 28px;
-  padding: 7px 14px;
+  padding: 6px 12px;
   box-shadow: 0 8px 24px rgba(16, 24, 18, 0.22);
   transition: border-color 0.2s;
 }
@@ -1078,8 +1078,8 @@ body.ui-hidden .hide-ui-btn:hover {
   font-family: 'Plus Jakarta Sans', sans-serif;
   font-size: 13px;
   font-weight: 500;
-  width: 290px;
-  max-width: 82vw;
+  width: 226px;
+  max-width: calc(88vw - 50px);
   caret-color: #8794d6;
 }
 
