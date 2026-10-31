@@ -1078,7 +1078,8 @@ body.ui-hidden .hide-ui-btn:hover {
   font-family: 'Plus Jakarta Sans', sans-serif;
   font-size: 13px;
   font-weight: 500;
-  width: 190px;
+  width: 290px;
+  max-width: 82vw;
   caret-color: #8794d6;
 }
 

@@ -490,11 +490,10 @@ class MeadowVisualLab {
     // Rebuild quick select chips to include planted flowers
     this.updateQuickSelectChips();
 
-    // Update search placeholder to show a real searchable name
+    // Search placeholder remains static to illustrate search functionality
     const searchInput = document.getElementById('flower-search-input');
-    if (searchInput && this.labelSystem && this.labelSystem.labels.length > 0) {
-      const example = userPlanted.length > 0 ? userPlanted[0].name : this.labelSystem.randomExampleName();
-      searchInput.placeholder = `Search your flower… e.g. "${example}"`;
+    if (searchInput) {
+      searchInput.placeholder = 'Search your flower- e.g bloom trail';
     }
   }
 
@@ -689,11 +688,6 @@ class MeadowVisualLab {
       if (isLiveAlert) {
         // Spotlight celebrate this planted flower for 20 seconds!
         this.focusOnFlowerWithGlow(planted, 20);
-
-        const input = document.getElementById('flower-search-input');
-        if (input) {
-          input.value = flowerData.name;
-        }
       }
     };
 
