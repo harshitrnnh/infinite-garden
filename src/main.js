@@ -407,11 +407,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   const isTabletBloom = window.location.pathname.includes('tablet-bloom') || document.body.classList.contains('tablet-bloom-view');
 
   if (isTabletBloom) {
-    // Moderately elevated angle so petals and flower structure are visible from above
+    // Gentle top-angle view: natural 3/4 perspective showing petals and stem elegance
     const TABLET_BLOOM_RADIUS = 4.85; // Zoomed out so bloom and root are fully visible with comfortable margins
-    const TABLET_BLOOM_PHI = 0.82; // Balanced top-down angle (~47° from vertical)
+    const TABLET_BLOOM_PHI = 0.90; // Reduced top angle (~51.5° from vertical / ~38.5° above horizontal)
     const TABLET_BLOOM_THETA = 0.04; // Centered
-    const TABLET_BLOOM_LOOK_Y = 0.92; // Framed comfortably on flower center
+    const TABLET_BLOOM_LOOK_Y = 0.95; // Framed comfortably on flower center
 
     if (garden && garden.studioSpherical) {
       garden.studioSpherical.radius = TABLET_BLOOM_RADIUS;
