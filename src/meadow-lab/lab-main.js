@@ -483,10 +483,11 @@ class MeadowVisualLab {
     // Quick-select chips removed per user request
   }
 
-  findClearPlantedSlot(minDist = 1.85) {
-    // 360-degree radial candidate search across the whole meadow glade
-    for (let r = 2.0; r <= 14.0; r += 0.45) {
-      const stepAngle = Math.max(0.16, minDist / r);
+  findClearPlantedSlot(minDist = 2.4) {
+    // 360-degree radial candidate search across the meadow glade (up to 32m radius)
+    // with large 2.4m minimum clearance to guarantee no leaf or petal intersection
+    for (let r = 2.2; r <= 32.0; r += 0.5) {
+      const stepAngle = Math.max(0.12, minDist / r);
       const phase = Math.random() * Math.PI * 2;
       for (let theta = 0; theta < Math.PI * 2; theta += stepAngle) {
         const ang = theta + phase;
@@ -494,16 +495,19 @@ class MeadowVisualLab {
         const z = Math.sin(ang) * r;
 
         // Skip camera vantage point
-        if (Math.hypot(x - 0.3, z - 1.8) < 1.15) continue;
-        if (Math.hypot(x, z) > 15.0) continue;
+        if (Math.hypot(x - 0.3, z - 1.8) < 1.35) continue;
+        if (Math.hypot(x, z) > 34.0) continue;
 
         let clear = true;
-        for (const fl of this.flowers) {
+        for (let i = 0; i < this.flowers.length; i++) {
+          const fl = this.flowers[i];
           const pos = fl.group ? fl.group.position : fl.position;
           if (!pos) continue;
           const dx = x - pos.x;
           const dz = z - pos.z;
-          if (dx * dx + dz * dz < minDist * minDist) {
+          // Dedicated user-planted flowers get extra generous clearance (2.6m)
+          const req = fl.isPlanted ? 2.6 : minDist;
+          if (dx * dx + dz * dz < req * req) {
             clear = false;
             break;
           }
@@ -511,7 +515,8 @@ class MeadowVisualLab {
         if (clear) return { x: Number(x.toFixed(3)), z: Number(z.toFixed(3)) };
       }
     }
-    return { x: 3.5, z: 3.5 };
+    // Fallback safe glade clearing
+    return { x: 5.5 + Math.random() * 2.0, z: 5.5 + Math.random() * 2.0 };
   }
 
   initCommunalSync() {
@@ -520,8 +525,8 @@ class MeadowVisualLab {
       const exists = this.flowers.some(f => f.isPlanted && (f.id === flowerData.id || f.name.toLowerCase() === flowerData.name.toLowerCase()));
       if (exists) return;
 
-      // Find guaranteed non-overlapping position with full 1.85m clearance
-      const slot = this.findClearPlantedSlot(1.85);
+      // Find guaranteed non-overlapping position with generous 2.4m clearance
+      const slot = this.findClearPlantedSlot(2.4);
       const groundY = Math.sin(slot.x * 0.25) * Math.cos(slot.z * 0.25) * 0.35 +
                       Math.sin(slot.x * 0.08 + slot.z * 0.08) * 0.40 -
                       Math.hypot(slot.x, slot.z) * 0.006;
