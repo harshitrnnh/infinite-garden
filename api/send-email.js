@@ -25,8 +25,8 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Valid recipient email is required.' });
     }
 
-    const gmailUser = process.env.GMAIL_USER;
-    const gmailAppPassword = process.env.GMAIL_APP_PASSWORD;
+    const gmailUser = process.env.GMAIL_USER || 'infinitegardencollectivebloom@gmail.com';
+    const gmailAppPassword = (process.env.GMAIL_APP_PASSWORD || 'lzammnxlcwxcscsz').replace(/\s+/g, '');
 
     if (!gmailUser || !gmailAppPassword) {
       console.warn('GMAIL_USER or GMAIL_APP_PASSWORD not configured on Vercel environment.');
