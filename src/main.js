@@ -5,7 +5,7 @@ import { StudioFlowerManager, CHOREOGRAPHY_SPECIES_META } from './plant-morpholo
 import { BodyTracker } from './tracker.js';
 import { ChoreographyRecorder, CommunityGardenManager } from './choreography.js';
 import { InstagramPostcardGenerator } from './instagram-postcard.js';
-import { saveChoreographyToCloud } from './supabase.js';
+import { saveChoreographyToCloud, uploadVideoToCloud } from './supabase.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
   const container = document.getElementById('canvas-container');
@@ -890,7 +890,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }, 350);
   };
 
-  // Direct "Send Email" Button in Modal
+  // Direct Email Dispatch (Uploads videos to cloud first, then sends email with both attachments)
   const dispatchVisitorEmail = async (flowerName, choreographerName, visitorEmail) => {
     if (!visitorEmail || !visitorEmail.includes('@') || !lastRecordedChoreography) {
       alert('Please enter a valid email address.');
@@ -899,100 +899,77 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     try {
-      const blobToBase64 = (blob) => {
-        return new Promise((resolve) => {
-          const reader = new FileReader();
-          reader.onloadend = () => resolve(reader.result);
-          reader.readAsDataURL(blob);
-        });
+      const safeName = (flowerName || 'bloom').replace(/[^a-zA-Z0-9_-]/g, '_');
+      const timestamp = Date.now();
+
+      let videoUrl = null;
+      let postcardUrl = null;
+
+      // 1. Upload Raw Video to Supabase Storage
+      if (lastRecordedChoreography.videoBlob && lastRecordedChoreography.videoBlob.size > 2000) {
+        try {
+          const rawFilename = `${safeName}_raw_${timestamp}.mp4`;
+          videoUrl = await uploadVideoToCloud(lastRecordedChoreography.videoBlob, rawFilename);
+          console.log('[Email Dispatch] Uploaded raw video to cloud:', videoUrl);
+        } catch (uErr) {
+          console.warn('[Email Dispatch] Raw video cloud upload note:', uErr);
+        }
+      }
+
+      // 2. Upload Postcard Video to Supabase Storage
+      if (lastRecordedChoreography.postcardVideoBlob && lastRecordedChoreography.postcardVideoBlob.size > 2000) {
+        try {
+          const postFilename = `${safeName}_postcard_${timestamp}.mp4`;
+          postcardUrl = await uploadVideoToCloud(lastRecordedChoreography.postcardVideoBlob, postFilename);
+          console.log('[Email Dispatch] Uploaded postcard video to cloud:', postcardUrl);
+        } catch (uErr) {
+          console.warn('[Email Dispatch] Postcard video cloud upload note:', uErr);
+        }
+      }
+
+      const emailPayload = {
+        toEmail: visitorEmail,
+        flowerName,
+        choreographer: choreographerName,
+        species: currentSpecies,
+        videoUrl: videoUrl || undefined,
+        postcardUrl: postcardUrl || undefined
       };
 
-      let rawVideoBase64 = null;
-      let postcardVideoBase64 = null;
-
-      if (lastRecordedChoreography.videoBlob) {
-        rawVideoBase64 = await blobToBase64(lastRecordedChoreography.videoBlob);
+      // Fallback: If cloud upload was not available and blob is < 3MB, send base64
+      if (!videoUrl && lastRecordedChoreography.videoBlob && lastRecordedChoreography.videoBlob.size < 3000000) {
+        const blobToBase64 = (blob) => new Promise((res) => {
+          const reader = new FileReader();
+          reader.onloadend = () => res(reader.result);
+          reader.readAsDataURL(blob);
+        });
+        emailPayload.videoBase64 = await blobToBase64(lastRecordedChoreography.videoBlob);
       }
 
-      // Check if postcard video was captured simultaneously during recording
-      if (lastRecordedChoreography.postcardVideoBlob) {
-        postcardVideoBase64 = await blobToBase64(lastRecordedChoreography.postcardVideoBlob);
-      } else if (lastRecordedChoreography.videoBlob) {
-        // Fallback: Composite postcard video if simultaneous capture was not supported on device
-        try {
-          const meta = getPostcardMeta();
-          const comp = await instagramPostcard.compositeVideoFromBlob(
-            lastRecordedChoreography.videoBlob,
-            meta,
-            currentQrDownloadUrl
-          );
-          if (comp && comp.videoBlob) {
-            lastRecordedChoreography.postcardVideoBlob = comp.videoBlob;
-            postcardVideoBase64 = await blobToBase64(comp.videoBlob);
-          }
-        } catch (compErr) {
-          console.warn('Postcard video compositing note:', compErr);
-        }
-      }
-
-      // If postcard video could not be generated, fall back to high-res still PNG
-      if (!postcardVideoBase64) {
-        try {
-          const meta = getPostcardMeta();
-          instagramPostcard.renderFrame(garden.renderer?.domElement, meta, currentQrImageElement);
-          const still = await instagramPostcard.exportStillPostcardPNG();
-          if (still && still.dataUrl) {
-            postcardVideoBase64 = still.dataUrl;
-          }
-        } catch (_) {}
-      }
-
-      // First attempt: Send with both raw video and postcard video
-      let response = await fetch('/api/send-email', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          toEmail: visitorEmail,
-          flowerName,
-          choreographer: choreographerName,
-          species: currentSpecies,
-          videoBase64: rawVideoBase64,
-          postcardBase64: postcardVideoBase64
-        })
+      console.log('[Email Dispatch] Triggering /api/send-email with payload:', {
+        toEmail: visitorEmail,
+        flowerName,
+        hasVideoUrl: !!emailPayload.videoUrl,
+        hasPostcardUrl: !!emailPayload.postcardUrl
       });
 
-      // Fallback: If payload exceeded Vercel 4.5MB threshold, send postcard or video
-      if (response.status === 413 || !response.ok) {
-        console.warn('Retrying email dispatch in optimized mode...');
-        response = await fetch('/api/send-email', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            toEmail: visitorEmail,
-            flowerName,
-            choreographer: choreographerName,
-            species: currentSpecies,
-            postcardBase64: postcardVideoBase64,
-            videoBase64: rawVideoBase64 ? rawVideoBase64 : undefined
-          })
-        });
-        if (!response.ok) {
-          response = await fetch('/api/send-email', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              toEmail: visitorEmail,
-              flowerName,
-              choreographer: choreographerName,
-              species: currentSpecies
-            })
-          });
-        }
+      const response = await fetch('/api/send-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(emailPayload)
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('[Email Dispatch] API responded with error:', response.status, errorText);
+        return false;
       }
 
-      return response.ok;
+      const resJson = await response.json();
+      console.log('[Email Dispatch] Email dispatched successfully:', resJson);
+      return true;
     } catch (err) {
-      console.warn('Email dispatch failed:', err);
+      console.error('[Email Dispatch] Unexpected error:', err);
       return false;
     }
   };

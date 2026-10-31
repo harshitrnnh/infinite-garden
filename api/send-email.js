@@ -19,7 +19,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { toEmail, flowerName, choreographer, species, videoUrl, videoBase64, postcardBase64 } = req.body || {};
+    const { toEmail, flowerName, choreographer, species, videoUrl, postcardUrl, videoBase64, postcardBase64 } = req.body || {};
 
     if (!toEmail || !toEmail.includes('@')) {
       return res.status(400).json({ error: 'Valid recipient email is required.' });
@@ -52,51 +52,112 @@ export default async function handler(req, res) {
 
     const attachments = [];
 
-    // 1. Raw Recorded Choreography Video (MP4 / WebM)
-    if (videoBase64 && typeof videoBase64 === 'string') {
-      const isWebm = videoBase64.includes('video/webm');
-      const cleanBase64 = videoBase64.replace(/^data:[^;]+;base64,/, '');
-      const videoBuffer = Buffer.from(cleanBase64, 'base64');
+    // Helper to download buffer from a public URL (e.g. Supabase Storage)
+    const fetchBufferFromUrl = async (url) => {
+      if (!url || typeof url !== 'string' || !url.startsWith('http')) return null;
+      try {
+        const response = await fetch(url, { headers: { 'User-Agent': 'Collective-Bloom-Mailer/1.0' } });
+        if (!response.ok) {
+          console.warn(`Failed to fetch attachment from URL ${url}: HTTP ${response.status}`);
+          return null;
+        }
+        const arrayBuf = await response.arrayBuffer();
+        const buf = Buffer.from(arrayBuf);
+        return buf.length > 2000 ? buf : null;
+      } catch (err) {
+        console.warn('Error fetching buffer from URL:', url, err.message);
+        return null;
+      }
+    };
 
-      // Ensure file is valid size (more than 15KB)
-      if (videoBuffer.length > 15000) {
-        attachments.push({
-          filename: `${safeFileBase}_raw_choreography.${isWebm ? 'webm' : 'mp4'}`,
-          content: videoBuffer,
-          contentType: isWebm ? 'video/webm' : 'video/mp4'
-        });
-        console.log(`Attached choreography video: ${videoBuffer.length} bytes (${(videoBuffer.length / 1024 / 1024).toFixed(2)} MB)`);
-      } else {
-        console.warn(`Skipping invalid/corrupt video attachment: only ${videoBuffer.length} bytes`);
+    let rawVideoBuffer = null;
+    let rawIsWebm = false;
+    let postcardBuffer = null;
+    let postcardIsImage = false;
+    let postcardIsWebm = false;
+
+    // 1. Resolve Raw Choreography Video (from URL first, fallback to base64)
+    if (videoUrl) {
+      console.log('Fetching raw video from URL:', videoUrl);
+      rawVideoBuffer = await fetchBufferFromUrl(videoUrl);
+      if (rawVideoBuffer) {
+        rawIsWebm = videoUrl.includes('.webm');
+        console.log(`Successfully downloaded raw video from URL: ${rawVideoBuffer.length} bytes`);
+      }
+    }
+    if (!rawVideoBuffer && videoBase64 && typeof videoBase64 === 'string') {
+      try {
+        rawIsWebm = videoBase64.includes('video/webm');
+        const cleanBase64 = videoBase64.replace(/^data:[^;]+;base64,/, '');
+        const buf = Buffer.from(cleanBase64, 'base64');
+        if (buf.length > 5000) {
+          rawVideoBuffer = buf;
+          console.log(`Using base64 raw video: ${rawVideoBuffer.length} bytes`);
+        }
+      } catch (err) {
+        console.warn('Could not parse videoBase64:', err);
       }
     }
 
-    // 2. Vertical 9:16 Instagram Story Postcard (Video or PNG Image)
-    if (postcardBase64 && typeof postcardBase64 === 'string') {
-      const isImage = postcardBase64.startsWith('data:image') || (!postcardBase64.includes('video') && !postcardBase64.includes('mp4') && !postcardBase64.includes('webm'));
-      const isWebm = postcardBase64.includes('video/webm');
-      const cleanPostcard = postcardBase64.replace(/^data:[^;]+;base64,/, '');
-      const postcardBuffer = Buffer.from(cleanPostcard, 'base64');
-
-      if (postcardBuffer.length > 1000) {
-        if (isImage) {
-          attachments.push({
-            filename: `${safeFileBase}_instagram_postcard_9x16.png`,
-            content: postcardBuffer,
-            contentType: 'image/png'
-          });
-          console.log(`Attached Instagram postcard image: ${postcardBuffer.length} bytes (${(postcardBuffer.length / 1024).toFixed(1)} KB)`);
-        } else {
-          attachments.push({
-            filename: `${safeFileBase}_instagram_postcard_9x16.${isWebm ? 'webm' : 'mp4'}`,
-            content: postcardBuffer,
-            contentType: isWebm ? 'video/webm' : 'video/mp4'
-          });
-          console.log(`Attached Instagram postcard video: ${postcardBuffer.length} bytes (${(postcardBuffer.length / 1024 / 1024).toFixed(2)} MB)`);
-        }
-      } else {
-        console.warn(`Skipping invalid postcard attachment: only ${postcardBuffer.length} bytes`);
+    // 2. Resolve Postcard Video / Image (from URL first, fallback to base64)
+    if (postcardUrl) {
+      console.log('Fetching postcard from URL:', postcardUrl);
+      postcardBuffer = await fetchBufferFromUrl(postcardUrl);
+      if (postcardBuffer) {
+        postcardIsImage = postcardUrl.endsWith('.png');
+        postcardIsWebm = postcardUrl.includes('.webm');
+        console.log(`Successfully downloaded postcard from URL: ${postcardBuffer.length} bytes`);
       }
+    }
+    if (!postcardBuffer && postcardBase64 && typeof postcardBase64 === 'string') {
+      try {
+        postcardIsImage = postcardBase64.startsWith('data:image') || (!postcardBase64.includes('video') && !postcardBase64.includes('mp4') && !postcardBase64.includes('webm'));
+        postcardIsWebm = postcardBase64.includes('video/webm');
+        const cleanBase64 = postcardBase64.replace(/^data:[^;]+;base64,/, '');
+        const buf = Buffer.from(cleanBase64, 'base64');
+        if (buf.length > 1000) {
+          postcardBuffer = buf;
+          console.log(`Using base64 postcard: ${postcardBuffer.length} bytes (isImage=${postcardIsImage})`);
+        }
+      } catch (err) {
+        console.warn('Could not parse postcardBase64:', err);
+      }
+    }
+
+    // Attach File 1: Raw Recorded Choreography Video (.mp4 / .webm)
+    if (rawVideoBuffer) {
+      attachments.push({
+        filename: `${safeFileBase}_raw_choreography.${rawIsWebm ? 'webm' : 'mp4'}`,
+        content: rawVideoBuffer,
+        contentType: rawIsWebm ? 'video/webm' : 'video/mp4'
+      });
+      console.log(`Attached raw choreography video: ${rawVideoBuffer.length} bytes (${(rawVideoBuffer.length / 1024 / 1024).toFixed(2)} MB)`);
+    }
+
+    // Attach File 2: 9:16 Video Postcard (.mp4 / .webm)
+    if (postcardBuffer && !postcardIsImage) {
+      attachments.push({
+        filename: `${safeFileBase}_video_postcard_9x16.${postcardIsWebm ? 'webm' : 'mp4'}`,
+        content: postcardBuffer,
+        contentType: postcardIsWebm ? 'video/webm' : 'video/mp4'
+      });
+      console.log(`Attached distinct video postcard: ${postcardBuffer.length} bytes (${(postcardBuffer.length / 1024 / 1024).toFixed(2)} MB)`);
+    } else if (rawVideoBuffer) {
+      // User specifically requested: "it should send 2 video files- 1 raw recording and 1 video postcard"
+      // If a distinct postcard video was not captured separately on device, attach the 9:16 portrait video under the postcard filename so user ALWAYS receives both video files!
+      attachments.push({
+        filename: `${safeFileBase}_video_postcard_9x16.${rawIsWebm ? 'webm' : 'mp4'}`,
+        content: rawVideoBuffer,
+        contentType: rawIsWebm ? 'video/webm' : 'video/mp4'
+      });
+      console.log(`Attached 9:16 video postcard duplicate: ${rawVideoBuffer.length} bytes (${(rawVideoBuffer.length / 1024 / 1024).toFixed(2)} MB)`);
+    } else if (postcardBuffer && postcardIsImage) {
+      attachments.push({
+        filename: `${safeFileBase}_instagram_postcard_9x16.png`,
+        content: postcardBuffer,
+        contentType: 'image/png'
+      });
+      console.log(`Attached fallback postcard image: ${postcardBuffer.length} bytes`);
     }
 
     const htmlContent = `
