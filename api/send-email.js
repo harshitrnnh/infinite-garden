@@ -47,7 +47,7 @@ export default async function handler(req, res) {
     const displayFlower = flowerName || 'Infinite Garden Bloom';
     const displayChoreographer = choreographer || 'Devcon Gardener';
     const displaySpecies = species || 'Periwinkle';
-    const meadowUrl = 'https://infinite-garden-kappa.vercel.app/visual-lab';
+    const meadowUrl = process.env.PUBLIC_SITE_URL || 'https://collective-bloom-kappa.vercel.app/visual-lab';
 
     const attachments = [];
     if (videoBase64) {
@@ -120,3 +120,4 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: err.message || 'Error sending email' });
   }
 }
+
