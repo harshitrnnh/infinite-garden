@@ -292,7 +292,7 @@ class MeadowVisualLab {
     const maxGladeRadius = count > 500 ? 46.0 : (count > 200 ? 25.0 : 12.5);
 
     // High-performance spatial grid for O(1) clearance & collision testing
-    const cellSize = 2.0;
+    const cellSize = 3.0;
     const grid = new Map();
     const getGridKey = (gx, gz) => `${gx}_${gz}`;
     const insertGrid = (pos) => {
@@ -305,7 +305,7 @@ class MeadowVisualLab {
 
     const isPositionClear = (x, z, reqDist) => {
       // Keep clear of initial camera corridor (0.3, 1.8)
-      if (Math.hypot(x - 0.3, z - 1.8) < 1.15) return false;
+      if (Math.hypot(x - 0.3, z - 1.8) < 1.4) return false;
       // Keep strictly within glade radius bounds
       if (Math.hypot(x, z) > maxGladeRadius) return false;
 
@@ -334,21 +334,21 @@ class MeadowVisualLab {
     const userPlanted = this.getUserPlantedFlowers();
     userPlanted.forEach((pData, idx) => {
       let slot = null;
-      for (let r = 2.0; r <= 8.5 && !slot; r += 0.45) {
-        const step = Math.max(0.18, 1.65 / r);
-        const phase = (idx * 2.15) % (Math.PI * 2);
+      for (let r = 2.4; r <= 24.0 && !slot; r += 0.5) {
+        const step = Math.max(0.12, 2.5 / r);
+        const phase = (idx * 2.39996) % (Math.PI * 2);
         for (let th = 0; th < Math.PI * 2; th += step) {
           const ang = th + phase;
           const x = Math.cos(ang) * r;
           const z = Math.sin(ang) * r;
-          if (isPositionClear(x, z, 1.65)) {
+          if (isPositionClear(x, z, 2.5)) {
             slot = { x: Number(x.toFixed(3)), z: Number(z.toFixed(3)) };
             break;
           }
         }
       }
       if (!slot) {
-        slot = this.findClearPlantedSlot(1.65);
+        slot = this.findClearPlantedSlot(2.5);
       }
 
       insertGrid(slot);
@@ -614,11 +614,11 @@ class MeadowVisualLab {
     }, durationSeconds * 1000);
   }
 
-  findClearPlantedSlot(minDist = 2.4) {
-    // 360-degree radial candidate search across the meadow glade (up to 32m radius)
-    // with large 2.4m minimum clearance to guarantee no leaf or petal intersection
-    for (let r = 2.2; r <= 32.0; r += 0.5) {
-      const stepAngle = Math.max(0.12, minDist / r);
+  findClearPlantedSlot(minDist = 2.6) {
+    // 360-degree radial candidate search across the meadow glade (up to 38m radius)
+    // with large 2.6m minimum clearance to guarantee no leaf or petal intersection
+    for (let r = 2.4; r <= 38.0; r += 0.5) {
+      const stepAngle = Math.max(0.10, minDist / r);
       const phase = Math.random() * Math.PI * 2;
       for (let theta = 0; theta < Math.PI * 2; theta += stepAngle) {
         const ang = theta + phase;
@@ -626,8 +626,8 @@ class MeadowVisualLab {
         const z = Math.sin(ang) * r;
 
         // Skip camera vantage point
-        if (Math.hypot(x - 0.3, z - 1.8) < 1.35) continue;
-        if (Math.hypot(x, z) > 34.0) continue;
+        if (Math.hypot(x - 0.3, z - 1.8) < 1.4) continue;
+        if (Math.hypot(x, z) > 42.0) continue;
 
         let clear = true;
         for (let i = 0; i < this.flowers.length; i++) {
@@ -636,8 +636,8 @@ class MeadowVisualLab {
           if (!pos) continue;
           const dx = x - pos.x;
           const dz = z - pos.z;
-          // Dedicated user-planted flowers get extra generous clearance (2.6m)
-          const req = fl.isPlanted ? 2.6 : minDist;
+          // Dedicated user-planted flowers get extra generous clearance (2.8m)
+          const req = fl.isPlanted ? 2.8 : minDist;
           if (dx * dx + dz * dz < req * req) {
             clear = false;
             break;
@@ -647,7 +647,7 @@ class MeadowVisualLab {
       }
     }
     // Fallback safe glade clearing
-    return { x: 5.5 + Math.random() * 2.0, z: 5.5 + Math.random() * 2.0 };
+    return { x: 7.5 + Math.random() * 3.0, z: 7.5 + Math.random() * 3.0 };
   }
 
   initCommunalSync() {
