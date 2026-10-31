@@ -232,8 +232,21 @@ document.addEventListener('DOMContentLoaded', async () => {
     tracker.initialize();
   }
 
-  // 5. Initialize Choreography Recorder (with 3D canvas video stream capture for 10s animation delivery)
-  const choreographyRecorder = new ChoreographyRecorder(tracker, () => garden.renderer?.domElement);
+  // 5. Initialize Choreography Recorder (with dual 3D canvas raw video & 9:16 postcard video stream capture)
+  const choreographyRecorder = new ChoreographyRecorder(
+    tracker,
+    () => garden.renderer?.domElement,
+    {
+      postcardCanvasProvider: () => {
+        instagramPostcard.ensureMounted();
+        return instagramPostcard.canvas;
+      },
+      onPostcardFrame: () => {
+        const meta = getPostcardMeta();
+        instagramPostcard.renderFrame(garden.renderer?.domElement, meta, currentQrImageElement);
+      }
+    }
+  );
   let lastRecordedChoreography = null;
 
   // Poetic Names Pool (Strictly capped to <= 20 characters)
@@ -742,7 +755,11 @@ document.addEventListener('DOMContentLoaded', async () => {
       plantingInstagramBtn.disabled = true;
 
       try {
-        if (lastRecordedChoreography.videoBlob) {
+        if (lastRecordedChoreography.postcardVideoBlob) {
+          const ext = lastRecordedChoreography.postcardVideoBlob.type.includes('mp4') ? 'mp4' : 'webm';
+          const filename = `Infinite_Garden_${(meta.flowerName || 'Bloom').replace(/[^a-zA-Z0-9_-]/g, '_')}_Devcon_2026.${ext}`;
+          downloadToDisk(lastRecordedChoreography.postcardVideoBlob, filename, lastRecordedChoreography.postcardVideoBlob.type);
+        } else if (lastRecordedChoreography.videoBlob) {
           if (igBtnLabel) igBtnLabel.textContent = 'Rendering Story...';
           const result = await instagramPostcard.compositeVideoFromBlob(
             lastRecordedChoreography.videoBlob,
@@ -884,25 +901,46 @@ document.addEventListener('DOMContentLoaded', async () => {
       };
 
       let rawVideoBase64 = null;
-      let postcardImageBase64 = null;
+      let postcardVideoBase64 = null;
 
       if (lastRecordedChoreography.videoBlob) {
         rawVideoBase64 = await blobToBase64(lastRecordedChoreography.videoBlob);
       }
 
-      // Generate high-resolution 9:16 vertical Instagram Story Postcard image
-      try {
-        const meta = getPostcardMeta();
-        instagramPostcard.renderFrame(garden.renderer?.domElement, meta, currentQrImageElement);
-        const still = await instagramPostcard.exportStillPostcardPNG();
-        if (still && still.dataUrl) {
-          postcardImageBase64 = still.dataUrl;
+      // Check if postcard video was captured simultaneously during recording
+      if (lastRecordedChoreography.postcardVideoBlob) {
+        postcardVideoBase64 = await blobToBase64(lastRecordedChoreography.postcardVideoBlob);
+      } else if (lastRecordedChoreography.videoBlob) {
+        // Fallback: Composite postcard video if simultaneous capture was not supported on device
+        try {
+          const meta = getPostcardMeta();
+          const comp = await instagramPostcard.compositeVideoFromBlob(
+            lastRecordedChoreography.videoBlob,
+            meta,
+            currentQrDownloadUrl
+          );
+          if (comp && comp.videoBlob) {
+            lastRecordedChoreography.postcardVideoBlob = comp.videoBlob;
+            postcardVideoBase64 = await blobToBase64(comp.videoBlob);
+          }
+        } catch (compErr) {
+          console.warn('Postcard video compositing note:', compErr);
         }
-      } catch (postErr) {
-        console.warn('Postcard generation for email warning:', postErr);
       }
 
-      // First attempt: Send with both raw video and 9:16 postcard
+      // If postcard video could not be generated, fall back to high-res still PNG
+      if (!postcardVideoBase64) {
+        try {
+          const meta = getPostcardMeta();
+          instagramPostcard.renderFrame(garden.renderer?.domElement, meta, currentQrImageElement);
+          const still = await instagramPostcard.exportStillPostcardPNG();
+          if (still && still.dataUrl) {
+            postcardVideoBase64 = still.dataUrl;
+          }
+        } catch (_) {}
+      }
+
+      // First attempt: Send with both raw video and postcard video
       let response = await fetch('/api/send-email', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -912,7 +950,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           choreographer: choreographerName,
           species: currentSpecies,
           videoBase64: rawVideoBase64,
-          postcardBase64: postcardImageBase64
+          postcardBase64: postcardVideoBase64
         })
       });
 
@@ -927,7 +965,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             flowerName,
             choreographer: choreographerName,
             species: currentSpecies,
-            postcardBase64: postcardImageBase64,
+            postcardBase64: postcardVideoBase64,
             videoBase64: rawVideoBase64 ? rawVideoBase64 : undefined
           })
         });

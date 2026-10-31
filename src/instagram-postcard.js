@@ -14,7 +14,9 @@ export class InstagramPostcardGenerator {
     this.canvas = document.createElement('canvas');
     this.canvas.width = this.width;
     this.canvas.height = this.height;
+    this.canvas.id = 'postcard-render-canvas';
     this.ctx = this.canvas.getContext('2d');
+    this.ensureMounted();
 
     this.artistName = 'Harshit Agrawal';
     this.artworkTitle = 'Infinite Garden';
@@ -31,6 +33,20 @@ export class InstagramPostcardGenerator {
         speedY: -0.3 - Math.random() * 0.6,
         alpha: 0.2 + Math.random() * 0.5
       });
+    }
+  }
+
+  ensureMounted() {
+    if (typeof document !== 'undefined' && document.body && !this.canvas.parentElement) {
+      this.canvas.style.position = 'fixed';
+      this.canvas.style.left = '-9999px';
+      this.canvas.style.top = '-9999px';
+      this.canvas.style.width = '1px';
+      this.canvas.style.height = '1px';
+      this.canvas.style.opacity = '0.01';
+      this.canvas.style.pointerEvents = 'none';
+      this.canvas.setAttribute('aria-hidden', 'true');
+      document.body.appendChild(this.canvas);
     }
   }
 

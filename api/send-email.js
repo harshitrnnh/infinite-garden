@@ -71,9 +71,9 @@ export default async function handler(req, res) {
       }
     }
 
-    // 2. Vertical 9:16 Instagram Story Postcard (PNG Image or Video)
+    // 2. Vertical 9:16 Instagram Story Postcard (Video or PNG Image)
     if (postcardBase64 && typeof postcardBase64 === 'string') {
-      const isImage = postcardBase64.startsWith('data:image') || !postcardBase64.includes('video');
+      const isImage = postcardBase64.startsWith('data:image') || (!postcardBase64.includes('video') && !postcardBase64.includes('mp4') && !postcardBase64.includes('webm'));
       const isWebm = postcardBase64.includes('video/webm');
       const cleanPostcard = postcardBase64.replace(/^data:[^;]+;base64,/, '');
       const postcardBuffer = Buffer.from(cleanPostcard, 'base64');
@@ -92,7 +92,7 @@ export default async function handler(req, res) {
             content: postcardBuffer,
             contentType: isWebm ? 'video/webm' : 'video/mp4'
           });
-          console.log(`Attached Instagram postcard video: ${postcardBuffer.length} bytes`);
+          console.log(`Attached Instagram postcard video: ${postcardBuffer.length} bytes (${(postcardBuffer.length / 1024 / 1024).toFixed(2)} MB)`);
         }
       } else {
         console.warn(`Skipping invalid postcard attachment: only ${postcardBuffer.length} bytes`);
@@ -132,10 +132,10 @@ export default async function handler(req, res) {
             Thank you for bringing your movement to the infinite meadow! Your 10-second choreography is now woven into the shared 2,000-flower living garden running live at Devcon.
           </p>
           <div style="background: rgba(56, 189, 248, 0.08); border-radius: 8px; padding: 14px 18px; margin: 18px 0; border-left: 3px solid #38bdf8;">
-            <p style="margin: 0 0 6px 0; font-weight: 600; color: #f8fafc; font-size: 14px;">Attached Files in this Email:</p>
+            <p style="margin: 0 0 6px 0; font-weight: 600; color: #f8fafc; font-size: 14px;">Attached 10-Second Videos in this Email:</p>
             <ul style="margin: 0; padding-left: 18px; font-size: 13px; color: #94a3b8; line-height: 1.6;">
               <li><strong>🎬 Raw Choreography Video (.mp4)</strong>: Your 10-second full dance animation of the living flower.</li>
-              <li><strong>🌸 Instagram Story Postcard (.png)</strong>: High-resolution vertical 9:16 botanical keepsake with Devcon artwork stamp, ready for Instagram Stories, Reels, & Status.</li>
+              <li><strong>📱 Instagram Story Postcard Video (.mp4)</strong>: Vertical 9:16 video postcard with Devcon artwork stamp, ready for Instagram Stories, Reels, & Status.</li>
             </ul>
           </div>
           ${videoUrl ? `<p style="font-size: 14px; color: #94a3b8;">You can also stream or download your recorded animation here: <br><a href="${videoUrl}" style="color: #38bdf8; word-break: break-all;">${videoUrl}</a></p>` : ''}

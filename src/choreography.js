@@ -430,21 +430,47 @@ export function generateProceduralMeadowFlowers(count, startIndex, meadowSlots) 
 // and captures a real 10s video stream of the 3D flower for email delivery & export.
 // -------------------------------------------------------------------------------------
 export class ChoreographyRecorder {
-  constructor(tracker, canvasProvider = null) {
+  constructor(tracker, canvasProvider = null, options = {}) {
     this.tracker = tracker;
     this.canvasProvider = canvasProvider;
+    this.postcardCanvasProvider = options.postcardCanvasProvider || null;
+    this.onPostcardFrame = options.onPostcardFrame || null;
     this.isRecording = false;
     this.isCountingDown = false;
     this.countdownTimer = null;
     this.recordTimer = null;
     this.sampleInterval = null;
     this.recordedFrames = [];
-    this.duration = 10.0; // 10 seconds choreography window
-    this.fps = 20;        // 20 samples per second
+    this.duration = options.duration || 10.0; // 10 seconds choreography window
+    this.fps = options.fps || 20;        // 20 samples per second
     this.startTime = 0;
     this.mediaRecorder = null;
     this.videoChunks = [];
     this.recordedVideoBlob = null;
+    this.postcardMediaRecorder = null;
+    this.postcardChunks = [];
+    this.recordedPostcardVideoBlob = null;
+    this.recordCanvas = null;
+    this.recordCtx = null;
+    this.recordAnimFrame = null;
+  }
+
+  getBestVideoMimeType() {
+    if (typeof MediaRecorder === 'undefined') return '';
+    const codecCandidates = [
+      'video/mp4;codecs=avc1.42E01E',
+      'video/mp4;codecs=avc1',
+      'video/mp4',
+      'video/webm;codecs=vp9',
+      'video/webm;codecs=vp8',
+      'video/webm'
+    ];
+    for (const candidate of codecCandidates) {
+      if (MediaRecorder.isTypeSupported(candidate)) {
+        return candidate;
+      }
+    }
+    return '';
   }
 
   startCountdown(onCountdownTick, onStartRecording, onProgress, onComplete) {
@@ -472,65 +498,88 @@ export class ChoreographyRecorder {
     this.recordedFrames = [];
     this.videoChunks = [];
     this.recordedVideoBlob = null;
+    this.postcardChunks = [];
+    this.recordedPostcardVideoBlob = null;
     this.startTime = performance.now();
     const intervalMs = 1000 / this.fps;
 
-    // Start Canvas MediaRecorder stream if available
     const sourceCanvas = typeof this.canvasProvider === 'function' ? this.canvasProvider() : this.canvasProvider;
     if (sourceCanvas && typeof MediaRecorder !== 'undefined') {
       try {
-        // Detect portrait vs landscape
         const isPortrait = sourceCanvas.height > sourceCanvas.width;
         const targetWidth = isPortrait ? 720 : 1280;
         const targetHeight = isPortrait ? 1280 : 720;
 
-        // Create standard HD recording canvas (prevents hardware encoder crashes from retina 2160p resolution on iPads)
+        // 1. Standard HD Raw Recording Canvas (mounted offscreen in DOM so Safari processes frames)
         this.recordCanvas = document.createElement('canvas');
         this.recordCanvas.width = targetWidth;
         this.recordCanvas.height = targetHeight;
+        this.recordCanvas.id = 'raw-video-record-canvas';
+        this.recordCanvas.style.position = 'fixed';
+        this.recordCanvas.style.left = '-9999px';
+        this.recordCanvas.style.top = '-9999px';
+        this.recordCanvas.style.width = '1px';
+        this.recordCanvas.style.height = '1px';
+        this.recordCanvas.style.opacity = '0.01';
+        this.recordCanvas.style.pointerEvents = 'none';
+        this.recordCanvas.setAttribute('aria-hidden', 'true');
+        if (typeof document !== 'undefined' && document.body) {
+          document.body.appendChild(this.recordCanvas);
+        }
         this.recordCtx = this.recordCanvas.getContext('2d');
-
-        // Draw initial frame
         this.recordCtx.drawImage(sourceCanvas, 0, 0, targetWidth, targetHeight);
 
-        // Capture stream from 2D canvas at 25fps
-        const stream = this.recordCanvas.captureStream(25);
-
-        // Select reliable video-only codec (never use audio codecs like mp4a on video-only streams)
-        const codecCandidates = [
-          'video/mp4;codecs=avc1.42E01E',
-          'video/mp4;codecs=avc1',
-          'video/mp4',
-          'video/webm;codecs=vp9',
-          'video/webm;codecs=vp8',
-          'video/webm'
-        ];
-        let mime = '';
-        for (const candidate of codecCandidates) {
-          if (MediaRecorder.isTypeSupported(candidate)) {
-            mime = candidate;
-            break;
-          }
+        let stream = null;
+        try {
+          stream = this.recordCanvas.captureStream(25);
+        } catch (_) {}
+        if (!stream && sourceCanvas.captureStream) {
+          stream = sourceCanvas.captureStream(25);
         }
 
+        const mime = this.getBestVideoMimeType();
         const options = { videoBitsPerSecond: 1200000 };
         if (mime) options.mimeType = mime;
 
-        this.mediaRecorder = new MediaRecorder(stream, options);
-        this.mediaRecorder.ondataavailable = (e) => {
-          if (e.data && e.data.size > 0) {
-            this.videoChunks.push(e.data);
-          }
-        };
-        this.mediaRecorder.start(250);
+        if (stream) {
+          this.mediaRecorder = new MediaRecorder(stream, options);
+          this.mediaRecorder.ondataavailable = (e) => {
+            if (e.data && e.data.size > 0) {
+              this.videoChunks.push(e.data);
+            }
+          };
+          this.mediaRecorder.start(250);
+        }
 
-        // Continuous frame pump copying WebGL frames to recording canvas
+        // 2. Vertical 9:16 Postcard Video Stream
+        const postcardCanvas = typeof this.postcardCanvasProvider === 'function' ? this.postcardCanvasProvider() : this.postcardCanvasProvider;
+        if (postcardCanvas && postcardCanvas.captureStream) {
+          try {
+            const pStream = postcardCanvas.captureStream(25);
+            const pOptions = { videoBitsPerSecond: 1200000 };
+            if (mime) pOptions.mimeType = mime;
+            this.postcardMediaRecorder = new MediaRecorder(pStream, pOptions);
+            this.postcardMediaRecorder.ondataavailable = (e) => {
+              if (e.data && e.data.size > 0) {
+                this.postcardChunks.push(e.data);
+              }
+            };
+            this.postcardMediaRecorder.start(250);
+          } catch (pErr) {
+            console.warn('[ChoreographyRecorder] Postcard simultaneous recorder error (will fallback to post-composite):', pErr);
+          }
+        }
+
+        // Continuous frame pump copying WebGL frames to recording canvas & updating postcard canvas
         this.recordAnimFrame = null;
         const pumpFrames = () => {
           if (!this.isRecording) return;
           try {
             if (this.recordCtx && sourceCanvas) {
               this.recordCtx.drawImage(sourceCanvas, 0, 0, targetWidth, targetHeight);
+            }
+            if (typeof this.onPostcardFrame === 'function') {
+              this.onPostcardFrame();
             }
           } catch (_) {}
           this.recordAnimFrame = requestAnimationFrame(pumpFrames);
@@ -586,6 +635,10 @@ export class ChoreographyRecorder {
       this.recordAnimFrame = null;
     }
 
+    if (this.recordCanvas && this.recordCanvas.parentElement) {
+      this.recordCanvas.parentElement.removeChild(this.recordCanvas);
+    }
+
     // Smooth loop boundary so start and end loop seamlessly
     this.smoothLoopBoundary();
 
@@ -594,12 +647,20 @@ export class ChoreographyRecorder {
         duration: this.duration,
         fps: this.fps,
         frames: this.recordedFrames,
-        videoBlob: this.recordedVideoBlob
+        videoBlob: this.recordedVideoBlob,
+        postcardVideoBlob: this.recordedPostcardVideoBlob
       };
       onComplete(result);
     };
 
+    let pendingStops = 0;
+    const checkAllStopped = () => {
+      if (pendingStops <= 0) finalize();
+    };
+
+    // 1. Stop Raw MediaRecorder
     if (this.mediaRecorder && this.mediaRecorder.state !== 'inactive') {
+      pendingStops++;
       try {
         if (this.mediaRecorder.state === 'recording') {
           this.mediaRecorder.requestData();
@@ -609,16 +670,45 @@ export class ChoreographyRecorder {
         if (this.videoChunks.length > 0) {
           const type = this.mediaRecorder.mimeType || 'video/mp4';
           this.recordedVideoBlob = new Blob(this.videoChunks, { type });
-          console.log(`[ChoreographyRecorder] Video capture complete: ${this.recordedVideoBlob.size} bytes (${(this.recordedVideoBlob.size / 1024 / 1024).toFixed(2)} MB), mime=${type}`);
+          console.log(`[ChoreographyRecorder] Raw video capture complete: ${this.recordedVideoBlob.size} bytes (${(this.recordedVideoBlob.size / 1024 / 1024).toFixed(2)} MB), mime=${type}`);
         }
-        finalize();
+        pendingStops--;
+        checkAllStopped();
       };
       try {
         this.mediaRecorder.stop();
       } catch (_) {
-        finalize();
+        pendingStops--;
+        checkAllStopped();
       }
-    } else {
+    }
+
+    // 2. Stop Postcard MediaRecorder
+    if (this.postcardMediaRecorder && this.postcardMediaRecorder.state !== 'inactive') {
+      pendingStops++;
+      try {
+        if (this.postcardMediaRecorder.state === 'recording') {
+          this.postcardMediaRecorder.requestData();
+        }
+      } catch (_) {}
+      this.postcardMediaRecorder.onstop = () => {
+        if (this.postcardChunks.length > 0) {
+          const type = this.postcardMediaRecorder.mimeType || 'video/mp4';
+          this.recordedPostcardVideoBlob = new Blob(this.postcardChunks, { type });
+          console.log(`[ChoreographyRecorder] Postcard video capture complete: ${this.recordedPostcardVideoBlob.size} bytes (${(this.recordedPostcardVideoBlob.size / 1024 / 1024).toFixed(2)} MB), mime=${type}`);
+        }
+        pendingStops--;
+        checkAllStopped();
+      };
+      try {
+        this.postcardMediaRecorder.stop();
+      } catch (_) {
+        pendingStops--;
+        checkAllStopped();
+      }
+    }
+
+    if (pendingStops === 0) {
       finalize();
     }
   }
@@ -647,16 +737,24 @@ export class ChoreographyRecorder {
       cancelAnimationFrame(this.recordAnimFrame);
       this.recordAnimFrame = null;
     }
+    if (this.recordCanvas && this.recordCanvas.parentElement) {
+      this.recordCanvas.parentElement.removeChild(this.recordCanvas);
+    }
     this.recordCanvas = null;
     this.recordCtx = null;
     if (this.mediaRecorder && this.mediaRecorder.state !== 'inactive') {
       try { this.mediaRecorder.stop(); } catch (_) {}
+    }
+    if (this.postcardMediaRecorder && this.postcardMediaRecorder.state !== 'inactive') {
+      try { this.postcardMediaRecorder.stop(); } catch (_) {}
     }
     this.isCountingDown = false;
     this.isRecording = false;
     this.recordedFrames = [];
     this.videoChunks = [];
     this.recordedVideoBlob = null;
+    this.postcardChunks = [];
+    this.recordedPostcardVideoBlob = null;
   }
 }
 
