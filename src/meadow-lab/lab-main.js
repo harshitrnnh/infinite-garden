@@ -914,32 +914,6 @@ class MeadowVisualLab {
         }
       });
     }
-
-    // 10. TV 16:9 Widescreen Fit Toggle (Solves iPad 4:3 -> TV side letterboxing directly from iPad)
-    const tvFitBtn = document.getElementById('btn-tv-fit');
-    if (tvFitBtn) {
-      // Check saved preference
-      const isTvFit = localStorage.getItem('botanical_tv_16_9') === 'true';
-      if (isTvFit) {
-        document.body.classList.add('tv-widescreen-mode');
-        tvFitBtn.classList.add('active');
-        tvFitBtn.textContent = '📺 16:9 Fit: ON';
-      }
-
-      tvFitBtn.addEventListener('click', () => {
-        const active = document.body.classList.toggle('tv-widescreen-mode');
-        tvFitBtn.classList.toggle('active', active);
-        tvFitBtn.textContent = active ? '📺 16:9 Fit: ON' : '📺 TV 16:9 Fit';
-        localStorage.setItem('botanical_tv_16_9', active ? 'true' : 'false');
-
-        // Trigger renderer resize to adapt projection matrix
-        setTimeout(() => {
-          if (this.sceneEnv && typeof this.sceneEnv.onResize === 'function') {
-            this.sceneEnv.onResize();
-          }
-        }, 100);
-      });
-    }
   }
 
   initSearch() {
