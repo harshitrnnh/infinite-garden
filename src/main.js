@@ -392,30 +392,30 @@ document.addEventListener('DOMContentLoaded', async () => {
   const isTabletBloom = window.location.pathname.includes('tablet-bloom') || document.body.classList.contains('tablet-bloom-view');
 
   if (isTabletBloom) {
-    // Elevated top-three-quarter view looking down into the bloom petals (matches tablet-bloom reference)
+    // Elevated top-three-quarter view zoomed out so the entire flower (petals, stem, shadow) is fully visible
     if (garden && garden.studioSpherical) {
-      garden.studioSpherical.radius = 3.30;
-      garden.targetStudioSpherical.radius = 3.30;
-      garden.studioSpherical.phi = 1.02; // Elevated angle looking down into the petals
-      garden.targetStudioSpherical.phi = 1.02;
+      garden.studioSpherical.radius = 4.50; // Zoomed out more so top bloom is fully visible below header
+      garden.targetStudioSpherical.radius = 4.50;
+      garden.studioSpherical.phi = 1.08; // Elevated angle looking down into the petals
+      garden.targetStudioSpherical.phi = 1.08;
       garden.studioSpherical.theta = 0.05; // Centered
       garden.targetStudioSpherical.theta = 0.05;
 
       if (garden.studioLookAt) {
-        garden.studioLookAt.set(0, 0.88, 0);
+        garden.studioLookAt.set(0, 0.76, 0); // Lowered center so bloom petals clear the header bar
       }
       if (garden.currentStudioLook) {
-        garden.currentStudioLook.set(0, 0.88, 0);
+        garden.currentStudioLook.set(0, 0.76, 0);
       }
     }
 
     // Reset view helper
     const resetFlowerView = () => {
       if (garden && garden.targetStudioSpherical) {
-        garden.targetStudioSpherical.radius = 3.30;
-        garden.targetStudioSpherical.phi = 1.02;
+        garden.targetStudioSpherical.radius = 4.50;
+        garden.targetStudioSpherical.phi = 1.08;
         garden.targetStudioSpherical.theta = 0.05;
-        if (garden.studioLookAt) garden.studioLookAt.set(0, 0.88, 0);
+        if (garden.studioLookAt) garden.studioLookAt.set(0, 0.76, 0);
       }
     };
 
@@ -441,31 +441,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     const zoomOutBtn = document.getElementById('inlet-zoom-out');
     const zoomValLabel = document.getElementById('inlet-zoom-val');
 
-    // Automatically adapt inlet stage to match camera native aspect ratio
-    const updateInletAspectRatio = () => {
-      if (tracker.video && tracker.video.videoWidth > 0 && tracker.video.videoHeight > 0) {
-        const inletStage = document.getElementById('inlet-stage');
-        if (inletStage) {
-          inletStage.style.aspectRatio = `${tracker.video.videoWidth} / ${tracker.video.videoHeight}`;
-        }
-      }
-    };
-    if (tracker.video) {
-      tracker.video.addEventListener('loadedmetadata', updateInletAspectRatio);
-      tracker.video.addEventListener('play', updateInletAspectRatio);
-      tracker.video.addEventListener('resize', updateInletAspectRatio);
-    }
-
-    let isFullBodyMode = true; // Default object-fit: contain (exact 1:1 skeleton alignment)
+    let isCoverMode = true; // Default object-fit: cover (matches index.html exact 1:1 skeleton size)
 
     if (fovToggleBtn) {
       fovToggleBtn.addEventListener('click', () => {
-        isFullBodyMode = !isFullBodyMode;
+        isCoverMode = !isCoverMode;
         if (cameraPane) {
-          cameraPane.classList.toggle('inlet-fit-cover', !isFullBodyMode);
+          cameraPane.classList.toggle('inlet-fit-contain', !isCoverMode);
         }
         if (fovLabel) {
-          fovLabel.textContent = isFullBodyMode ? 'Wide' : 'Fill';
+          fovLabel.textContent = isCoverMode ? 'Fill' : 'Contain';
         }
       });
     }
