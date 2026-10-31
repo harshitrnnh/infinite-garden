@@ -1,15 +1,21 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="viewport"
+    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>Collective Bloom — Tablet Bloom & Fullscreen Flower Choreography</title>
-  <meta name="description" content="Fullscreen vertical tablet flower choreography installation with floating dancer inlet view and wide-angle skeleton tracking.">
+  <meta name="description"
+    content="Fullscreen vertical tablet flower choreography installation with floating dancer inlet view and wide-angle skeleton tracking.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;1,9..144,400&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;1,9..144,400&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap"
+    rel="stylesheet">
   <link rel="stylesheet" href="./src/style.css">
 </head>
+
 <body class="choreography-split-view tablet-bloom-view">
   <!-- Minimal Ambient Mist Vignette -->
   <div class="mist-vignette"></div>
@@ -44,7 +50,8 @@
         <div class="inlet-action-group">
           <!-- Zoom Controls (Wide-angle capture for nearby full body) -->
           <div class="inlet-zoom-controls">
-            <button class="inlet-tool-btn" id="inlet-zoom-out" title="Zoom Out (Wider FOV for nearby full body)">−</button>
+            <button class="inlet-tool-btn" id="inlet-zoom-out"
+              title="Zoom Out (Wider FOV for nearby full body)">−</button>
             <span class="inlet-zoom-label" id="inlet-zoom-val" title="Camera Field of View">85%</span>
             <button class="inlet-tool-btn" id="inlet-zoom-in" title="Zoom In">+</button>
           </div>
@@ -55,7 +62,8 @@
           </button>
 
           <!-- Toggle Inlet Size -->
-          <button class="inlet-tool-btn inlet-text-btn" id="inlet-size-toggle" title="Toggle Inlet Window Size (Normal / Large / Compact)">⤢ Size</button>
+          <button class="inlet-tool-btn inlet-text-btn" id="inlet-size-toggle"
+            title="Toggle Inlet Window Size (Normal / Large / Compact)">⤢ Size</button>
 
           <!-- Flip Corner: Top Right <-> Top Left -->
           <button class="inlet-tool-btn" id="inlet-corner-toggle" title="Switch Corner Position">⇄</button>
@@ -90,28 +98,32 @@
           <button class="modal-close-btn" id="centerstage-close-btn">&times;</button>
         </div>
         <h3 class="modal-title">Optimized for 3.5 to 5 Feet</h3>
-        <p class="modal-desc">You do not need to step back! Our choreography vision model is calibrated for standing right in front of your iPad:</p>
-        
+        <p class="modal-desc">You do not need to step back! Our choreography vision model is calibrated for standing
+          right in front of your iPad:</p>
+
         <div class="centerstage-steps">
           <div class="cs-step">
             <span class="cs-step-num">1</span>
             <div class="cs-step-text">
               <strong>Elbow & Wrist Dual Tracking</strong>
-              <span>When spreading arms wide or reaching overhead, the system tracks both elbows and wrists so hands never get lost even if near the frame edge.</span>
+              <span>When spreading arms wide or reaching overhead, the system tracks both elbows and wrists so hands
+                never get lost even if near the frame edge.</span>
             </div>
           </div>
           <div class="cs-step">
             <span class="cs-step-num">2</span>
             <div class="cs-step-text">
               <strong>Native 4:3 Sensor Angle</strong>
-              <span>We stream the full native camera sensor without 16:9 cropping to capture the absolute widest physical lens angle of your iPad.</span>
+              <span>We stream the full native camera sensor without 16:9 cropping to capture the absolute widest
+                physical lens angle of your iPad.</span>
             </div>
           </div>
           <div class="cs-step">
             <span class="cs-step-num">3</span>
             <div class="cs-step-text">
               <strong>iPad Placement & Tilt</strong>
-              <span>Angle the iPad slightly upward so your chest, head, and waist are visible. Just sway and lift your arms to bloom!</span>
+              <span>Angle the iPad slightly upward so your chest, head, and waist are visible. Just sway and lift your
+                arms to bloom!</span>
             </div>
           </div>
         </div>
@@ -244,7 +256,8 @@
           <div class="email-input-container" id="email-input-container">
             <div class="email-input-field-wrap">
               <span class="email-prefix-icon">✉️</span>
-              <input type="email" id="visitor-email-input" placeholder="Enter your email (e.g. dancer@ethereum.org)" autocomplete="email">
+              <input type="email" id="visitor-email-input" placeholder="Enter your email (e.g. dancer@ethereum.org)"
+                autocomplete="email">
             </div>
             <p class="email-subtext">You will receive the 10-second MP4 dance video and 9:16 video postcard.</p>
           </div>
@@ -260,7 +273,8 @@
       <!-- Exactly 2 Buttons: Re-record and Plant -->
       <div class="modal-footer modal-footer-two-btn">
         <button class="hud-btn" id="planting-rerecord-btn" type="button">🔄 Re-record [R]</button>
-        <button class="hud-btn primary glow-btn" id="planting-submit-btn" type="button">🌱 Plant in Garden [ENTER]</button>
+        <button class="hud-btn primary glow-btn" id="planting-submit-btn" type="button">🌱 Plant in Garden
+          [ENTER]</button>
       </div>
     </div>
   </div>
@@ -363,5 +377,5 @@
 
   <script type="module" src="./src/main.js"></script>
 </body>
-</html>
 
+</html>

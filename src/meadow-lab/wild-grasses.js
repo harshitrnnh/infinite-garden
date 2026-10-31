@@ -16,9 +16,8 @@ export class WildGrassesField {
     this.seedheadMeshes = [];
 
     this.initMaterials();
-    this.generateGroundCover();   // NEW: dense short carpet layer
-    this.generateGrasses();
-    this.generateWheatAndSeedheads();
+    this.generateGroundCover();   // Dense short carpet layer - kept!
+    // Tall grass and tall wheat/seedheads removed: only short grass is kept.
   }
 
   initMaterials() {

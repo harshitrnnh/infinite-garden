@@ -85,7 +85,7 @@ export class GardenEnvironment {
     this.setupSkyDome();
     this.setupGround();
     this.setupWildGrass();
-    this.setupReedField();
+    // Tall grass/reeds removed (only short grass is kept)
     this.setupPollenSystem();
     this.setupStudioOrbitControls();
 
@@ -175,10 +175,10 @@ export class GardenEnvironment {
   }
 
   setupWildGrass() {
-    // Low, delicate background grass blades (NEVER blocking the flower view)
-    const count = 400;
-    const bladeGeo = new THREE.ConeGeometry(0.016, 0.45, 3);
-    bladeGeo.translate(0, 0.225, 0);
+    // Low, delicate short grass blades (kept low to ground, never blocking flower)
+    const count = 420;
+    const bladeGeo = new THREE.ConeGeometry(0.016, 0.35, 3);
+    bladeGeo.translate(0, 0.175, 0);
 
     const bladeMat = new THREE.MeshStandardMaterial({
       color: 0x4a6944,
@@ -194,19 +194,18 @@ export class GardenEnvironment {
     this.grassTransforms = [];
 
     for (let i = 0; i < count; i++) {
-      // Keep clear radius of at least 1.3 units around center and keep away from camera Z > 0.5
       let x, z;
       while (true) {
-        x = (Math.random() - 0.5) * 6.0;
-        z = -0.6 - Math.random() * 3.5; // strictly behind the flower
-        if (Math.hypot(x, z) > 1.2) break;
+        x = (Math.random() - 0.5) * 6.5;
+        z = -0.3 - Math.random() * 3.5;
+        if (Math.hypot(x, z) > 0.9) break;
       }
 
-      const scaleY = 0.5 + Math.random() * 0.6;
+      const scaleY = 0.45 + Math.random() * 0.45; // short grass (0.15m to 0.31m)
       const scaleXZ = 0.6 + Math.random() * 0.5;
       const rotY = Math.random() * Math.PI * 2;
-      const tiltX = (Math.random() - 0.5) * 0.3;
-      const tiltZ = (Math.random() - 0.5) * 0.3;
+      const tiltX = (Math.random() - 0.5) * 0.25;
+      const tiltZ = (Math.random() - 0.5) * 0.25;
 
       dummy.position.set(x, 0, z);
       dummy.rotation.set(tiltX, rotY, tiltZ);
@@ -220,7 +219,7 @@ export class GardenEnvironment {
         baseRot: new THREE.Euler(tiltX, rotY, tiltZ),
         scale: new THREE.Vector3(scaleXZ, scaleY, scaleXZ),
         phase: Math.random() * Math.PI * 2,
-        flex: 0.04 + Math.random() * 0.05
+        flex: 0.04 + Math.random() * 0.04
       });
     }
 
@@ -229,55 +228,9 @@ export class GardenEnvironment {
   }
 
   setupReedField() {
-    // Distant background reeds framing the horizon
-    const count = 90;
-    const reedGeo = new THREE.CylinderGeometry(0.008, 0.016, 2.2, 4);
-    reedGeo.translate(0, 1.1, 0);
-
-    const reedMat = new THREE.MeshStandardMaterial({
-      color: 0x607855,
-      roughness: 0.75,
-      metalness: 0.02
-    });
-
-    this.instancedReeds = new THREE.InstancedMesh(reedGeo, reedMat, count);
-    const dummy = new THREE.Object3D();
+    // Tall grass and tall reeds removed per user specification: only short grass is kept.
+    this.instancedReeds = null;
     this.reedTransforms = [];
-
-    for (let i = 0; i < count; i++) {
-      // Reeds placed in background perimeter and lateral flanks (never blocking camera view)
-      let x, z, angle;
-      while (true) {
-        angle = Math.random() * Math.PI * 2;
-        const radius = 2.4 + Math.random() * 3.5;
-        x = Math.cos(angle) * radius;
-        z = Math.sin(angle) * radius - 1.2;
-
-        // Ensure clear sightline: only allow reeds behind the plant (z < -0.3) or on wide flanks (|x| > 1.6)
-        if (z < -0.3 || Math.abs(x) > 1.6) break;
-      }
-
-      const scaleY = 0.6 + Math.random() * 0.5;
-      const tiltX = (Math.random() - 0.5) * 0.2;
-      const tiltZ = (Math.random() - 0.5) * 0.2;
-
-      dummy.position.set(x, 0, z);
-      dummy.rotation.set(tiltX, angle, tiltZ);
-      dummy.scale.set(1, scaleY, 1);
-      dummy.updateMatrix();
-
-      this.instancedReeds.setMatrixAt(i, dummy.matrix);
-
-      this.reedTransforms.push({
-        basePos: new THREE.Vector3(x, 0, z),
-        baseRot: new THREE.Euler(tiltX, angle, tiltZ),
-        scale: new THREE.Vector3(1, scaleY, 1),
-        phase: Math.random() * Math.PI * 2
-      });
-    }
-
-    this.instancedReeds.instanceMatrix.needsUpdate = true;
-    this.scene.add(this.instancedReeds);
   }
 
   setupPollenSystem() {
