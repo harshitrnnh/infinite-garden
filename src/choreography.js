@@ -493,7 +493,7 @@ export class ChoreographyRecorder {
         } else if (MediaRecorder.isTypeSupported('video/webm')) {
           mime = 'video/webm';
         }
-        this.mediaRecorder = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: 2500000 });
+        this.mediaRecorder = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: 1200000 });
         this.mediaRecorder.ondataavailable = (e) => {
           if (e.data && e.data.size > 0) {
             this.videoChunks.push(e.data);

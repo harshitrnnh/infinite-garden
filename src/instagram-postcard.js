@@ -282,7 +282,7 @@ export class InstagramPostcardGenerator {
     const chunks = [];
     const recorder = new MediaRecorder(stream, {
       mimeType,
-      videoBitsPerSecond: 3500000 // Crisp Instagram 1080p/720p quality
+      videoBitsPerSecond: 1300000 // Optimized crisp mobile stream under serverless payload limits
     });
 
     recorder.ondataavailable = (e) => {

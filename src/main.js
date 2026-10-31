@@ -738,20 +738,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       if (lastRecordedChoreography.videoBlob) {
         rawVideoBase64 = await blobToBase64(lastRecordedChoreography.videoBlob);
-        try {
-          const meta = getPostcardMeta();
-          const postcardResult = await instagramPostcard.compositeVideoFromBlob(
-            lastRecordedChoreography.videoBlob,
-            meta,
-            currentQrDownloadUrl
-          );
-          if (postcardResult && postcardResult.videoBlob) {
-            postcardVideoBase64 = await blobToBase64(postcardResult.videoBlob);
-          }
-        } catch (_) {}
       }
 
-      const response = await fetch('/api/send-email', {
+      // First attempt: Send with both or raw video
+      let response = await fetch('/api/send-email', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -763,6 +753,21 @@ document.addEventListener('DOMContentLoaded', async () => {
           postcardBase64: postcardVideoBase64
         })
       });
+
+      // Fallback: If payload exceeded Vercel 4.5MB threshold, send immediate email with confirmation & link
+      if (response.status === 413 || !response.ok) {
+        console.warn('Retrying email dispatch in compact stream mode...');
+        response = await fetch('/api/send-email', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            toEmail: visitorEmail,
+            flowerName,
+            choreographer: choreographerName,
+            species: currentSpecies
+          })
+        });
+      }
 
       return response.ok;
     } catch (err) {
@@ -905,7 +910,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         localStorage.setItem('botanical_garden_email_dispatches', JSON.stringify(dispatches));
       } catch (_) {}
 
-      // Asynchronously trigger serverless email dispatch with both raw video & Instagram postcard
+      // Asynchronously trigger serverless email dispatch with video
       (async () => {
         try {
           const blobToBase64 = (blob) => {
@@ -917,28 +922,11 @@ document.addEventListener('DOMContentLoaded', async () => {
           };
 
           let rawVideoBase64 = null;
-          let postcardVideoBase64 = null;
-
           if (lastRecordedChoreography.videoBlob) {
             rawVideoBase64 = await blobToBase64(lastRecordedChoreography.videoBlob);
-
-            // Composite 9:16 Instagram Story video postcard
-            try {
-              const meta = getPostcardMeta();
-              const postcardResult = await instagramPostcard.compositeVideoFromBlob(
-                lastRecordedChoreography.videoBlob,
-                meta,
-                currentQrDownloadUrl
-              );
-              if (postcardResult && postcardResult.videoBlob) {
-                postcardVideoBase64 = await blobToBase64(postcardResult.videoBlob);
-              }
-            } catch (errPostcard) {
-              console.warn('Could not composite postcard video for email:', errPostcard);
-            }
           }
 
-          const response = await fetch('/api/send-email', {
+          let response = await fetch('/api/send-email', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -946,16 +934,26 @@ document.addEventListener('DOMContentLoaded', async () => {
               flowerName: flowerName,
               choreographer: choreographerName,
               species: currentSpecies,
-              videoBase64: rawVideoBase64,
-              postcardBase64: postcardVideoBase64
+              videoBase64: rawVideoBase64
             })
           });
 
-          if (!response.ok) {
-            const errData = await response.json().catch(() => ({}));
-            console.warn('Email dispatch notice:', errData.error || response.statusText);
-          } else {
-            console.log('Choreography and postcard email sent successfully to', visitorEmail);
+          if (response.status === 413 || !response.ok) {
+            console.warn('Retrying email dispatch without large attachment...');
+            response = await fetch('/api/send-email', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                toEmail: visitorEmail,
+                flowerName: flowerName,
+                choreographer: choreographerName,
+                species: currentSpecies
+              })
+            });
+          }
+
+          if (response.ok) {
+            console.log('Choreography email sent successfully to', visitorEmail);
           }
         } catch (err) {
           console.warn('Could not dispatch email:', err);
