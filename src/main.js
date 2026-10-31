@@ -407,11 +407,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   const isTabletBloom = window.location.pathname.includes('tablet-bloom') || document.body.classList.contains('tablet-bloom-view');
 
   if (isTabletBloom) {
-    // Upright eye-level frontal view: minimal top angle, direct portrait presentation
+    // Natural frontal portrait view with subtle top angle into petals
     const TABLET_BLOOM_RADIUS = 4.85; // Zoomed out so bloom and root are fully visible with comfortable margins
-    const TABLET_BLOOM_PHI = 1.22; // Substantially reduced top view (~70° from vertical / ~20° above horizontal)
+    const TABLET_BLOOM_PHI = 1.15; // Slightly elevated top angle (~66° from vertical / ~24° above horizontal)
     const TABLET_BLOOM_THETA = 0.04; // Centered
-    const TABLET_BLOOM_LOOK_Y = 1.05; // Framed comfortably on flower center
+    const TABLET_BLOOM_LOOK_Y = 1.02; // Framed comfortably on flower center
 
     if (garden && garden.studioSpherical) {
       garden.studioSpherical.radius = TABLET_BLOOM_RADIUS;
