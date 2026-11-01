@@ -679,12 +679,15 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   const getPostcardMeta = () => {
     const speciesMeta = CHOREOGRAPHY_SPECIES_META[currentSpecies] || FLOWER_SPECIES[currentSpecies] || {};
+    const inputTitle = flowerNameInput?.value.trim().slice(0, 20);
+    const inputDancer = choreographerInput?.value.trim();
+    const cleanDancer = (inputDancer && inputDancer.toLowerCase() !== 'devcon gardener' && inputDancer.toLowerCase() !== 'anonymous dancer') ? inputDancer : '';
     return {
-      flowerName: flowerNameInput?.value.trim().slice(0, 20) || 'Luna Bloom',
-      choreographer: choreographerInput?.value.trim() || 'Devcon Gardener',
+      flowerName: inputTitle || speciesMeta.name || 'Living Flower',
+      choreographer: cleanDancer,
       speciesName: speciesMeta.name || 'Botanical Wildflower',
       artworkTitle: 'Collective Bloom',
-      artistName: 'Harshit Agrawal',
+      artistName: 'Harshit Agrawal (@harshitrnnh)',
       eventTitle: 'Devcon, Mumbai 2026'
     };
   };
@@ -720,11 +723,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   const openPlantingModal = () => {
     const meta = CHOREOGRAPHY_SPECIES_META[currentSpecies] || FLOWER_SPECIES[currentSpecies];
-    flowerNameInput.value = getRandomPoeticName().slice(0, 20);
-    updateTitleCharCount();
-    if (!choreographerInput.value) {
-      choreographerInput.value = 'Devcon Gardener';
+    // Do not force generic 'Devcon Gardener' - leave empty if not typed by user
+    if (choreographerInput.value === 'Devcon Gardener' || choreographerInput.value === 'Anonymous Dancer') {
+      choreographerInput.value = '';
     }
+    updateTitleCharCount();
     speciesPillName.textContent = meta ? meta.name : 'Living Flower';
     speciesPillIcon.textContent =
       currentSpecies === 'periwinkle' ? '🌸' :
@@ -916,11 +919,39 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
       }
 
-      // 2. Upload Postcard Video to Supabase Storage
-      if (lastRecordedChoreography.postcardVideoBlob && lastRecordedChoreography.postcardVideoBlob.size > 2000) {
+      // 2. Upload Postcard Video to Supabase Storage (composited with user's custom tag & choreographer name)
+      let postcardBlob = null;
+      if (lastRecordedChoreography.videoBlob && lastRecordedChoreography.videoBlob.size > 2000) {
+        try {
+          const compMeta = {
+            flowerName: flowerName || '',
+            choreographer: choreographerName || '',
+            speciesName: (CHOREOGRAPHY_SPECIES_META[currentSpecies] || FLOWER_SPECIES[currentSpecies] || {}).name || 'Botanical Wildflower',
+            artworkTitle: 'Collective Bloom',
+            artistName: 'Harshit Agrawal (@harshitrnnh)',
+            eventTitle: 'Devcon, Mumbai 2026'
+          };
+          const compResult = await instagramPostcard.compositeVideoFromBlob(
+            lastRecordedChoreography.videoBlob,
+            compMeta,
+            currentQrDownloadUrl
+          );
+          if (compResult && compResult.videoBlob) {
+            postcardBlob = compResult.videoBlob;
+            console.log('[Email Dispatch] Custom postcard video composited:', postcardBlob.size, 'bytes');
+          }
+        } catch (cErr) {
+          console.warn('[Email Dispatch] Postcard video compositing note:', cErr);
+        }
+      }
+      if (!postcardBlob && lastRecordedChoreography.postcardVideoBlob) {
+        postcardBlob = lastRecordedChoreography.postcardVideoBlob;
+      }
+
+      if (postcardBlob && postcardBlob.size > 2000) {
         try {
           const postFilename = `${safeName}_postcard_${timestamp}.mp4`;
-          postcardUrl = await uploadVideoToCloud(lastRecordedChoreography.postcardVideoBlob, postFilename);
+          postcardUrl = await uploadVideoToCloud(postcardBlob, postFilename);
           console.log('[Email Dispatch] Uploaded postcard video to cloud:', postcardUrl);
         } catch (uErr) {
           console.warn('[Email Dispatch] Postcard video cloud upload note:', uErr);
@@ -977,8 +1008,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (plantingEmailBtn) {
     plantingEmailBtn.addEventListener('click', async () => {
       if (!lastRecordedChoreography) return;
-      const flowerName = flowerNameInput.value.trim().slice(0, 20) || 'Luna Bloom';
-      const choreographerName = choreographerInput.value.trim() || 'Devcon Gardener';
+      const flowerName = flowerNameInput.value.trim().slice(0, 20) || (CHOREOGRAPHY_SPECIES_META[currentSpecies]?.name || 'Living Flower');
+      const choreographerName = (choreographerInput.value.trim() && choreographerInput.value.trim().toLowerCase() !== 'devcon gardener' && choreographerInput.value.trim().toLowerCase() !== 'anonymous dancer')
+        ? choreographerInput.value.trim()
+        : '';
       const visitorEmail = visitorEmailInput ? visitorEmailInput.value.trim() : '';
 
       const origText = plantingEmailBtn.textContent;
@@ -1001,7 +1034,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (plantingDownloadBtn) {
     plantingDownloadBtn.addEventListener('click', () => {
       if (!lastRecordedChoreography) return;
-      const flowerName = flowerNameInput.value.trim().slice(0, 20) || 'Luna Bloom';
+      const flowerName = flowerNameInput.value.trim().slice(0, 20) || (CHOREOGRAPHY_SPECIES_META[currentSpecies]?.name || 'Living Flower');
       downloadChoreographyToLocalDisk(flowerName, currentSpecies, lastRecordedChoreography);
       const origText = plantingDownloadBtn.textContent;
       plantingDownloadBtn.textContent = '✅ Saved to Disk!';
@@ -1014,8 +1047,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   plantingSubmitBtn.addEventListener('click', () => {
     if (!lastRecordedChoreography) return;
 
-    const flowerName = flowerNameInput.value.trim().slice(0, 20) || 'Luna Bloom';
-    const choreographerName = choreographerInput.value.trim() || 'Anonymous Dancer';
+    const flowerName = flowerNameInput.value.trim().slice(0, 20) || (CHOREOGRAPHY_SPECIES_META[currentSpecies]?.name || 'Living Flower');
+    const choreographerName = (choreographerInput.value.trim() && choreographerInput.value.trim().toLowerCase() !== 'devcon gardener' && choreographerInput.value.trim().toLowerCase() !== 'anonymous dancer')
+      ? choreographerInput.value.trim()
+      : '';
     const wantEmail = sendEmailToggle ? sendEmailToggle.checked : true;
     const visitorEmail = visitorEmailInput ? visitorEmailInput.value.trim() : '';
 

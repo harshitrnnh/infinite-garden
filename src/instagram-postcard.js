@@ -18,10 +18,10 @@ export class InstagramPostcardGenerator {
     this.ctx = this.canvas.getContext('2d');
     this.ensureMounted();
 
-    this.artistName = 'Harshit Agrawal';
+    this.artistName = 'Harshit Agrawal (@harshitrnnh)';
     this.artworkTitle = 'Collective Bloom';
-    this.eventTitle = 'Devcon, Mumbai 2026';
-    this.takeawayText = 'A living collective memory sculpted by human movement & generative code.';
+    this.topSubtitle = 'An Interactively Grown Garden';
+    this.eventTitle = 'Collective Bloom • Devcon, Mumbai 2026';
 
     // Floating atmospheric dust spores for postcard ambiance
     this.particles = [];
@@ -117,8 +117,8 @@ export class InstagramPostcardGenerator {
       const sx = (sw - cropW) / 2;
       const sy = sh * 0.08;
 
-      const destY = 160;
-      const destH = 750;
+      const destY = 145;
+      const destH = 785;
 
       // Subtle glow behind flower
       const flowerGlow = ctx.createRadialGradient(w / 2, destY + destH * 0.45, 40, w / 2, destY + destH * 0.45, 340);
@@ -146,88 +146,87 @@ export class InstagramPostcardGenerator {
       ctx.fillRect(0, destY + destH - 90, w, 90);
     }
 
-    // 5. TOP HEADER: ARTIST & ARTWORK
+    // 5. TOP HEADER
     ctx.textAlign = 'center';
 
-    // Subtitle badge
-    ctx.font = '600 11px system-ui, -apple-system, sans-serif';
+    // Top Subtitle: 'An Interactively Grown Garden'
+    ctx.font = '600 12px system-ui, -apple-system, sans-serif';
     ctx.fillStyle = '#b39852';
-    ctx.letterSpacing = '3px';
-    ctx.fillText('AN INTERACTIVE BOTANICAL CHOREOGRAPHY', w / 2, 60);
+    ctx.letterSpacing = '2.5px';
+    ctx.fillText('AN INTERACTIVELY GROWN GARDEN', w / 2, 60);
 
-    // Main Artwork Title
+    // Main Artwork Title: 'COLLECTIVE BLOOM'
     ctx.font = 'italic 700 36px "Cinzel", "Cormorant Garamond", "Playfair Display", Georgia, serif';
     ctx.fillStyle = '#f7fbf8';
     ctx.letterSpacing = '5px';
     ctx.fillText(this.artworkTitle.toUpperCase(), w / 2, 102);
 
-    // Artist Name
-    ctx.font = '500 13px system-ui, -apple-system, sans-serif';
-    ctx.fillStyle = '#a6c2ad';
-    ctx.letterSpacing = '3.5px';
-    ctx.fillText(`BY ${this.artistName.toUpperCase()}`, w / 2, 126);
-
     // Decorative divider line
     ctx.strokeStyle = 'rgba(224, 197, 124, 0.35)';
     ctx.lineWidth = 1;
     ctx.beginPath();
-    ctx.moveTo(w / 2 - 80, 142);
-    ctx.lineTo(w / 2 + 80, 142);
+    ctx.moveTo(w / 2 - 80, 120);
+    ctx.lineTo(w / 2 + 80, 120);
     ctx.stroke();
 
-    // 6. BOTTOM TAKEAWAY & METADATA CARD (y: 920 to 1240)
-    const cardY = 925;
-    const cardH = 300;
+    // 6. BOTTOM TAKEAWAY & METADATA CARD (y: 948 to 1198)
+    const cardY = 948;
+    const cardH = 250;
     const cardW = w - 60;
     const cardX = 30;
 
     // Card background plate
-    ctx.fillStyle = 'rgba(15, 24, 18, 0.85)';
+    ctx.fillStyle = 'rgba(15, 24, 18, 0.88)';
     ctx.strokeStyle = 'rgba(215, 235, 220, 0.18)';
     ctx.lineWidth = 1;
     this.roundRect(ctx, cardX, cardY, cardW, cardH, 16);
     ctx.fill();
     ctx.stroke();
 
-    // Event Tag
+    // 1. Artist Credit: 'An Artwork by Harshit Agrawal (@harshitrnnh)'
     ctx.textAlign = 'left';
-    ctx.font = '700 11px system-ui, -apple-system, sans-serif';
+    ctx.font = '600 12px system-ui, -apple-system, sans-serif';
     ctx.fillStyle = '#e8c15a';
-    ctx.letterSpacing = '2px';
-    ctx.fillText('🏛️ DEVCON, MUMBAI 2026', cardX + 24, cardY + 36);
+    ctx.letterSpacing = '1.2px';
+    ctx.fillText('An Artwork by Harshit Agrawal (@harshitrnnh)', cardX + 26, cardY + 38);
 
-    // Flower Title
-    const flowerTitle = meta.flowerName || 'Luna Bloom';
-    ctx.font = '700 24px "Cinzel", Georgia, serif';
+    // 2. Flower Tag / Title (User-input tag; fallback to species name, never generic 'Luna Bloom')
+    const displayFlowerTitle = (meta.flowerName && meta.flowerName.trim() && meta.flowerName.trim().toLowerCase() !== 'luna bloom')
+      ? meta.flowerName.trim()
+      : (meta.speciesName || 'Living Flower');
+    ctx.font = '700 28px "Cinzel", "Playfair Display", Georgia, serif';
     ctx.fillStyle = '#ffffff';
-    ctx.letterSpacing = '1px';
-    ctx.fillText(flowerTitle, cardX + 24, cardY + 70);
+    ctx.letterSpacing = '0.8px';
+    ctx.fillText(displayFlowerTitle, cardX + 26, cardY + 80);
 
-    // Choreographer & Species
-    const dancer = meta.choreographer || 'Devcon Gardener';
-    const species = meta.speciesName || 'Botanical Wildflower';
-    ctx.font = '500 13px system-ui, -apple-system, sans-serif';
-    ctx.fillStyle = '#8eb697';
-    ctx.letterSpacing = '0.5px';
-    ctx.fillText(`Choreographed by ${dancer} • ${species}`, cardX + 24, cardY + 95);
+    // 3. Choreographer Name:
+    // Only include 'Choreographed by ____' if the person entered a name.
+    // If blank or generic 'Devcon Gardener', do not show this line.
+    const rawDancer = (meta.choreographer || '').trim();
+    const isGenericDancer = !rawDancer ||
+      rawDancer.toLowerCase() === 'devcon gardener' ||
+      rawDancer.toLowerCase() === 'anonymous dancer';
+    const hasDancer = !isGenericDancer;
 
-    // Devcon Takeaway Narrative Quote
-    ctx.font = 'italic 400 13.5px Georgia, serif';
-    ctx.fillStyle = '#d2e3d5';
-    ctx.letterSpacing = '0.3px';
-    const quoteLines = [
-      '“A living collective memory sculpted by human movement',
-      '& generative code amidst the global Ethereum community.”'
-    ];
-    ctx.fillText(quoteLines[0], cardX + 24, cardY + 135);
-    ctx.fillText(quoteLines[1], cardX + 24, cardY + 155);
+    if (hasDancer) {
+      ctx.font = '500 14px system-ui, -apple-system, sans-serif';
+      ctx.fillStyle = '#8eb697';
+      ctx.letterSpacing = '0.4px';
+      const speciesSuffix = meta.speciesName ? ` • ${meta.speciesName}` : '';
+      ctx.fillText(`Choreographed by ${rawDancer}${speciesSuffix}`, cardX + 26, cardY + 114);
+    } else if (meta.speciesName && displayFlowerTitle.toLowerCase() !== meta.speciesName.toLowerCase()) {
+      ctx.font = '500 14px system-ui, -apple-system, sans-serif';
+      ctx.fillStyle = '#8eb697';
+      ctx.letterSpacing = '0.4px';
+      ctx.fillText(meta.speciesName, cardX + 26, cardY + 114);
+    }
 
-    // Bottom Footer Row (QR code & scan instructions)
+    // 4. Bottom Row: 'Collective Bloom • Devcon, Mumbai 2026'
     if (qrImage) {
-      // Draw QR Code in bottom-right of card
-      const qrSize = 96;
+      // Draw QR Code in top-right of card
+      const qrSize = 84;
       const qrX = cardX + cardW - qrSize - 20;
-      const qrY = cardY + cardH - qrSize - 20;
+      const qrY = cardY + 28;
 
       ctx.drawImage(qrImage, qrX, qrY, qrSize, qrSize);
 
@@ -235,17 +234,19 @@ export class InstagramPostcardGenerator {
       ctx.font = '600 10px system-ui, -apple-system, sans-serif';
       ctx.fillStyle = '#e8c15a';
       ctx.letterSpacing = '1px';
-      ctx.fillText('SCAN TO SAVE TO PHONE', qrX - 12, qrY + 44);
+      ctx.fillText('DEVCON 2026', qrX - 12, qrY + 38);
 
-      ctx.font = '400 10.5px system-ui, -apple-system, sans-serif';
+      ctx.font = '400 10px system-ui, -apple-system, sans-serif';
       ctx.fillStyle = '#9cb5a2';
-      ctx.fillText('Instagram Story & Reel', qrX - 12, qrY + 62);
-    } else {
-      ctx.font = '600 11px system-ui, -apple-system, sans-serif';
-      ctx.fillStyle = '#b39852';
-      ctx.letterSpacing = '1.5px';
-      ctx.fillText('INFINITE GARDEN • DEVCON MUMBAI 2026', cardX + 24, cardY + cardH - 24);
+      ctx.fillText('Living Memory', qrX - 12, qrY + 54);
+
+      ctx.textAlign = 'left';
     }
+
+    ctx.font = '600 11.5px system-ui, -apple-system, sans-serif';
+    ctx.fillStyle = '#b39852';
+    ctx.letterSpacing = '1.8px';
+    ctx.fillText('COLLECTIVE BLOOM • DEVCON, MUMBAI 2026', cardX + 26, cardY + cardH - 26);
   }
 
   roundRect(ctx, x, y, width, height, radius) {

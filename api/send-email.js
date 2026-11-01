@@ -44,9 +44,9 @@ export default async function handler(req, res) {
       }
     });
 
-    const displayFlower = flowerName || 'Collective Bloom Flower';
-    const displayChoreographer = choreographer || 'Devcon Gardener';
-    const displaySpecies = species || 'Periwinkle';
+    const displayFlower = (flowerName && flowerName.trim()) ? flowerName.trim() : (species ? `${species.charAt(0).toUpperCase() + species.slice(1)} Flower` : 'Collective Bloom Flower');
+    const displayChoreographer = (choreographer && choreographer.trim() && choreographer.toLowerCase() !== 'devcon gardener' && choreographer.toLowerCase() !== 'anonymous dancer') ? choreographer.trim() : '';
+    const displaySpecies = species || 'Living Flower';
     const meadowUrl = process.env.PUBLIC_SITE_URL || 'https://collective-bloom-kappa.vercel.app/visual-lab';
     const safeFileBase = displayFlower.replace(/[^a-zA-Z0-9_-]/g, '_');
 
@@ -187,7 +187,7 @@ export default async function handler(req, res) {
           </div>
           <div class="flower-box">
             <div class="flower-name">🌸 ${displayFlower}</div>
-            <div class="flower-meta">Choreographed by ${displayChoreographer} • ${displaySpecies.toUpperCase()}</div>
+            <div class="flower-meta">${displayChoreographer ? `Choreographed by ${displayChoreographer} • ` : ''}${displaySpecies.toUpperCase()}</div>
           </div>
           <p style="font-size: 15px; line-height: 1.6; color: #cbd5e1;">
             Thank you for bringing your movement to Collective Bloom! Your 10-second choreography is now woven into the shared 2,000-flower living artwork running live at Devcon.
@@ -204,7 +204,7 @@ export default async function handler(req, res) {
             <a href="${meadowUrl}" class="btn">Explore Collective Bloom & Find Your Flower</a>
           </div>
           <div class="footer">
-            Devcon Southeast Asia • Collective Bloom • Crafted with WebGL & Computer Vision
+            Collective Bloom • Devcon, Mumbai 2026 • An Artwork by Harshit Agrawal (@harshitrnnh)
           </div>
         </div>
       </body>
