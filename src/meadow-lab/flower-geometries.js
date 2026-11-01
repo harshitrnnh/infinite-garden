@@ -920,8 +920,8 @@ export class PoppyMorphology {
       group: fGroup,
       setBloom: (b) => {
         holders.forEach(m => {
-          m.rotation.x = THREE.MathUtils.lerp(0.20, 1.10, b);
-          const s = THREE.MathUtils.lerp(0.85, 1.10, b);
+          m.rotation.x = THREE.MathUtils.lerp(0.18, 1.50, b);
+          const s = THREE.MathUtils.lerp(0.85, 1.12, b);
           m.scale.set(s, s, s);
         });
       },
@@ -944,8 +944,8 @@ export class PoppyMorphology {
   setBloom(val) {
     this.currentBloom = val;
     this.petalHolders.forEach(p => {
-      p.mesh.rotation.x = THREE.MathUtils.lerp(0.20, 1.15, val);
-      const s = THREE.MathUtils.lerp(0.85, 1.12, val);
+      p.mesh.rotation.x = THREE.MathUtils.lerp(0.18, 1.62, val);
+      const s = THREE.MathUtils.lerp(0.85, 1.15, val);
       p.mesh.scale.set(s, s, s);
     });
     this.stem.setBloom(val);
@@ -1104,8 +1104,8 @@ export class PeriwinkleMorphology {
       group: fGroup,
       setBloom: (b) => {
         holders.forEach(m => {
-          m.rotation.x = THREE.MathUtils.lerp(0.25, 1.20, b);
-          const s = THREE.MathUtils.lerp(0.85, 1.10, b);
+          m.rotation.x = THREE.MathUtils.lerp(0.20, 1.50, b);
+          const s = THREE.MathUtils.lerp(0.85, 1.12, b);
           m.scale.set(s, s, s);
         });
       },
@@ -1128,8 +1128,8 @@ export class PeriwinkleMorphology {
   setBloom(val) {
     this.currentBloom = val;
     this.petalHolders.forEach(p => {
-      p.mesh.rotation.x = THREE.MathUtils.lerp(0.25, 1.25, val);
-      const s = THREE.MathUtils.lerp(0.85, 1.10, val);
+      p.mesh.rotation.x = THREE.MathUtils.lerp(0.20, 1.62, val);
+      const s = THREE.MathUtils.lerp(0.85, 1.15, val);
       p.mesh.scale.set(s, s, s);
     });
     this.stem.setBloom(val);
@@ -1282,8 +1282,8 @@ export class ChamomileMorphology {
       group: fGroup,
       setBloom: (b) => {
         holders.forEach(m => {
-          m.rotation.x = THREE.MathUtils.lerp(0.25, 1.40, b);
-          const s = THREE.MathUtils.lerp(0.85, 1.05, b);
+          m.rotation.x = THREE.MathUtils.lerp(0.20, 1.50, b);
+          const s = THREE.MathUtils.lerp(0.85, 1.10, b);
           m.scale.set(s, s, s);
         });
       },
@@ -1307,8 +1307,8 @@ export class ChamomileMorphology {
   setBloom(val) {
     this.currentBloom = val;
     this.petalHolders.forEach(p => {
-      p.mesh.rotation.x = THREE.MathUtils.lerp(0.25, 1.45, val);
-      const s = THREE.MathUtils.lerp(0.85, 1.05, val);
+      p.mesh.rotation.x = THREE.MathUtils.lerp(0.20, 1.65, val);
+      const s = THREE.MathUtils.lerp(0.85, 1.10, val);
       p.mesh.scale.set(s, s, s);
     });
     this.stem.setBloom(val);
@@ -1573,9 +1573,9 @@ export class ChampaMorphology {
       group: fGroup,
       setBloom: (b) => {
         holders.forEach(h => {
-          h.mesh.rotation.x = THREE.MathUtils.lerp(h.baseRotX * 0.35, h.baseRotX * 1.45, b);
-          h.mesh.rotation.z = THREE.MathUtils.lerp(h.baseRotZ * 1.80, h.baseRotZ * 0.80, b);
-          const s = h.baseScale * THREE.MathUtils.lerp(0.85, 1.05, b);
+          h.mesh.rotation.x = THREE.MathUtils.lerp(h.baseRotX * 0.22, h.baseRotX * 1.95, b);
+          h.mesh.rotation.z = THREE.MathUtils.lerp(h.baseRotZ * 1.80, h.baseRotZ * 0.70, b);
+          const s = h.baseScale * THREE.MathUtils.lerp(0.85, 1.10, b);
           h.mesh.scale.set(s, s, s);
         });
       }
@@ -1591,9 +1591,9 @@ export class ChampaMorphology {
   setBloom(val) {
     this.currentBloom = val;
     this.petalHolders.forEach(p => {
-      p.mesh.rotation.x = THREE.MathUtils.lerp(p.baseRotX * 0.35, p.baseRotX * 1.45, val);
-      p.mesh.rotation.z = THREE.MathUtils.lerp(p.baseRotZ * 1.80, p.baseRotZ * 0.80, val);
-      const s = p.baseScale * THREE.MathUtils.lerp(0.85, 1.05, val);
+      p.mesh.rotation.x = THREE.MathUtils.lerp(p.baseRotX * 0.22, p.baseRotX * 2.10, val);
+      p.mesh.rotation.z = THREE.MathUtils.lerp(p.baseRotZ * 1.80, p.baseRotZ * 0.70, val);
+      const s = p.baseScale * THREE.MathUtils.lerp(0.85, 1.12, val);
       p.mesh.scale.set(s, s, s);
     });
 
@@ -1808,7 +1808,7 @@ export class MarigoldMorphology {
       group: fGroup,
       setBloom: (b) => {
         holders.forEach(m => {
-          m.rotation.x = THREE.MathUtils.lerp(0.25, 0.85, b);
+          m.rotation.x = THREE.MathUtils.lerp(0.20, 1.15, b);
         });
       },
       setWireframe: (w) => {
@@ -1830,9 +1830,9 @@ export class MarigoldMorphology {
   setBloom(val) {
     this.currentBloom = val;
     this.petalHolders.forEach(p => {
-      const targetAngle = THREE.MathUtils.lerp(p.baseRotX * 0.45, p.openAngle, val);
+      const targetAngle = THREE.MathUtils.lerp(p.baseRotX * 0.22, p.openAngle * 1.08, val);
       p.mesh.rotation.x = targetAngle;
-      const s = THREE.MathUtils.lerp(0.85, 1.05, val);
+      const s = THREE.MathUtils.lerp(0.85, 1.10, val);
       p.mesh.scale.set(s, s, s);
     });
     this.stem.setBloom(val);
@@ -2069,7 +2069,7 @@ export class LotusMorphology {
       group: fGroup,
       setBloom: (b) => {
         holders.forEach(m => {
-          m.rotation.x = THREE.MathUtils.lerp(0.25, 0.75, b);
+          m.rotation.x = THREE.MathUtils.lerp(0.20, 1.10, b);
         });
       },
       setWireframe: (w) => {
@@ -2091,9 +2091,9 @@ export class LotusMorphology {
   setBloom(val) {
     this.currentBloom = val;
     this.petalHolders.forEach(p => {
-      const targetAngle = THREE.MathUtils.lerp(p.baseRotX * 0.45, p.openAngle, val);
+      const targetAngle = THREE.MathUtils.lerp(p.baseRotX * 0.22, p.openAngle * 1.08, val);
       p.mesh.rotation.x = targetAngle;
-      const s = THREE.MathUtils.lerp(0.90, 1.05, val);
+      const s = THREE.MathUtils.lerp(0.85, 1.10, val);
       p.mesh.scale.set(s, s, s);
     });
     this.stem.setBloom(val);
@@ -2264,7 +2264,7 @@ export class HibiscusMorphology {
       group: fGroup,
       setBloom: (b) => {
         holders.forEach(m => {
-          m.rotation.x = THREE.MathUtils.lerp(0.25, 1.15, b);
+          m.rotation.x = THREE.MathUtils.lerp(0.20, 1.50, b);
         });
       },
       setWireframe: (w) => {
@@ -2286,8 +2286,8 @@ export class HibiscusMorphology {
   setBloom(val) {
     this.currentBloom = val;
     this.petalHolders.forEach(p => {
-      p.mesh.rotation.x = THREE.MathUtils.lerp(0.25, 1.25, val);
-      const s = THREE.MathUtils.lerp(0.85, 1.05, val);
+      p.mesh.rotation.x = THREE.MathUtils.lerp(0.20, 1.62, val);
+      const s = THREE.MathUtils.lerp(0.85, 1.15, val);
       p.mesh.scale.set(s, s, s);
     });
     this.stem.setBloom(val);

@@ -571,52 +571,58 @@ export class BodyTracker {
     // FLOWER HEIGHT:
     this.targets.heightFactor = 1.0 + this.targets.armStretchUp * 0.28;
 
-    // 4. LATERAL ARM STRETCH & WINGSPAN SPREAD (Extrapolated from both wrists AND elbows)
-    // At 4ft standing, hands might touch the left/right frame borders. Elbows ensure 100% full bloom!
-    const lWrExt = (lWr.x - lSh.x) / shoulderWidth;
-    const rWrExt = (rSh.x - rWr.x) / shoulderWidth;
-    const lElExt = (lEl.x - lSh.x) / shoulderWidth;
-    const rElExt = (rSh.x - rEl.x) / shoulderWidth;
+    // 4. PALM / HAND DISTANCE FROM CENTRAL STRAIGHT BODY:
+    // User physical rule:
+    // - If palms are near the central body -> bloom / petal spread is lesser (closed/compact ~0.06)
+    // - If palms are spread out or further from central straight body -> bloom is more (up to 1.0 full bloom)
+    const bodyCenterX = (lHip && rHip && (lHip.visibility > 0.25 || rHip.visibility > 0.25))
+      ? (midShoulderX + (lHip.x + rHip.x) * 0.5) * 0.5
+      : midShoulderX;
 
-    const lExt = Math.max(lWrExt, lElExt * 1.5);
-    const rExt = Math.max(rWrExt, rElExt * 1.5);
+    // Distances of left and right wrists/palms from the central vertical body line
+    const lPalmDist = Math.abs(lWr.x - bodyCenterX);
+    const rPalmDist = Math.abs(rWr.x - bodyCenterX);
 
-    this.targets.armExtensionL = Math.max(0, Math.min(1.8, (lExt - 0.10) * 2.0));
-    this.targets.armExtensionR = Math.max(0, Math.min(1.8, (rExt - 0.10) * 2.0));
+    // Elbow backup when arms extend to frame edges or hands leave frame
+    const lElbowDist = Math.abs(lEl.x - bodyCenterX) * 1.45;
+    const rElbowDist = Math.abs(rEl.x - bodyCenterX) * 1.45;
 
-    // Total wingspan spread ratio across both arms (wrists + elbows)
+    const leftReach = Math.max(lPalmDist, lElbowDist);
+    const rightReach = Math.max(rPalmDist, rElbowDist);
+
+    // Lateral arm extensions relative to shoulder width
+    this.targets.armExtensionL = Math.max(0, Math.min(1.8, (leftReach / shoulderWidth - 0.30) * 1.6));
+    this.targets.armExtensionR = Math.max(0, Math.min(1.8, (rightReach / shoulderWidth - 0.30) * 1.6));
+
+    // Overall lateral arm spread from central body
+    const avgSpread = (leftReach + rightReach) * 0.5;
+    const maxSpread = Math.max(leftReach, rightReach);
+    const effectiveSpread = Math.max(avgSpread, maxSpread * 0.85);
+
+    // Proportional spread ratio:
+    // At rest / center body (e.g. typing, hands clasped, resting in lap): effectiveSpread <= 0.32 * shoulderWidth -> 0.0
+    // Further from central body: increases progressively up to 1.50 * shoulderWidth -> 1.0 full wingspan
+    const palmSpreadRatio = Math.max(0.0, Math.min(1.0, (effectiveSpread / shoulderWidth - 0.32) / 1.15));
+
+    this.targets.wingspanSpread = palmSpreadRatio * 1.5;
+    this.targets.horizontalArmSpread = palmSpreadRatio;
+
+    // Total distance between wrists & elbows (retained for Namaste pose detection)
     const wristDist = Math.hypot(lWr.x - rWr.x, lWr.y - rWr.y);
     const elbowDist = Math.hypot(lEl.x - rEl.x, lEl.y - rEl.y);
 
-    // Lateral outstretchedness metrics
-    // When resting at sides or desk, wristDist/shoulderWidth is ~0.8 to 1.15.
-    // When stretched horizontally outward, wristDist/shoulderWidth goes from 1.15 up to 3.0+.
-    const wristSpreadNorm = Math.max(0, Math.min(1.0, (wristDist / shoulderWidth - 1.15) / 1.65));
-    const elbowSpreadNorm = Math.max(0, Math.min(1.0, (elbowDist / shoulderWidth - 0.95) / 1.15));
-    const avgArmExtension = (this.targets.armExtensionL + this.targets.armExtensionR) * 0.5;
-    const extSpreadNorm = Math.max(0, Math.min(1.0, (avgArmExtension - 0.15) / 1.15));
-
-    // Horizontal arm spread factor (0.0 when arms down/resting at desk, 1.0 when arms fully spread horizontally)
-    const horizontalArmSpread = Math.max(0, Math.min(1.0, Math.max(wristSpreadNorm, elbowSpreadNorm, extSpreadNorm)));
-    this.targets.horizontalArmSpread = horizontalArmSpread;
-    this.targets.wingspanSpread = horizontalArmSpread * 1.4;
-
-    // 5. FLOWER BLOOMING FORMULATION:
-    // Core Requirement: Petals fully spread out ONLY when hands are outstretched horizontally.
-    // Petal spread is strictly proportional to how spread out horizontally the arms are.
-    // When arms are down, resting at desk, or close to body: petals stay in compact upright chalice posture (~0.06).
+    // 5. FLOWER BLOOM & PETAL SPREAD FORMULATION:
+    // Strictly proportional to how spread out the palms are from the central straight body:
+    // - Palms near center: bloomRatio = 0.06 (lesser, compact upright bud)
+    // - Palms spread out: bloomRatio = 1.0 (more, petals fully spread out wide)
     const lerpVal = (a, b, t) => a + (b - a) * t;
-    const horizontalPetalBloom = lerpVal(0.06, 1.0, horizontalArmSpread);
+    const palmBloom = lerpVal(0.06, 1.0, palmSpreadRatio);
 
     // Optional upward sky reach gesture
-    const upwardReachBloom = Math.max(0, Math.min(0.85, (avgHandUp - 0.20) * 1.5));
-    const gestureBloom = Math.max(horizontalPetalBloom, upwardReachBloom > 0 ? lerpVal(0.06, 0.85, upwardReachBloom) : 0.06);
+    const upwardReachBloom = avgHandUp > 0.30 ? lerpVal(0.06, 0.85, Math.min(1.0, (avgHandUp - 0.30) * 1.6)) : 0.0;
 
-    // Body straightness: bowing down closes the bloom
-    const bendMagnitude = Math.hypot(this.targets.spineLeanX, this.targets.spineLeanZ);
-    const bodyStraightness = Math.max(0.12, Math.min(1.0, 1.0 - Math.max(0, bendMagnitude - 0.12) * 1.35));
-
-    this.targets.bloomRatio = Math.max(0.05, Math.min(1.0, gestureBloom * bodyStraightness));
+    // Direct proportional bloom (uncompromised by torso lean so sitting at desk doesn't close it)
+    this.targets.bloomRatio = Math.max(0.06, Math.min(1.0, Math.max(palmBloom, upwardReachBloom)));
 
     // 6. LEG LIFT & BALANCING (Works both with full-body standing and sitting/desk framing!)
     let liftL = 0;
