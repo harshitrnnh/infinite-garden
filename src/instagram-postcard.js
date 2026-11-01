@@ -183,23 +183,17 @@ export class InstagramPostcardGenerator {
     ctx.fill();
     ctx.stroke();
 
-    // 1. Artist Credit: 'An Artwork by Harshit Agrawal (@harshitrnnh)'
-    ctx.textAlign = 'left';
-    ctx.font = '600 12px system-ui, -apple-system, sans-serif';
-    ctx.fillStyle = '#e8c15a';
-    ctx.letterSpacing = '1.2px';
-    ctx.fillText('An Artwork by Harshit Agrawal (@harshitrnnh)', cardX + 26, cardY + 38);
-
-    // 2. Flower Tag / Title (User-input tag; fallback to species name, never generic 'Luna Bloom')
+    // 1. Flower Tag / Title (starts directly at top of card; nothing above it)
     const displayFlowerTitle = (meta.flowerName && meta.flowerName.trim() && meta.flowerName.trim().toLowerCase() !== 'luna bloom')
       ? meta.flowerName.trim()
       : (meta.speciesName || 'Living Flower');
-    ctx.font = '700 28px "Cinzel", "Playfair Display", Georgia, serif';
+    ctx.textAlign = 'left';
+    ctx.font = '700 30px "Cinzel", "Playfair Display", Georgia, serif';
     ctx.fillStyle = '#ffffff';
     ctx.letterSpacing = '0.8px';
-    ctx.fillText(displayFlowerTitle, cardX + 26, cardY + 80);
+    ctx.fillText(displayFlowerTitle, cardX + 26, cardY + 54);
 
-    // 3. Choreographer Name:
+    // 2. Choreographer Name:
     // Only include 'Choreographed by ____' if the person entered a name.
     // If blank or generic 'Devcon Gardener', do not show this line.
     const rawDancer = (meta.choreographer || '').trim();
@@ -213,17 +207,16 @@ export class InstagramPostcardGenerator {
       ctx.fillStyle = '#8eb697';
       ctx.letterSpacing = '0.4px';
       const speciesSuffix = meta.speciesName ? ` • ${meta.speciesName}` : '';
-      ctx.fillText(`Choreographed by ${rawDancer}${speciesSuffix}`, cardX + 26, cardY + 114);
+      ctx.fillText(`Choreographed by ${rawDancer}${speciesSuffix}`, cardX + 26, cardY + 88);
     } else if (meta.speciesName && displayFlowerTitle.toLowerCase() !== meta.speciesName.toLowerCase()) {
       ctx.font = '500 14px system-ui, -apple-system, sans-serif';
       ctx.fillStyle = '#8eb697';
       ctx.letterSpacing = '0.4px';
-      ctx.fillText(meta.speciesName, cardX + 26, cardY + 114);
+      ctx.fillText(meta.speciesName, cardX + 26, cardY + 88);
     }
 
-    // 4. Bottom Row: 'Collective Bloom • Devcon, Mumbai 2026'
+    // 3. QR Code linking to Visual Lab Meadow
     if (qrImage) {
-      // Draw QR Code in top-right of card
       const qrSize = 84;
       const qrX = cardX + cardW - qrSize - 20;
       const qrY = cardY + 28;
@@ -231,22 +224,29 @@ export class InstagramPostcardGenerator {
       ctx.drawImage(qrImage, qrX, qrY, qrSize, qrSize);
 
       ctx.textAlign = 'right';
-      ctx.font = '600 10px system-ui, -apple-system, sans-serif';
+      ctx.font = '600 10.5px system-ui, -apple-system, sans-serif';
       ctx.fillStyle = '#e8c15a';
       ctx.letterSpacing = '1px';
-      ctx.fillText('DEVCON 2026', qrX - 12, qrY + 38);
+      ctx.fillText('VISUAL LAB', qrX - 12, qrY + 38);
 
       ctx.font = '400 10px system-ui, -apple-system, sans-serif';
       ctx.fillStyle = '#9cb5a2';
-      ctx.fillText('Living Memory', qrX - 12, qrY + 54);
+      ctx.fillText('Scan to Explore', qrX - 12, qrY + 54);
 
       ctx.textAlign = 'left';
     }
 
+    // 4. Bottom Line: 'COLLECTIVE BLOOM • DEVCON, MUMBAI 2026'
     ctx.font = '600 11.5px system-ui, -apple-system, sans-serif';
     ctx.fillStyle = '#b39852';
     ctx.letterSpacing = '1.8px';
-    ctx.fillText('COLLECTIVE BLOOM • DEVCON, MUMBAI 2026', cardX + 26, cardY + cardH - 26);
+    ctx.fillText('COLLECTIVE BLOOM • DEVCON, MUMBAI 2026', cardX + 26, cardY + cardH - 46);
+
+    // 5. Artist Credit in little bigger font directly below the Collective Bloom line:
+    ctx.font = '600 14px system-ui, -apple-system, sans-serif';
+    ctx.fillStyle = '#f0ce6f';
+    ctx.letterSpacing = '0.8px';
+    ctx.fillText('An Artwork by Harshit Agrawal (@harshitrnnh)', cardX + 26, cardY + cardH - 22);
   }
 
   roundRect(ctx, x, y, width, height, radius) {
@@ -360,11 +360,12 @@ export class InstagramPostcardGenerator {
    * composites each frame inside the 9:16 vertical Instagram postcard layout,
    * and returns an MP4 (or WebM fallback) video blob ready for mobile & Instagram.
    */
-  async compositeVideoFromBlob(videoBlob, meta = {}, qrUrl = null, onProgress = null) {
+  async compositeVideoFromBlob(videoBlob, meta = {}, qrUrl = 'https://collective-bloom-kappa.vercel.app/visual-lab', onProgress = null) {
     let qrImage = null;
-    if (qrUrl) {
+    const targetQrUrl = qrUrl || 'https://collective-bloom-kappa.vercel.app/visual-lab';
+    if (targetQrUrl) {
       try {
-        const qrDataUrl = await this.generateQRCodeDataUrl(qrUrl);
+        const qrDataUrl = await this.generateQRCodeDataUrl(targetQrUrl);
         if (qrDataUrl) {
           qrImage = await new Promise((res) => {
             const img = new Image();

@@ -666,15 +666,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
-  // Instagram Postcard & Dynamic Mobile QR Generator
+  // Instagram Postcard & Dynamic Mobile QR Generator (Points directly to Visual Lab Meadow)
   const getShareUrl = () => {
-    const customUrl = localStorage.getItem('botanical_booth_public_url');
-    if (customUrl && customUrl.startsWith('http')) return customUrl;
-    const cleanOrigin = window.location.origin.includes('localhost')
-      ? window.location.href.split('#')[0]
-      : `${window.location.origin}${window.location.pathname}`;
-    const nameSlug = encodeURIComponent((flowerNameInput?.value || 'bloom').trim());
-    return `${cleanOrigin}?dance=${nameSlug}&t=${Date.now()}`;
+    return 'https://collective-bloom-kappa.vercel.app/visual-lab';
   };
 
   const getPostcardMeta = () => {
