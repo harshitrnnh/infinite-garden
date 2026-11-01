@@ -616,8 +616,9 @@ export class BodyTracker {
     }
 
     // Spread arms horizontally drives bloom directly up to 1.0 full radiant blossom!
+    const lerpVal = (a, b, t) => a + (b - a) * t;
     if (horizontalArmSpread > 0.08) {
-      const spreadBloomTarget = THREE.MathUtils.lerp(0.65, 1.0, horizontalArmSpread);
+      const spreadBloomTarget = lerpVal(0.65, 1.0, horizontalArmSpread);
       armBloom = Math.max(armBloom, spreadBloomTarget);
     }
 
@@ -627,7 +628,7 @@ export class BodyTracker {
 
     // When arms are spread out horizontally, petals spread out completely corresponding to arm stretch
     const baseBloom = armBloom * bodyStraightness;
-    const spreadOutBloom = THREE.MathUtils.lerp(baseBloom, 1.0, horizontalArmSpread);
+    const spreadOutBloom = lerpVal(baseBloom, 1.0, horizontalArmSpread);
     this.targets.bloomRatio = Math.max(0.04, Math.min(1.0, spreadOutBloom));
 
     // 6. LEG LIFT & BALANCING (Works both with full-body standing and sitting/desk framing!)

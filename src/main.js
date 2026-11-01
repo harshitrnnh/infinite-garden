@@ -1375,8 +1375,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     const dt = Math.min(0.1, (now - lastTime) * 0.001);
     lastTime = now;
 
-    // Update body tracking
-    const kinematics = tracker.update(now);
+    // Update body tracking safely
+    let kinematics = tracker.kinematics;
+    try {
+      kinematics = tracker.update(now) || kinematics;
+    } catch (trackerErr) {
+      console.warn('Tracker update error:', trackerErr);
+    }
 
     // Spore burst triggered by visitor motion energy
     const isGestureSpore = (kinematics.energy > 0.65) || (kinematics.armStretchUp > 0.75) || (kinematics.legLiftL > 0.7 || kinematics.legLiftR > 0.7);
@@ -1385,26 +1390,34 @@ document.addEventListener('DOMContentLoaded', async () => {
       lastSporeBurstTime = now;
     }
 
-    // 1. Update Live Hero Plant (Real-Time Physical Pose)
-    plant.update(kinematics, dt);
+    try {
+      // 1. Update Live Hero Plant (Real-Time Physical Pose)
+      plant.update(kinematics, dt);
 
-    // 2. Update Communal Garden Choir (Playback of All Planted Flowers' Choreographies)
-    communityManager.update(dt);
+      // 2. Update Communal Garden Choir (Playback of All Planted Flowers' Choreographies)
+      communityManager.update(dt);
+    } catch (plantErr) {
+      console.warn('Plant update error:', plantErr);
+    }
 
     // 3. Update HUD metrics
     if (metricBloom) {
-      metricBloom.textContent = `${Math.round(kinematics.bloomRatio * 100)}%`;
+      metricBloom.textContent = `${Math.round((kinematics.bloomRatio || 0) * 100)}%`;
     }
     if (metricLean) {
-      const degrees = Math.round(kinematics.spineLeanX * 45);
+      const degrees = Math.round((kinematics.spineLeanX || 0) * 45);
       metricLean.textContent = `${degrees > 0 ? '+' : ''}${degrees}°`;
     }
     if (metricHeight) {
-      metricHeight.textContent = `${kinematics.heightFactor.toFixed(2)}x`;
+      metricHeight.textContent = `${(kinematics.heightFactor || 1.0).toFixed(2)}x`;
     }
 
     // 4. Render 3D garden environment (Camera lerp, grass, reeds, pollen)
-    garden.update(dt, kinematics.energy);
+    try {
+      garden.update(dt, kinematics.energy);
+    } catch (renderErr) {
+      console.error('Garden render error:', renderErr);
+    }
   }
 
   requestAnimationFrame(animate);
