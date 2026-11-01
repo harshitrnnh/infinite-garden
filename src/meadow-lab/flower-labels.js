@@ -107,20 +107,22 @@ export class FlowerLabelSystem {
     const species = metadata.species || '';
     const isPlanted = !!metadata.isPlanted;
 
+    const author = (choreographer && choreographer !== 'Devcon Botanical Lab' && choreographer !== 'Devcon Community Glade' && choreographer !== 'Devcon Gardener') ? choreographer : '';
+
     // Build the DOM pill
     const pill = document.createElement('div');
     pill.className = 'flower-name-tag' + (isPlanted ? ' tag-planted' : '');
     
     if (isPlanted) {
-      pill.innerHTML = `<span class="tag-badge">🌱</span><span class="tag-title">${tagName}</span>${choreographer ? `<span class="tag-author">by ${choreographer}</span>` : ''}`;
+      pill.innerHTML = `<span class="tag-badge">🌱</span><span class="tag-title">${tagName}</span>${author ? `<span class="tag-author">by ${author}</span>` : ''}`;
     } else {
-      pill.textContent = tagName;
+      pill.innerHTML = `<span class="tag-title">${tagName}</span>${author ? `<span class="tag-author">by ${author}</span>` : ''}`;
     }
     pill.dataset.flowerName = tagName.toLowerCase();
 
     const obj = new CSS2DObject(pill);
-    // Float the label above the flower top
-    obj.position.set(0, 2.3, 0);
+    // Float the label directly above the bloom crown
+    obj.position.set(0, 2.35, 0);
     flowerGroup.add(obj);
 
     const record = {

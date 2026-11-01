@@ -504,22 +504,50 @@ class MeadowVisualLab {
   }
 
   /**
-   * Focuses the camera directly on a flower, attaches a glowing celestial aura mesh,
-   * highlights its tag directly above it, and maintains celebration focus for the given duration (e.g. 20s).
+   * Generates a smooth, feathered radial gradient canvas texture for the celestial glow aura.
    */
-  focusOnFlowerWithGlow(flower, durationSeconds = 20) {
-    if (!flower) return;
+  getGlowSpriteTexture() {
+    if (this._glowSpriteTexture) return this._glowSpriteTexture;
+    const canvas = document.createElement('canvas');
+    canvas.width = 256;
+    canvas.height = 256;
+    const ctx = canvas.getContext('2d');
+    const grad = ctx.createRadialGradient(128, 128, 0, 128, 128, 126);
+    // Warm ethereal golden-ivory glow with soft botanical falloff
+    grad.addColorStop(0, 'rgba(255, 252, 235, 0.72)');
+    grad.addColorStop(0.22, 'rgba(255, 230, 160, 0.42)');
+    grad.addColorStop(0.55, 'rgba(235, 195, 110, 0.13)');
+    grad.addColorStop(0.82, 'rgba(210, 170, 90, 0.03)');
+    grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, 256, 256);
+    this._glowSpriteTexture = new THREE.CanvasTexture(canvas);
+    return this._glowSpriteTexture;
+  }
 
+  /**
+   * Cleanly disposes and clears all active flower spotlight and glow meshes.
+   */
+  clearFlowerHighlight() {
     if (this.spotlightTimeout) {
       clearTimeout(this.spotlightTimeout);
       this.spotlightTimeout = null;
     }
-
-    // Clean up previous glow objects if any
     if (this.spotlightLight) {
       this.sceneEnv.scene.remove(this.spotlightLight);
       if (this.spotlightLight.dispose) this.spotlightLight.dispose();
       this.spotlightLight = null;
+    }
+    if (this.glowSprite) {
+      this.sceneEnv.scene.remove(this.glowSprite);
+      if (this.glowSprite.material) this.glowSprite.material.dispose();
+      this.glowSprite = null;
+    }
+    if (this.groundRing) {
+      this.sceneEnv.scene.remove(this.groundRing);
+      if (this.groundRing.geometry) this.groundRing.geometry.dispose();
+      if (this.groundRing.material) this.groundRing.material.dispose();
+      this.groundRing = null;
     }
     if (this.glowMesh) {
       this.sceneEnv.scene.remove(this.glowMesh);
@@ -527,42 +555,68 @@ class MeadowVisualLab {
       if (this.glowMesh.material) this.glowMesh.material.dispose();
       this.glowMesh = null;
     }
-
-    // Clear previous glow class from pills
     document.querySelectorAll('.flower-name-tag.tag-celebrate-glow').forEach((el) => {
       el.classList.remove('tag-celebrate-glow');
     });
+    this.activeCelebratedFlower = null;
+  }
+
+  /**
+   * Focuses the camera directly on a flower, attaches a subtle warm glow around/above it,
+   * highlights its floating tag showing the flower name, and maintains focus for durationSeconds.
+   */
+  focusOnFlowerWithGlow(flower, durationSeconds = 20) {
+    if (!flower) return;
+
+    this.clearFlowerHighlight();
 
     const pos = flower.group ? flower.group.position : flower.position;
     if (!pos) return;
 
     // 1. Smoothly glide camera toward flower
     this.sceneEnv.targetLookAt.set(pos.x, (pos.y || 0) + 1.25, pos.z);
-    this.sceneEnv.targetSpherical.radius = 2.4;
+    this.sceneEnv.targetSpherical.radius = 2.6;
 
-    // 2. High-intensity 3D PointLight focused on the bloom
-    const glow = new THREE.PointLight(0x38bdf8, 8.0, 10.0, 1.0);
-    glow.position.set(pos.x, (pos.y || 0) + 2.2, pos.z);
-    this.sceneEnv.scene.add(glow);
-    this.spotlightLight = glow;
+    // 2. Subtle warm botanical sunlight PointLight focused gently on the bloom
+    const glowLight = new THREE.PointLight(0xfff6dd, 1.5, 6.0, 1.2);
+    glowLight.position.set(pos.x, (pos.y || 0) + 2.1, pos.z);
+    this.sceneEnv.scene.add(glowLight);
+    this.spotlightLight = glowLight;
 
-    // 3. Luminous 3D glowing aura halo mesh around the flower base & bloom
-    const glowGeo = new THREE.SphereGeometry(1.4, 32, 16);
-    const glowMat = new THREE.MeshBasicMaterial({
-      color: 0x67e8f9,
+    // 3. Ethereal soft glowing aura sprite hovering around and above the bloom
+    const spriteMat = new THREE.SpriteMaterial({
+      map: this.getGlowSpriteTexture(),
+      color: 0xfff3d0,
       transparent: true,
-      opacity: 0.28,
+      opacity: 0.52,
       blending: THREE.AdditiveBlending,
-      side: THREE.BackSide,
       depthWrite: false
     });
-    const halo = new THREE.Mesh(glowGeo, glowMat);
-    halo.position.set(pos.x, (pos.y || 0) + 1.2, pos.z);
-    this.sceneEnv.scene.add(halo);
-    this.glowMesh = halo;
+    const aura = new THREE.Sprite(spriteMat);
+    aura.scale.set(2.4, 2.4, 1.0);
+    aura.position.set(pos.x, (pos.y || 0) + 1.85, pos.z);
+    this.sceneEnv.scene.add(aura);
+    this.glowSprite = aura;
+
+    // 4. Subtle, delicate ground beacon ring on the meadow grass
+    const ringGeo = new THREE.RingGeometry(0.35, 0.85, 48);
+    const ringMat = new THREE.MeshBasicMaterial({
+      color: 0xe8d08c,
+      transparent: true,
+      opacity: 0.18,
+      side: THREE.DoubleSide,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false
+    });
+    const ring = new THREE.Mesh(ringGeo, ringMat);
+    ring.rotation.x = -Math.PI / 2;
+    ring.position.set(pos.x, (pos.y || 0) + 0.02, pos.z);
+    this.sceneEnv.scene.add(ring);
+    this.groundRing = ring;
+
     this.activeCelebratedFlower = flower;
 
-    // 4. Highlight this flower's tag above it & ensure CSS2DRenderer is active
+    // 5. Highlight this flower's floating tag above it & ensure CSS2DRenderer is active
     if (this.labelSystem) {
       this.labelSystem.setVisible(true);
 
@@ -580,7 +634,7 @@ class MeadowVisualLab {
           flower.group = anchorGroup;
         }
         const createdName = this.labelSystem.addLabel(anchorGroup, flower.name, {
-          choreographer: flower.choreographer || 'Devcon Gardener',
+          choreographer: flower.choreographer || '',
           species: flower.species || 'periwinkle',
           isPlanted: !!flower.isPlanted
         });
@@ -593,23 +647,12 @@ class MeadowVisualLab {
       }
     }
 
-    // 5. Fade spotlight & restore default state after 20 seconds
+    // 6. Restore after durationSeconds
     this.spotlightTimeout = setTimeout(() => {
-      if (this.spotlightLight) {
-        this.sceneEnv.scene.remove(this.spotlightLight);
-        this.spotlightLight = null;
-      }
-      if (this.glowMesh) {
-        this.sceneEnv.scene.remove(this.glowMesh);
-        this.glowMesh = null;
-      }
-      document.querySelectorAll('.flower-name-tag.tag-celebrate-glow').forEach((el) => {
-        el.classList.remove('tag-celebrate-glow');
-      });
+      this.clearFlowerHighlight();
       if (this.labelSystem && !this.labelsVisible) {
         this.labelSystem.setVisible(false);
       }
-      this.activeCelebratedFlower = null;
     }, durationSeconds * 1000);
   }
 
@@ -1019,6 +1062,7 @@ class MeadowVisualLab {
       this.updateChipActive(q);
 
       if (q.length === 0) {
+        this.clearFlowerHighlight();
         this.labelSystem.clearSearch();
         this.searchMatches = [];
         this.searchMatchIndex = 0;
@@ -1297,6 +1341,16 @@ class MeadowVisualLab {
       // 3. Animate wild meadow grasses & wheat
       if (this.wildGrasses) {
         this.wildGrasses.update(time, this.windStrength);
+      }
+
+      // 3b. Subtle organic breathing of active highlight glow if present
+      if (this.glowSprite) {
+        const pulse = Math.sin(time * 2.4) * 0.08;
+        this.glowSprite.scale.set(2.4 + pulse, 2.4 + pulse, 1.0);
+      }
+      if (this.groundRing) {
+        const ringPulse = Math.sin(time * 2.0) * 0.03;
+        this.groundRing.scale.set(1.0 + ringPulse, 1.0 + ringPulse, 1.0);
       }
 
       // 4. Update scene & camera
