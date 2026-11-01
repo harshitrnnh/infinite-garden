@@ -845,8 +845,9 @@ body.clean-view .indian-flower-dock {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(5, 12, 9, 0.78);
-  backdrop-filter: blur(8px);
+  background: rgba(5, 12, 9, 0.45);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
   animation: fadeIn 0.3s ease;
 }
 
@@ -900,9 +901,9 @@ body.clean-view .indian-flower-dock {
 /* 2. Active Recording Floating HUD Bar */
 .recording-active-hud {
   position: fixed;
-  top: 90px;
-  left: 50%;
-  transform: translateX(-50%);
+  top: 24px;
+  left: 24px;
+  transform: none;
   z-index: 90;
   animation: slideDown 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
@@ -915,13 +916,15 @@ body.clean-view .indian-flower-dock {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  min-width: 420px;
-  padding: 14px 22px;
-  background: rgba(14, 26, 20, 0.92);
-  backdrop-filter: var(--glass-blur);
+  min-width: 290px;
+  max-width: 360px;
+  padding: 12px 18px;
+  background: rgba(14, 26, 20, 0.88);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   border: 1px solid rgba(255, 64, 129, 0.45);
   border-radius: 16px;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6), 0 0 25px rgba(255, 64, 129, 0.25);
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.55), 0 0 20px rgba(255, 64, 129, 0.22);
 }
 
 .record-indicator {
@@ -3329,4 +3332,24 @@ body.choreography-split-view {
   opacity: 0;
   transform: translateX(-50%) translateY(-14px);
   pointer-events: none;
+}
+
+/* Tablet & Laptop Bloom: If Camera Inlet flipped to Left corner, mirror Recording HUD to Right */
+.tablet-bloom-view .tablet-camera-inlet.corner-left ~ .recording-active-hud,
+body.tablet-bloom-view:has(.tablet-camera-inlet.corner-left) .recording-active-hud,
+body.laptop-bloom-view:has(.tablet-camera-inlet.corner-left) .recording-active-hud {
+  left: auto !important;
+  right: 24px !important;
+}
+
+@media (max-width: 680px) {
+  .recording-active-hud {
+    top: 14px;
+    left: 14px;
+    max-width: calc(100vw - 200px);
+  }
+  .record-hud-card {
+    min-width: 200px;
+    padding: 8px 12px;
+  }
 }
