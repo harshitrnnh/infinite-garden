@@ -2,6 +2,7 @@
   "cleanUrls": true,
   "rewrites": [
     { "source": "/tablet-bloom", "destination": "/tablet-bloom.html" },
+    { "source": "/laptop-bloom", "destination": "/laptop-bloom.html" },
     { "source": "/visual-lab", "destination": "/visual-lab.html" },
     { "source": "/flower-geometries", "destination": "/flower-geometries.html" }
   ]
