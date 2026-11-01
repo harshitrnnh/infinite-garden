@@ -35,14 +35,15 @@ export class MeadowScene {
     // Mouse Interaction State
     this.isDragging = false;
     this.prevMouse = { x: 0, y: 0 };
+    // Default view: camera view from a little up, zoomed out enough to show majority of the garden
     this.spherical = {
-      radius: 2.1,
-      theta: 0.15, // horizontal angle
-      phi: 1.25     // vertical elevation (low angle looking up)
+      radius: 16.5,
+      theta: 0.28,  // gentle perspective angle across meadow
+      phi: 1.02     // elevated top-angle (~58°) looking across the garden
     };
     this.targetSpherical = { ...this.spherical };
-    this.targetLookAt = new THREE.Vector3(0, 1.35, 0);
-    this.currentLookAt = new THREE.Vector3(0, 1.35, 0);
+    this.targetLookAt = new THREE.Vector3(0, 1.10, 0);
+    this.currentLookAt = new THREE.Vector3(0, 1.10, 0);
 
     this.initAtmosphere();
     this.initLighting();
@@ -318,6 +319,12 @@ export class MeadowScene {
       this.targetSpherical.phi = 0.45;
       this.targetSpherical.theta = 0.65;
       this.targetLookAt.set(0, 1.0, 0);
+    } else if (presetName === 'default' || presetName === 'overview') {
+      // Default view: from a little up, zoomed out enough to show majority of the garden
+      this.targetSpherical.radius = 16.5;
+      this.targetSpherical.phi = 1.02;
+      this.targetSpherical.theta = 0.28;
+      this.targetLookAt.set(0, 1.10, 0);
     }
   }
 

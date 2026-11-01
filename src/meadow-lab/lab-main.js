@@ -737,13 +737,33 @@ class MeadowVisualLab {
       }
     }
 
-    // 6. Restore after durationSeconds
+    // 6. Restore after durationSeconds: pan out to default view (from a little up, zoomed out showing majority of garden)
+    clearTimeout(this.spotlightTimeout);
     this.spotlightTimeout = setTimeout(() => {
       this.clearFlowerHighlight();
       if (this.labelSystem && !this.labelsVisible) {
         this.labelSystem.setVisible(false);
       }
+      this.panOutToGardenOverview();
     }, durationSeconds * 1000);
+  }
+
+  /**
+   * Smoothly pans the camera back out to the default view:
+   * elevated from a little up, zoomed out enough to showcase the majority of the living garden meadow.
+   */
+  panOutToGardenOverview() {
+    this.sceneEnv.targetLookAt.set(0, 1.10, 0);
+    this.sceneEnv.targetSpherical.radius = 16.5; // Zoomed out enough to show majority of the garden
+    this.sceneEnv.targetSpherical.phi = 1.02;   // Camera view from a little up (~58° angle looking across the meadow)
+    this.sceneEnv.targetSpherical.theta = 0.28;
+
+    const overviewBtn = document.getElementById('btn-cam-overview');
+    const heroLowBtn = document.getElementById('btn-cam-hero-low');
+    const eyeLevelBtn = document.getElementById('btn-cam-eye');
+    const aerialBtn = document.getElementById('btn-cam-aerial');
+    [heroLowBtn, eyeLevelBtn, aerialBtn].forEach(b => b && b.classList.remove('active'));
+    if (overviewBtn) overviewBtn.classList.add('active');
   }
 
   findClearPlantedSlot(minDist = 2.6) {
@@ -890,14 +910,22 @@ class MeadowVisualLab {
 
   initControls() {
     // 1. Camera Preset Buttons
+    const overviewBtn = document.getElementById('btn-cam-overview');
     const heroLowBtn = document.getElementById('btn-cam-hero-low');
     const eyeLevelBtn = document.getElementById('btn-cam-eye');
     const aerialBtn = document.getElementById('btn-cam-aerial');
 
     const setActiveBtn = (btn) => {
-      [heroLowBtn, eyeLevelBtn, aerialBtn].forEach(b => b && b.classList.remove('active'));
+      [overviewBtn, heroLowBtn, eyeLevelBtn, aerialBtn].forEach(b => b && b.classList.remove('active'));
       if (btn) btn.classList.add('active');
     };
+
+    if (overviewBtn) {
+      overviewBtn.addEventListener('click', () => {
+        this.panOutToGardenOverview();
+        setActiveBtn(overviewBtn);
+      });
+    }
 
     if (heroLowBtn) {
       heroLowBtn.addEventListener('click', () => {
@@ -1166,6 +1194,7 @@ class MeadowVisualLab {
         if (countEl) countEl.textContent = '';
         if (cycleControls) cycleControls.classList.add('hidden');
         clearBtn && clearBtn.classList.remove('visible');
+        this.panOutToGardenOverview();
         return;
       }
 
