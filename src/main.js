@@ -448,11 +448,18 @@ document.addEventListener('DOMContentLoaded', async () => {
   const isLaptopBloom = window.location.pathname.includes('laptop-bloom') || document.body.classList.contains('laptop-bloom-view');
 
   if (isTabletBloom) {
-    // Natural frontal portrait view with subtle top angle into petals
-    const TABLET_BLOOM_RADIUS = isLaptopBloom ? 4.35 : 4.85; // Natural framing for laptop widescreen or vertical tablet
-    const TABLET_BLOOM_PHI = 1.10; // Gently elevated top angle (~63° from vertical / ~27° above horizontal)
+    // Natural frontal portrait view with subtle top angle into petals & generous headroom so flower never cuts off
+    const TABLET_BLOOM_RADIUS = isLaptopBloom ? 4.60 : 5.15; // Generous distance ensuring full flower & tall stretches fit with clear headroom
+    const TABLET_BLOOM_PHI = 1.14; // Gently elevated top angle (~65° from vertical / ~25° above horizontal)
     const TABLET_BLOOM_THETA = 0.04; // Centered
-    const TABLET_BLOOM_LOOK_Y = 1.00; // Framed comfortably on flower center
+    const TABLET_BLOOM_LOOK_Y = 1.18; // Aimed comfortably on flower center & blossom
+
+    if (garden) {
+      garden.defaultStudioRadius = TABLET_BLOOM_RADIUS;
+      garden.defaultStudioPhi = TABLET_BLOOM_PHI;
+      garden.defaultStudioTheta = TABLET_BLOOM_THETA;
+      garden.defaultStudioLookY = TABLET_BLOOM_LOOK_Y;
+    }
 
     if (garden && garden.studioSpherical) {
       garden.studioSpherical.radius = TABLET_BLOOM_RADIUS;

@@ -22,21 +22,25 @@ export class GardenEnvironment {
     // Camera Modes: 'studio' (live creation), 'tv' (infinite garden on HDMI TV), 'panorama' (wide communal meadow), 'inspect' (close-up)
     this.cameraMode = 'studio';
     this.isSoloMode = false;
-    this.cameraGardenPos = new THREE.Vector3(0, 1.15, 3.25);
-    this.cameraGardenLook = new THREE.Vector3(0, 0.95, 0);
-    this.cameraSoloPos = new THREE.Vector3(0, 1.15, 3.15);
-    this.cameraSoloLook = new THREE.Vector3(0, 0.95, 0);
+    this.cameraGardenPos = new THREE.Vector3(0, 1.35, 3.85);
+    this.cameraGardenLook = new THREE.Vector3(0, 1.15, 0);
+    this.cameraSoloPos = new THREE.Vector3(0, 1.35, 3.85);
+    this.cameraSoloLook = new THREE.Vector3(0, 1.15, 0);
     this.cameraPanoramaPos = new THREE.Vector3(0, 2.3, 5.4);
     this.cameraPanoramaLook = new THREE.Vector3(0, 0.85, -1.0);
     this.inspectTargetPos = new THREE.Vector3();
     this.inspectTargetLook = new THREE.Vector3();
     this.currentCameraLook = new THREE.Vector3().copy(this.cameraGardenLook);
 
-    // Studio Mode Interactive View Angle & Zoom (Matches flower-geometries.html)
-    this.studioSpherical = { radius: 2.85, theta: 0.15, phi: 1.25 };
+    // Studio Mode Interactive View Angle & Zoom (Generous framing so entire flower & crown are visible at all times)
+    this.defaultStudioRadius = 3.85;
+    this.defaultStudioPhi = 1.18;
+    this.defaultStudioTheta = 0.08;
+    this.defaultStudioLookY = 1.15;
+    this.studioSpherical = { radius: this.defaultStudioRadius, theta: this.defaultStudioTheta, phi: this.defaultStudioPhi };
     this.targetStudioSpherical = { ...this.studioSpherical };
-    this.studioLookAt = new THREE.Vector3(0, 0.95, 0);
-    this.currentStudioLook = new THREE.Vector3(0, 0.95, 0);
+    this.studioLookAt = new THREE.Vector3(0, this.defaultStudioLookY, 0);
+    this.currentStudioLook = new THREE.Vector3(0, this.defaultStudioLookY, 0);
     this.isStudioDragging = false;
     this.studioPrevMouse = { x: 0, y: 0 };
 
@@ -582,6 +586,14 @@ export class GardenEnvironment {
 
   resetToStudio() {
     this.cameraMode = 'studio';
+    if (this.targetStudioSpherical) {
+      this.targetStudioSpherical.radius = this.defaultStudioRadius || 3.85;
+      this.targetStudioSpherical.phi = this.defaultStudioPhi || 1.18;
+      this.targetStudioSpherical.theta = this.defaultStudioTheta || 0.08;
+    }
+    if (this.studioLookAt) {
+      this.studioLookAt.set(0, this.defaultStudioLookY || 1.15, 0);
+    }
   }
 
   setSoloMode(isSolo) {

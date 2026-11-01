@@ -530,20 +530,38 @@ export class ChoreographyRecorder {
             sWidth = sh * targetAspect;
             sx = (sw - sWidth) * 0.5;
             sy = 0;
-          } else {
-            // Screen is narrower than 16:9 (tablets or portrait viewports)
-            // Fit full width and center 16:9 window vertically on the main flower
+            this.recordCtx.drawImage(
+              sourceCanvas,
+              sx, sy, sWidth, sHeight,
+              0, 0, targetWidth, targetHeight
+            );
+          } else if (srcAspect >= 1.50) {
+            // Screen is slightly narrower than 16:9 (e.g. 16:10 MacBook)
+            // Fit full width and ALWAYS start at the top (sy = 0) so the flower
+            // crown and open sky headroom are 100% preserved!
             sWidth = sw;
             sHeight = sw / targetAspect;
             sx = 0;
-            sy = Math.max(0, (sh - sHeight) * 0.42);
+            sy = 0;
+            this.recordCtx.drawImage(
+              sourceCanvas,
+              sx, sy, sWidth, sHeight,
+              0, 0, targetWidth, targetHeight
+            );
+          } else {
+            // Screen is distinctly narrower/vertical (tablets 4:3, square, portrait)
+            // Fit full vertical height into 720p so neither top nor bottom is ever cropped!
+            const scale = targetHeight / sh;
+            const scaledW = sw * scale;
+            const destX = (targetWidth - scaledW) * 0.5;
+            this.recordCtx.fillStyle = '#b6c7b7'; // Soft daylight mist matching 3D scene fog
+            this.recordCtx.fillRect(0, 0, targetWidth, targetHeight);
+            this.recordCtx.drawImage(
+              sourceCanvas,
+              0, 0, sw, sh,
+              destX, 0, scaledW, targetHeight
+            );
           }
-
-          this.recordCtx.drawImage(
-            sourceCanvas,
-            sx, sy, sWidth, sHeight,
-            0, 0, targetWidth, targetHeight
-          );
         };
 
         // 1. Standard 16:9 HD Recording Canvas (mounted offscreen in DOM so Safari processes frames)

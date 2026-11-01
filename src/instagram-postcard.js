@@ -111,14 +111,30 @@ export class InstagramPostcardGenerator {
     const sw = (sourceCanvas && (sourceCanvas.videoWidth || sourceCanvas.width)) || 0;
     const sh = (sourceCanvas && (sourceCanvas.videoHeight || sourceCanvas.height)) || 0;
     if (sourceCanvas && sw > 0 && sh > 0) {
-      // Vertical focus crop around the flower
-      const cropH = sh * 0.86;
-      const cropW = Math.min(sw, cropH * (w / 780));
-      const sx = (sw - cropW) / 2;
-      const sy = sh * 0.08;
+      // Postcard viewport runs between top header (y ≈ 125) and bottom metadata card (y ≈ 948)
+      const destY = 132;
+      const destH = 812;
+      const targetAspect = w / destH; // 720 / 812 ≈ 0.8867
 
-      const destY = 145;
-      const destH = 785;
+      // Center focus crop around the flower
+      // ALWAYS keep sy = 0 so the entire flower crown and open sky headroom are 100% preserved!
+      let cropW, cropH, sx, sy;
+      const srcAspect = sw / sh;
+
+      if (srcAspect >= targetAspect) {
+        // Source is wider than vertical postcard viewport (standard 16:9 video or widescreen canvas)
+        // Keep 100% full height from y=0 to y=sh, crop horizontally centered on flower
+        cropH = sh;
+        cropW = sh * targetAspect;
+        sx = Math.max(0, (sw - cropW) * 0.5);
+        sy = 0;
+      } else {
+        // Source is narrower than target aspect (rare portrait viewport)
+        cropW = sw;
+        cropH = sw / targetAspect;
+        sx = 0;
+        sy = 0; // Never cut off the top!
+      }
 
       // Subtle glow behind flower
       const flowerGlow = ctx.createRadialGradient(w / 2, destY + destH * 0.45, 40, w / 2, destY + destH * 0.45, 340);
@@ -132,18 +148,21 @@ export class InstagramPostcardGenerator {
       ctx.drawImage(sourceCanvas, sx, sy, cropW, cropH, 0, destY, w, destH);
       ctx.restore();
 
-      // Soft vignette blend around the flower viewport
-      const topFade = ctx.createLinearGradient(0, destY, 0, destY + 90);
+      // Soft compact vignette blend at top and bottom boundaries
+      // (Kept very shallow ~34px so it NEVER overlaps or cuts into flower petals!)
+      const topFade = ctx.createLinearGradient(0, destY, 0, destY + 34);
       topFade.addColorStop(0, '#0c130f');
+      topFade.addColorStop(0.5, 'rgba(12, 19, 15, 0.5)');
       topFade.addColorStop(1, 'rgba(12, 19, 15, 0)');
       ctx.fillStyle = topFade;
-      ctx.fillRect(0, destY, w, 90);
+      ctx.fillRect(0, destY, w, 34);
 
-      const botFade = ctx.createLinearGradient(0, destY + destH - 90, 0, destY + destH);
+      const botFade = ctx.createLinearGradient(0, destY + destH - 45, 0, destY + destH);
       botFade.addColorStop(0, 'rgba(16, 26, 20, 0)');
+      botFade.addColorStop(0.6, 'rgba(16, 26, 20, 0.6)');
       botFade.addColorStop(1, '#101a14');
       ctx.fillStyle = botFade;
-      ctx.fillRect(0, destY + destH - 90, w, 90);
+      ctx.fillRect(0, destY + destH - 45, w, 45);
     }
 
     // 5. TOP HEADER
