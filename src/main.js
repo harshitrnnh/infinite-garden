@@ -1295,9 +1295,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // If typing in input, ignore remaining single-key triggers
-    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+    if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) return;
 
-    const key = e.key.toLowerCase();
+    const key = (e.key || '').toLowerCase();
 
     // 3. Spacebar / R / C: Start Recording Choreography (or plant if modal is open)
     if (e.code === 'Space' || key === ' ' || key === 'r' || key === 'c') {

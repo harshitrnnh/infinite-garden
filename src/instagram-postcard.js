@@ -208,7 +208,7 @@ export class InstagramPostcardGenerator {
       ctx.letterSpacing = '0.4px';
       const speciesSuffix = meta.speciesName ? ` • ${meta.speciesName}` : '';
       ctx.fillText(`Choreographed by ${rawDancer}${speciesSuffix}`, cardX + 26, cardY + 88);
-    } else if (meta.speciesName && displayFlowerTitle.toLowerCase() !== meta.speciesName.toLowerCase()) {
+    } else if (meta.speciesName && (displayFlowerTitle || '').toLowerCase() !== meta.speciesName.toLowerCase()) {
       ctx.font = '500 14px system-ui, -apple-system, sans-serif';
       ctx.fillStyle = '#8eb697';
       ctx.letterSpacing = '0.4px';

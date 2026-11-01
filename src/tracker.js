@@ -280,7 +280,7 @@ export class BodyTracker {
     });
 
     window.addEventListener('keydown', (e) => {
-      const key = e.key.toLowerCase();
+      const key = (e.key || '').toLowerCase();
       if (e.code === 'Space') {
         this.targets.bloomRatio = this.targets.bloomRatio > 0.6 ? 0.05 : 0.95;
       } else if (key === 'x') {
