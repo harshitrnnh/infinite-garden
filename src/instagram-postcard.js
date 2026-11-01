@@ -202,20 +202,29 @@ export class InstagramPostcardGenerator {
       rawDancer.toLowerCase() === 'anonymous dancer';
     const hasDancer = !isGenericDancer;
 
+    let choreoLineY = cardY + 84;
     if (hasDancer) {
       ctx.font = '500 14px system-ui, -apple-system, sans-serif';
       ctx.fillStyle = '#8eb697';
       ctx.letterSpacing = '0.4px';
       const speciesSuffix = meta.speciesName ? ` • ${meta.speciesName}` : '';
-      ctx.fillText(`Choreographed by ${rawDancer}${speciesSuffix}`, cardX + 26, cardY + 88);
+      ctx.fillText(`Choreographed by ${rawDancer}${speciesSuffix}`, cardX + 26, choreoLineY);
     } else if (meta.speciesName && (displayFlowerTitle || '').toLowerCase() !== meta.speciesName.toLowerCase()) {
       ctx.font = '500 14px system-ui, -apple-system, sans-serif';
       ctx.fillStyle = '#8eb697';
       ctx.letterSpacing = '0.4px';
-      ctx.fillText(meta.speciesName, cardX + 26, cardY + 88);
+      ctx.fillText(meta.speciesName, cardX + 26, choreoLineY);
+    } else {
+      choreoLineY = cardY + 60;
     }
 
-    // 3. QR Code linking to Infinite Garden Meadow
+    // 3. Collective Bloom • Devcon, Mumbai 2026 directly below the choreographed line
+    ctx.font = '600 12.5px system-ui, -apple-system, sans-serif';
+    ctx.fillStyle = '#b39852';
+    ctx.letterSpacing = '1.2px';
+    ctx.fillText('Collective Bloom • Devcon, Mumbai 2026', cardX + 26, choreoLineY + 28);
+
+    // 4. QR Code linking to Infinite Garden Meadow
     if (qrImage) {
       const qrSize = 84;
       const qrX = cardX + cardW - qrSize - 20;
@@ -236,14 +245,16 @@ export class InstagramPostcardGenerator {
       ctx.textAlign = 'left';
     }
 
-    // 4. Bottom Line: 'COLLECTIVE BLOOM • DEVCON, MUMBAI 2026'
-    ctx.font = '600 11.5px system-ui, -apple-system, sans-serif';
-    ctx.fillStyle = '#b39852';
-    ctx.letterSpacing = '1.8px';
-    ctx.fillText('COLLECTIVE BLOOM • DEVCON, MUMBAI 2026', cardX + 26, cardY + cardH - 46);
+    // 5. Subtle separator line above artist credit
+    ctx.strokeStyle = 'rgba(215, 235, 220, 0.12)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(cardX + 26, cardY + cardH - 50);
+    ctx.lineTo(cardX + cardW - 26, cardY + cardH - 50);
+    ctx.stroke();
 
-    // 5. Artist Credit in little bigger font directly below the Collective Bloom line:
-    ctx.font = '600 14px system-ui, -apple-system, sans-serif';
+    // 6. Artist Credit directly at bottom of card
+    ctx.font = '600 13.5px system-ui, -apple-system, sans-serif';
     ctx.fillStyle = '#f0ce6f';
     ctx.letterSpacing = '0.8px';
     ctx.fillText('An Artwork by Harshit Agrawal (@harshitrnnh)', cardX + 26, cardY + cardH - 22);
