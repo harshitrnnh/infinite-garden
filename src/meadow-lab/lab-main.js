@@ -618,10 +618,10 @@ class MeadowVisualLab {
     const pos = flower.group ? flower.group.position : flower.position;
     if (!pos) return;
 
-    // 1. Smoothly glide camera toward flower (comfortably zoomed out so full flower, base to crown, is visible)
-    this.sceneEnv.targetLookAt.set(pos.x, (pos.y || 0) + 1.10, pos.z);
-    this.sceneEnv.targetSpherical.radius = 4.2;
-    this.sceneEnv.targetSpherical.phi = 1.18; // Balanced natural viewing elevation
+    // 1. Smoothly glide camera toward flower (comfortably zoomed out from an elevated top angle)
+    this.sceneEnv.targetLookAt.set(pos.x, (pos.y || 0) + 0.85, pos.z);
+    this.sceneEnv.targetSpherical.radius = 5.8; // Zoomed out to view the complete flower and ground halo
+    this.sceneEnv.targetSpherical.phi = 0.86;   // Elevated top angle looking gracefully downward at the bloom
 
     // 2. Subtle warm botanical sunlight PointLight focused gently on the bloom
     const glowLight = new THREE.PointLight(0xfff6dd, 1.5, 6.0, 1.2);

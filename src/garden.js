@@ -575,9 +575,9 @@ export class GardenEnvironment {
     if (!flowerRecord) return;
     this.cameraMode = 'inspect';
     const pos = flowerRecord.meta.position || { x: 0, y: 0, z: 0 };
-    const offsetX = pos.x > 0 ? 0.25 : (pos.x < 0 ? -0.25 : 0);
-    this.inspectTargetPos.set(pos.x + offsetX, 1.35, pos.z + 1.85);
-    this.inspectTargetLook.set(pos.x, 1.05, pos.z);
+    const offsetX = pos.x > 0 ? 0.35 : (pos.x < 0 ? -0.35 : 0);
+    this.inspectTargetPos.set(pos.x + offsetX, 2.10, pos.z + 2.85);
+    this.inspectTargetLook.set(pos.x, 0.85, pos.z);
   }
 
   resetToStudio() {
