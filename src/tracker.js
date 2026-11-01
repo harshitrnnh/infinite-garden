@@ -50,7 +50,17 @@ export class BodyTracker {
 
     // Fallback mouse control state
     this.mouse = { x: 0, y: 0, isDown: false, dragBloom: 0.35 };
+    this.onNamaste = options.onNamaste || null;
+    this.namasteFrames = 0;
+    this.namasteTriggered = false;
     this.setupMouseFallback();
+  }
+
+  triggerNamaste() {
+    console.log('🙏 [Easter Egg] Namaste Pose confirmed!');
+    if (typeof this.onNamaste === 'function') {
+      this.onNamaste();
+    }
   }
 
   async initialize() {
@@ -332,6 +342,9 @@ export class BodyTracker {
         this.targets.armExtensionL = isSpread ? 0.0 : 1.2;
         this.targets.armExtensionR = isSpread ? 0.0 : 1.2;
         this.targets.bloomRatio = isSpread ? 0.65 : 0.95;
+      } else if (key === 'm') {
+        // Keyboard testing: trigger Namaste mudra easter egg
+        this.triggerNamaste();
       } else if (key === '[' || key === 'l') {
         // Toggle lifting left leg
         this.targets.legLiftL = this.targets.legLiftL > 0.5 ? 0.0 : 0.9;
@@ -673,6 +686,34 @@ export class BodyTracker {
       this.targets.energy = Math.min(1.0, (dL + dR + dN) * 8.0);
     }
     this.prevPose = { lWr: { ...lWr }, rWr: { ...rWr }, nose: { ...nose } };
+
+    // 9. NAMASTE / ANJALI MUDRA POSE DETECTION (Easter Egg)
+    // Hands clasped together in front of the chest / sternum
+    const avgWristX = (lWr.x + rWr.x) * 0.5;
+    const avgWristY = (lWr.y + rWr.y) * 0.5;
+
+    const isNamastePose = (
+      wristDist < shoulderWidth * 0.44 &&
+      avgWristY > (nose.y + 0.04) &&
+      avgWristY < (midShoulderY + shoulderWidth * 1.35) &&
+      Math.abs(avgWristX - midShoulderX) < shoulderWidth * 0.38 &&
+      elbowDist > wristDist * 1.7 &&
+      elbowDist > shoulderWidth * 0.65
+    );
+
+    if (isNamastePose) {
+      this.namasteFrames = (this.namasteFrames || 0) + 1;
+      // Holding Namaste for ~14 frames (~0.45s) confirms the deliberate gesture
+      if (this.namasteFrames >= 14 && !this.namasteTriggered) {
+        this.namasteTriggered = true;
+        this.triggerNamaste();
+      }
+    } else {
+      this.namasteFrames = Math.max(0, (this.namasteFrames || 0) - 2);
+      if (this.namasteFrames === 0) {
+        this.namasteTriggered = false; // Reset lock when hands release
+      }
+    }
 
     // Render skeleton overlay in PIP
     this.drawSkeleton(lm);

@@ -563,8 +563,13 @@ export class BotanicalArticulatedStem {
         b.group.rotation.x = b.baseX + verticalLift * 0.12;
       }
 
+      if (b.growthScale !== undefined && b.growthScale < (b.targetGrowthScale || 1.0)) {
+        b.growthScale = THREE.MathUtils.lerp(b.growthScale, b.targetGrowthScale || 1.0, 0.08);
+      }
+      const growthMult = b.growthScale !== undefined ? b.growthScale : 1.0;
+
       // Gentle reach scale
-      const reachScale = 1.0 + Math.max(0, verticalLift) * 0.15 + wingSpread * 0.20;
+      const reachScale = (1.0 + Math.max(0, verticalLift) * 0.15 + wingSpread * 0.20) * growthMult;
       b.group.scale.set(reachScale, reachScale, reachScale);
     });
 
@@ -620,6 +625,91 @@ export class BotanicalArticulatedStem {
         f.setWireframe(wire);
       }
     });
+  }
+
+  /**
+   * EASTER EGG: Namaste Mudra Sprouting
+   * When dancer holds Namaste pose (hands clasped at heart), a new living botanical branch sprouts!
+   */
+  sproutNamasteBranch() {
+    this.namasteBranchCount = (this.namasteBranchCount || 0) + 1;
+    const count = this.namasteBranchCount;
+
+    // Distribute among visible stem segments (e.g. segments 2, 3, 1)
+    const segIndices = [2, 3, 1, 3, 2];
+    const segIdx = segIndices[(count - 1) % segIndices.length];
+    const segObj = this.segments[segIdx];
+    if (!segObj) return null;
+
+    const segGroup = segObj.group;
+    const side = (count % 2 === 1) ? 1 : -1;
+    const branchLen = 0.38 + ((count * 0.04) % 0.12);
+
+    const branch = new THREE.Group();
+    // Positioned along the segment height
+    const heightOffset = this.segmentHeight * (0.35 + (count % 3) * 0.16);
+    branch.position.set(side * 0.012, heightOffset, 0.008);
+
+    // Natural botanical angles: tilted upwards & slightly forward
+    const baseZ = side === 1 ? (0.50 + Math.random() * 0.10) : (-0.46 - Math.random() * 0.10);
+    const baseX = 0.14 + (count % 2) * 0.06;
+    const baseY = (side === 1 ? -0.32 : 0.32) + (Math.random() - 0.5) * 0.15;
+    branch.rotation.set(baseX, baseY, baseZ);
+
+    // Sprouting animation starts at microscopic bud size
+    branch.scale.set(0.001, 0.001, 0.001);
+
+    // Arching sculpted branch stem
+    const stemGeom = new THREE.CylinderGeometry(0.011, 0.020, branchLen, 8);
+    stemGeom.translate(0, branchLen * 0.5, 0);
+    const stemMesh = new THREE.Mesh(stemGeom, this.stemMat);
+    stemMesh.castShadow = true;
+    branch.add(stemMesh);
+
+    // Sculpted foliage leaves along new branch
+    const leafMesh1 = new THREE.Mesh(createSculptedFoliageLeaf(branchLen * 0.60, 0.07, 8), this.leafMat);
+    leafMesh1.position.set(side * 0.006, branchLen * 0.40, 0.004);
+    leafMesh1.rotation.set(0.18, side * 0.30, side * 0.25);
+    leafMesh1.castShadow = true;
+    branch.add(leafMesh1);
+
+    const leafMesh2 = new THREE.Mesh(createSculptedFoliageLeaf(branchLen * 0.46, 0.05, 8), this.leafMat);
+    leafMesh2.position.set(-side * 0.005, branchLen * 0.70, -0.004);
+    leafMesh2.rotation.set(-0.14, -side * 0.28, -side * 0.22);
+    leafMesh2.castShadow = true;
+    branch.add(leafMesh2);
+
+    // Tip floret mount
+    const floretMount = new THREE.Group();
+    floretMount.position.set(0, branchLen, 0);
+    floretMount.rotation.z = side * -0.16;
+    floretMount.rotation.x = 0.12;
+    branch.add(floretMount);
+
+    if (typeof this.createFloretFn === 'function') {
+      const floret = this.createFloretFn(0.30, true);
+      if (floret && floret.group) {
+        floretMount.add(floret.group);
+        if (typeof floret.setBloom === 'function') floret.setBloom(this.currentBloom);
+        this.florets.push(floret);
+      }
+    }
+
+    segGroup.add(branch);
+
+    const branchEntry = {
+      group: branch,
+      mount: floretMount,
+      side: side,
+      baseZ: baseZ,
+      baseX: baseX,
+      growthScale: 0.001,
+      targetGrowthScale: 1.0,
+      isNamasteBranch: true
+    };
+
+    this.branchlets.push(branchEntry);
+    return branchEntry;
   }
 }
 

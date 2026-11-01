@@ -669,6 +669,68 @@ export class LivingPlant {
     });
   }
 
+  /**
+   * EASTER EGG: Namaste Mudra Sprouting
+   * When dancer holds Namaste pose, a new living botanical branch sprouts!
+   */
+  sproutNamasteBranch() {
+    this.namasteBranchCount = (this.namasteBranchCount || 0) + 1;
+    const count = this.namasteBranchCount;
+
+    const segIndices = [2, 3, 1, 3, 2];
+    const segIdx = segIndices[(count - 1) % segIndices.length];
+    const seg = this.segments[segIdx]?.group;
+    if (!seg) return null;
+
+    const side = (count % 2 === 1) ? 1 : -1;
+    const len = 0.42;
+    const floretScale = 0.65;
+
+    const pivot = new THREE.Group();
+    pivot.position.y = this.segmentHeight * (0.35 + (count % 3) * 0.16);
+    pivot.rotation.y = (side === 1 ? -0.32 : 0.32) + (Math.random() - 0.5) * 0.15;
+    pivot.rotation.z = side === 1 ? (0.54 + Math.random() * 0.10) : (-0.50 - Math.random() * 0.10);
+    pivot.rotation.x = 0.14;
+    pivot.scale.set(0.001, 0.001, 0.001);
+
+    const stemGeom = new THREE.CylinderGeometry(0.014, 0.022, len, 8);
+    stemGeom.translate(0, len * 0.5, 0);
+    const stemMesh = new THREE.Mesh(stemGeom, this.materials.stem);
+    stemMesh.castShadow = true;
+    pivot.add(stemMesh);
+
+    const leafGeom = this.createSculptedLeafGeometry(len * 0.70, len * 0.22);
+    const leafMesh = new THREE.Mesh(leafGeom, this.materials.leaf);
+    leafMesh.position.set(0, len * 0.45, 0);
+    leafMesh.rotation.z = side === -1 ? -0.30 : 0.30;
+    leafMesh.rotation.x = 0.20;
+    pivot.add(leafMesh);
+
+    const floretGroup = new THREE.Group();
+    floretGroup.position.set(0, len, 0);
+    floretGroup.rotation.z = side === -1 ? 0.42 : -0.42;
+    floretGroup.rotation.x = Math.PI * 0.30;
+    pivot.add(floretGroup);
+
+    this.buildFloret(floretGroup, floretScale);
+    seg.add(pivot);
+
+    const entry = {
+      pivot: pivot,
+      side: side,
+      baseAngleZ: pivot.rotation.z,
+      baseAngleX: pivot.rotation.x,
+      floretGroup: floretGroup,
+      floretScale: floretScale,
+      growthScale: 0.001,
+      targetGrowthScale: 1.0,
+      isNamasteBranch: true
+    };
+
+    this.branchlets.push(entry);
+    return entry;
+  }
+
   buildFloret(parentGroup, scale) {
     const s = scale;
     const isCommunal = this.detailLevel === 'communal';
@@ -2218,7 +2280,11 @@ export class LivingPlant {
       const spreadDrive = THREE.MathUtils.clamp(armExt * 0.75 + wingspanRatio * 0.75, 0.0, 1.6);
 
       // Branch length physically stretches out when spreading arms
-      const stretchReach = 1.0 + spreadDrive * 0.60;
+      if (b.growthScale !== undefined && b.growthScale < (b.targetGrowthScale || 1.0)) {
+        b.growthScale = THREE.MathUtils.lerp(b.growthScale, b.targetGrowthScale || 1.0, 0.08);
+      }
+      const growthMult = b.growthScale !== undefined ? b.growthScale : 1.0;
+      const stretchReach = (1.0 + spreadDrive * 0.60) * growthMult;
       b.pivot.scale.set(stretchReach, stretchReach, stretchReach);
 
       const flutter = Math.sin(this.idleTime * 2.5 + idx * 1.5) * 0.025 + (kinematics.energy ?? 0) * 0.06;

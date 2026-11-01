@@ -227,6 +227,37 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   });
 
+  // EASTER EGG: Namaste Mudra Sprouting
+  // When the dancer performs Namaste gesture, a new living flower branch sprouts with golden spores!
+  let namasteToastTimeout = null;
+  const showNamasteEasterEggToast = () => {
+    let pill = document.getElementById('namaste-easter-egg-pill');
+    if (!pill) {
+      pill = document.createElement('div');
+      pill.id = 'namaste-easter-egg-pill';
+      pill.className = 'namaste-easter-egg-pill';
+      document.body.appendChild(pill);
+    }
+    pill.innerHTML = `<span>🙏</span> <span>Namaste! A new flower branch has sprouted</span>`;
+    pill.classList.remove('hidden');
+
+    clearTimeout(namasteToastTimeout);
+    namasteToastTimeout = setTimeout(() => {
+      if (pill) pill.classList.add('hidden');
+    }, 3200);
+  };
+
+  tracker.onNamaste = () => {
+    console.log('🙏 Namaste detected! Sprouting new living flower branch...');
+    if (plant && typeof plant.sproutNamasteBranch === 'function') {
+      plant.sproutNamasteBranch();
+    }
+    if (garden && typeof garden.addSporeBurst === 'function') {
+      garden.addSporeBurst(80);
+    }
+    showNamasteEasterEggToast();
+  };
+
   // Start vision model only on creator station (keeps TV display ultra-lean)
   if (!isTvMode) {
     tracker.initialize();

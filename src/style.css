@@ -3297,3 +3297,36 @@ body.choreography-split-view {
     right: 12px !important;
   }
 }
+
+/* Namaste Easter Egg Floating Notification */
+.namaste-easter-egg-pill {
+  position: fixed;
+  top: 32px;
+  left: 50%;
+  transform: translateX(-50%) translateY(0);
+  background: rgba(18, 30, 22, 0.94);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1.5px solid rgba(240, 206, 111, 0.65);
+  box-shadow: 0 10px 36px rgba(0, 0, 0, 0.55), 0 0 24px rgba(240, 206, 111, 0.35);
+  color: #f7fbf8;
+  font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  padding: 12px 26px;
+  border-radius: 9999px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  z-index: 10000;
+  pointer-events: none;
+  opacity: 1;
+  transition: opacity 0.4s ease, transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.namaste-easter-egg-pill.hidden {
+  opacity: 0;
+  transform: translateX(-50%) translateY(-14px);
+  pointer-events: none;
+}
