@@ -230,7 +230,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   // EASTER EGG: Namaste Mudra Sprouting
   // When the dancer performs Namaste gesture, a new living flower branch sprouts with golden spores!
   let namasteToastTimeout = null;
-  const showNamasteEasterEggToast = () => {
+  const showNamasteEasterEggToast = (speciesName = '') => {
     let pill = document.getElementById('namaste-easter-egg-pill');
     if (!pill) {
       pill = document.createElement('div');
@@ -238,7 +238,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       pill.className = 'namaste-easter-egg-pill';
       document.body.appendChild(pill);
     }
-    pill.innerHTML = `<span>🙏</span> <span>Namaste! A new flower branch has sprouted</span>`;
+    const flowerLabel = speciesName ? speciesName.charAt(0).toUpperCase() + speciesName.slice(1) : 'flower';
+    pill.innerHTML = `<span>🙏</span> <span>Namaste! A new branch sprouted on ${flowerLabel}</span>`;
     pill.classList.remove('hidden');
 
     clearTimeout(namasteToastTimeout);
@@ -255,7 +256,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (garden && typeof garden.addSporeBurst === 'function') {
       garden.addSporeBurst(80);
     }
-    showNamasteEasterEggToast();
+    const activeSpecies = plant?.currentSpecies || currentSpecies || 'flower';
+    showNamasteEasterEggToast(activeSpecies);
   };
 
   // Start vision model only on creator station (keeps TV display ultra-lean)

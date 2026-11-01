@@ -143,18 +143,6 @@ export class StudioFlowerManager {
 
     this.activeMorphology = this.morphologies[targetKey];
     this.triggerGust();
-
-    // Re-sprout existing namaste branches on the new morphology if user switched species
-    if (this.totalNamasteCount > 0 && this.activeMorphology && this.activeMorphology.stem) {
-      const needed = this.totalNamasteCount - (this.activeMorphology.stem.namasteBranchCount || 0);
-      for (let i = 0; i < needed; i++) {
-        const b = this.activeMorphology.stem.sproutNamasteBranch();
-        if (b) {
-          b.growthScale = 1.0;
-          b.group.scale.set(1.0, 1.0, 1.0);
-        }
-      }
-    }
   }
 
   setPosition(x, y, z) {
@@ -166,7 +154,7 @@ export class StudioFlowerManager {
   }
 
   sproutNamasteBranch() {
-    this.totalNamasteCount = (this.totalNamasteCount || 0) + 1;
+    // Sprout a new branch ONLY on the currently selected active flower morphology
     if (this.activeMorphology && this.activeMorphology.stem && typeof this.activeMorphology.stem.sproutNamasteBranch === 'function') {
       return this.activeMorphology.stem.sproutNamasteBranch();
     }
