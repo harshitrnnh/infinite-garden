@@ -473,10 +473,10 @@ export class ChoreographyRecorder {
     return '';
   }
 
-  startCountdown(onCountdownTick, onStartRecording, onProgress, onComplete) {
+  startCountdown(onCountdownTick, onStartRecording, onProgress, onComplete, countdownSeconds = 5) {
     if (this.isRecording || this.isCountingDown) return;
     this.isCountingDown = true;
-    let count = 3;
+    let count = countdownSeconds || 5;
     onCountdownTick(count);
 
     this.countdownTimer = setInterval(() => {
