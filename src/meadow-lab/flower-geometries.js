@@ -631,7 +631,7 @@ export class BotanicalArticulatedStem {
    * EASTER EGG: Namaste Mudra Sprouting
    * When dancer holds Namaste pose (hands clasped at heart), a new living botanical branch sprouts!
    */
-  sproutNamasteBranch() {
+  sproutNamasteBranch(immediate = false) {
     this.namasteBranchCount = (this.namasteBranchCount || 0) + 1;
     const count = this.namasteBranchCount;
 
@@ -656,8 +656,9 @@ export class BotanicalArticulatedStem {
     const baseY = (side === 1 ? -0.32 : 0.32) + (Math.random() - 0.5) * 0.15;
     branch.rotation.set(baseX, baseY, baseZ);
 
-    // Sprouting animation starts at microscopic bud size
-    branch.scale.set(0.001, 0.001, 0.001);
+    // Sprouting animation: full size immediately if loaded/planted, or microscopic bud if actively sprouting
+    const initialGrowth = immediate ? 1.0 : 0.001;
+    branch.scale.set(initialGrowth, initialGrowth, initialGrowth);
 
     // Arching sculpted branch stem
     const stemGeom = new THREE.CylinderGeometry(0.011, 0.020, branchLen, 8);
@@ -703,7 +704,7 @@ export class BotanicalArticulatedStem {
       side: side,
       baseZ: baseZ,
       baseX: baseX,
-      growthScale: 0.001,
+      growthScale: initialGrowth,
       targetGrowthScale: 1.0,
       isNamasteBranch: true
     };

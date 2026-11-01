@@ -53,11 +53,13 @@ export class BodyTracker {
     this.onNamaste = options.onNamaste || null;
     this.namasteFrames = 0;
     this.namasteTriggered = false;
+    this.namasteCount = 0;
     this.setupMouseFallback();
   }
 
   triggerNamaste() {
-    console.log('🙏 [Easter Egg] Namaste Pose confirmed!');
+    this.namasteCount = (this.namasteCount || 0) + 1;
+    console.log(`🙏 [Easter Egg] Namaste Pose confirmed! (Total: ${this.namasteCount})`);
     if (typeof this.onNamaste === 'function') {
       this.onNamaste();
     }

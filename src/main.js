@@ -1094,6 +1094,16 @@ document.addEventListener('DOMContentLoaded', async () => {
       return;
     }
 
+    // Compute total Namaste branches sprouted on the flower (before or during recording)
+    const heroStemBranches = (plant && typeof plant.getNamasteBranchCount === 'function')
+      ? plant.getNamasteBranchCount()
+      : 0;
+    const finalNamasteCount = Math.max(
+      heroStemBranches,
+      tracker?.namasteCount || 0,
+      lastRecordedChoreography?.namasteBranchCount || 0
+    );
+
     // Plant in Communal Garden
     const newRecord = communityManager.plantNewFlower({
       name: flowerName,
@@ -1101,7 +1111,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       species: currentSpecies,
       frames: lastRecordedChoreography.frames,
       duration: lastRecordedChoreography.duration || 10.0,
-      fps: lastRecordedChoreography.fps || 20
+      fps: lastRecordedChoreography.fps || 20,
+      namasteBranchCount: finalNamasteCount
     });
 
     plantingModal.classList.add('hidden');
@@ -1111,7 +1122,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (gardenChannel) {
       gardenChannel.postMessage({
         type: 'NEW_BLOOM',
-        flowerData: newRecord.meta
+        flowerData: {
+          ...newRecord.meta,
+          namasteBranchCount: finalNamasteCount
+        }
       });
     }
 
@@ -1124,7 +1138,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       species: currentSpecies,
       duration: lastRecordedChoreography.duration || 10.0,
       fps: lastRecordedChoreography.fps || 20,
-      frames: lastRecordedChoreography.frames
+      frames: lastRecordedChoreography.frames,
+      namasteBranchCount: finalNamasteCount
     }, lastRecordedChoreography.videoBlob).catch((err) => {
       console.warn('Supabase cloud save note:', err);
     });
@@ -1132,6 +1147,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     try {
       localStorage.setItem('botanical_garden_new_bloom', JSON.stringify({
         ...newRecord.meta,
+        namasteBranchCount: finalNamasteCount,
         _t: Date.now()
       }));
 
@@ -1146,6 +1162,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         duration: lastRecordedChoreography.duration || 10.0,
         fps: lastRecordedChoreography.fps || 20,
         frames: lastRecordedChoreography.frames,
+        namasteBranchCount: finalNamasteCount,
         timestamp: Date.now()
       });
       localStorage.setItem('botanical_garden_user_plants', JSON.stringify(filtered.slice(0, 50)));

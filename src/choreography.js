@@ -647,7 +647,8 @@ export class ChoreographyRecorder {
         legLiftR: Number((k.legLiftR ?? t.legLiftR ?? 0).toFixed(3)),
         headGazeX: Number((k.headGazeX ?? t.headGazeX ?? 0).toFixed(3)),
         headGazeY: Number((k.headGazeY ?? t.headGazeY ?? 0).toFixed(3)),
-        energy: Number((k.energy ?? t.energy ?? 0).toFixed(3))
+        energy: Number((k.energy ?? t.energy ?? 0).toFixed(3)),
+        namasteBranchCount: Number(this.tracker?.namasteCount || 0)
       });
 
       onProgress(progress, elapsedSec);
@@ -682,7 +683,8 @@ export class ChoreographyRecorder {
         fps: this.fps,
         frames: this.recordedFrames,
         videoBlob: this.recordedVideoBlob,
-        postcardVideoBlob: this.recordedPostcardVideoBlob
+        postcardVideoBlob: this.recordedPostcardVideoBlob,
+        namasteBranchCount: Number(this.tracker?.namasteCount || 0)
       };
       onComplete(result);
     };
@@ -922,6 +924,17 @@ export class CommunityGardenManager {
     plant.setRotationY(rotY);
     plant.setScale(scale);
 
+    // Recreate any extra branches sprouted via Namaste gesture
+    const extraBranches = flowerData.namasteBranchCount || flowerData.extraBranches ||
+      (Array.isArray(flowerData.frames) && flowerData.frames.length > 0
+        ? Math.max(0, ...flowerData.frames.map(f => f.namasteBranchCount || 0))
+        : 0);
+    if (extraBranches > 0 && typeof plant.sproutNamasteBranch === 'function') {
+      for (let b = 0; b < extraBranches; b++) {
+        plant.sproutNamasteBranch();
+      }
+    }
+
     // Tag the 3D group for raycasting / inspection
     plant.group.userData = {
       isPlantedFlower: true,
@@ -973,7 +986,7 @@ export class CommunityGardenManager {
     return record;
   }
 
-  plantNewFlower({ name, choreographer, species, frames, duration, fps }) {
+  plantNewFlower({ name, choreographer, species, frames, duration, fps, namasteBranchCount, extraBranches }) {
     const slotIdx = this.plantedFlowers.length;
     const slot = this.meadowSlots[slotIdx % this.meadowSlots.length];
 
@@ -991,6 +1004,7 @@ export class CommunityGardenManager {
       position: { x: Number((slot.x + jitterX).toFixed(2)), y: 0, z: Number((slot.z + jitterZ).toFixed(2)) },
       rotationY: Number((slot.rotY + (Math.random() - 0.5) * 0.2).toFixed(2)),
       scale: Number((slot.scale * (0.92 + Math.random() * 0.14)).toFixed(2)),
+      namasteBranchCount: namasteBranchCount || extraBranches || 0,
       timestamp: Date.now(),
       frames: frames
     };
