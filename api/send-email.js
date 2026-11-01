@@ -7,16 +7,30 @@ import { SESv2Client, SendEmailCommand } from '@aws-sdk/client-sesv2';
  * with optional fallback to legacy SMTP credentials.
  */
 function getEmailTransporter() {
+  const sesSmtpHost = process.env.SES_SMTP_HOST || 'dtbixh63sr7r.hkph.mail-manager-smtp.amazonaws.com';
+  const sesSmtpPort = parseInt(process.env.SES_SMTP_PORT || '587', 10);
+  const sesSmtpUser = process.env.SES_SMTP_USER || process.env.AWS_SES_SMTP_USER || 'inp-5htkshhflefy5ipkjefdqerg';
+  const sesSmtpPass = process.env.SES_SMTP_PASS || process.env.AWS_SES_SMTP_PASS || '8l25eQYnySm?$PMYMX(GF)3$yVvTdz@B';
+
   const awsAccessKey = process.env.AWS_ACCESS_KEY_ID;
   const awsSecretKey = process.env.AWS_SECRET_ACCESS_KEY;
   const awsRegion = process.env.AWS_REGION || process.env.AWS_DEFAULT_REGION || 'us-east-1';
 
-  const sesSmtpUser = process.env.SES_SMTP_USER || process.env.AWS_SES_SMTP_USER;
-  const sesSmtpPass = process.env.SES_SMTP_PASS || process.env.AWS_SES_SMTP_PASS;
-  const sesSmtpHost = process.env.SES_SMTP_HOST || `email-smtp.${awsRegion}.amazonaws.com`;
-  const sesSmtpPort = parseInt(process.env.SES_SMTP_PORT || '465', 10);
+  // 1. AWS SES SMTP Credentials (Primary)
+  if (sesSmtpUser && sesSmtpPass) {
+    console.log(`[Mailer] Initializing AWS SES SMTP (${sesSmtpHost}:${sesSmtpPort})`);
+    return nodemailer.createTransport({
+      host: sesSmtpHost,
+      port: sesSmtpPort,
+      secure: sesSmtpPort === 465,
+      auth: {
+        user: sesSmtpUser,
+        pass: sesSmtpPass
+      }
+    });
+  }
 
-  // 1. AWS IAM Access Key & Secret (SESv2 SDK)
+  // 2. AWS IAM Access Key & Secret (SESv2 SDK)
   if (awsAccessKey && awsSecretKey) {
     console.log(`[Mailer] Initializing AWS SESv2 client (region: ${awsRegion})`);
     const sesClient = new SESv2Client({
@@ -28,20 +42,6 @@ function getEmailTransporter() {
     });
     return nodemailer.createTransport({
       SES: { sesClient, SendEmailCommand }
-    });
-  }
-
-  // 2. AWS SES SMTP Credentials
-  if (sesSmtpUser && sesSmtpPass) {
-    console.log(`[Mailer] Initializing AWS SES SMTP (${sesSmtpHost}:${sesSmtpPort})`);
-    return nodemailer.createTransport({
-      host: sesSmtpHost,
-      port: sesSmtpPort,
-      secure: sesSmtpPort === 465,
-      auth: {
-        user: sesSmtpUser,
-        pass: sesSmtpPass
-      }
     });
   }
 
