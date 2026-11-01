@@ -731,6 +731,19 @@ export class LivingPlant {
     return entry;
   }
 
+  resetNamasteBranches() {
+    this.namasteBranchCount = 0;
+    this.branchlets = (this.branchlets || []).filter(b => {
+      if (b.isNamasteBranch) {
+        if (b.pivot && b.pivot.parent) {
+          b.pivot.parent.remove(b.pivot);
+        }
+        return false;
+      }
+      return true;
+    });
+  }
+
   buildFloret(parentGroup, scale) {
     const s = scale;
     const isCommunal = this.detailLevel === 'communal';

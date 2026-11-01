@@ -249,7 +249,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   };
 
   tracker.onNamaste = () => {
-    console.log('🙏 Namaste detected! Sprouting new living flower branch...');
+    // Feature of branch getting added is active ONLY during active choreography recording!
+    if (!choreographyRecorder || !choreographyRecorder.isRecording) {
+      return;
+    }
+    console.log('🙏 Namaste detected during recording! Sprouting new living flower branch...');
     if (plant && typeof plant.sproutNamasteBranch === 'function') {
       plant.sproutNamasteBranch();
     }
@@ -644,6 +648,15 @@ document.addEventListener('DOMContentLoaded', async () => {
       },
       () => {
         // Countdown completed: start recording
+        // Ensure flower starts clean at default
+        if (plant && typeof plant.resetNamasteBranches === 'function') {
+          plant.resetNamasteBranches();
+        }
+        if (tracker) {
+          tracker.namasteCount = 0;
+          tracker.namasteFrames = 0;
+          tracker.namasteTriggered = false;
+        }
         recordCountdownOverlay.classList.add('hidden');
         recordingActiveHud.classList.remove('hidden');
         recordProgressBar.style.width = '0%';
@@ -657,6 +670,25 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Recording complete: open planting dialog
         recordingActiveHud.classList.add('hidden');
         lastRecordedChoreography = result;
+
+        // Save branches sprouted during this recorded dance
+        const branchesGrownDuringDance = Math.max(
+          (plant && typeof plant.getNamasteBranchCount === 'function') ? plant.getNamasteBranchCount() : 0,
+          tracker?.namasteCount || 0,
+          result?.namasteBranchCount || 0
+        );
+        lastRecordedChoreography.namasteBranchCount = branchesGrownDuringDance;
+
+        // Post recording: Flower immediately resets to the clean default
+        if (plant && typeof plant.resetNamasteBranches === 'function') {
+          plant.resetNamasteBranches();
+        }
+        if (tracker) {
+          tracker.namasteCount = 0;
+          tracker.namasteFrames = 0;
+          tracker.namasteTriggered = false;
+        }
+
         openPlantingModal();
       }
     );
@@ -666,6 +698,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     choreographyRecorder.cancel();
     recordCountdownOverlay.classList.add('hidden');
     recordingActiveHud.classList.add('hidden');
+    // Post recording / cancel: reset flower to default
+    if (plant && typeof plant.resetNamasteBranches === 'function') {
+      plant.resetNamasteBranches();
+    }
+    if (tracker) {
+      tracker.namasteCount = 0;
+      tracker.namasteFrames = 0;
+      tracker.namasteTriggered = false;
+    }
   });
 
   recordChoreographyBtn.addEventListener('click', () => {

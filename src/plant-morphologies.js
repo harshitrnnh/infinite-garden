@@ -176,6 +176,16 @@ export class StudioFlowerManager {
     return Math.max(this.namasteBranchCount || 0, stemCount);
   }
 
+  resetNamasteBranches() {
+    this.namasteBranchCount = 0;
+    Object.keys(this.morphologies).forEach((k) => {
+      const morph = this.morphologies[k];
+      if (morph && morph.stem && typeof morph.stem.resetNamasteBranches === 'function') {
+        morph.stem.resetNamasteBranches();
+      }
+    });
+  }
+
   update(kinematics, dt = 0.016) {
     if (!this.activeMorphology) return;
 

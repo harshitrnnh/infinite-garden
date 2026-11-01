@@ -712,6 +712,28 @@ export class BotanicalArticulatedStem {
     this.branchlets.push(branchEntry);
     return branchEntry;
   }
+
+  resetNamasteBranches() {
+    this.namasteBranchCount = 0;
+    const retainedBranchlets = [];
+    for (let i = 0; i < this.branchlets.length; i++) {
+      const b = this.branchlets[i];
+      if (b.isNamasteBranch) {
+        if (b.group && b.group.parent) {
+          b.group.parent.remove(b.group);
+        }
+        if (b.mount && b.mount.children) {
+          b.mount.children.forEach(c => {
+            const fIdx = this.florets.findIndex(f => f.group === c);
+            if (fIdx !== -1) this.florets.splice(fIdx, 1);
+          });
+        }
+      } else {
+        retainedBranchlets.push(b);
+      }
+    }
+    this.branchlets = retainedBranchlets;
+  }
 }
 
 // ============================================================================
