@@ -15,6 +15,7 @@ import { CHOREOGRAPHY_PRESETS } from './choreography-simulator.js';
 import { FlowerLabelSystem, resetNameDeck, nextName } from './flower-labels.js';
 import { InstancedBotanicalMeadow } from './instanced-meadow.js';
 import { subscribeToNewBlooms, fetchCloudChoreographies } from '../supabase.js';
+import { MeadowButterflies } from './butterflies.js';
 
 /**
  * PlantedChoreographyFlower
@@ -174,6 +175,7 @@ class MeadowVisualLab {
     this.flowers = [];
     this.wildGrasses = null;
     this.labelSystem = null;
+    this.butterflies = null;
     this.instancedMeadow = new InstancedBotanicalMeadow(this.sceneEnv.scene);
     this.flowerNames = [];  // parallel array to this.flowers
     this.windStrength = 1.0;
@@ -253,6 +255,16 @@ class MeadowVisualLab {
     // 1. Add Surrounding Wild Grasses & Dry Wheat Awns
     if (!this.wildGrasses) {
       this.wildGrasses = new WildGrassesField(this.sceneEnv.scene, 950, 14.5);
+    }
+
+    // 1b. Add Living Procedural Butterflies fluttering through meadow
+    if (!this.butterflies) {
+      this.butterflies = new MeadowButterflies(
+        this.sceneEnv.scene,
+        () => this.flowers,
+        (x, z) => this.getTerrainHeight(x, z),
+        8
+      );
     }
 
     // Reset label system (hidden by default)
@@ -676,6 +688,11 @@ class MeadowVisualLab {
     this.groundRing = ring;
 
     this.activeCelebratedFlower = flower;
+
+    // Summon butterflies to the searched / spotlighted flower!
+    if (this.butterflies) {
+      this.butterflies.summonToFlower(flower, durationSeconds);
+    }
 
     // 5. Highlight this flower's floating tag above it & ensure CSS2DRenderer is active
     if (this.labelSystem) {
@@ -1420,6 +1437,11 @@ class MeadowVisualLab {
       // 3. Animate wild meadow grasses & wheat
       if (this.wildGrasses) {
         this.wildGrasses.update(time, this.windStrength);
+      }
+
+      // 3b. Animate fluttering meadow butterflies
+      if (this.butterflies) {
+        this.butterflies.update(time, dt);
       }
 
       // 3b. Subtle organic breathing of active highlight glow if present
