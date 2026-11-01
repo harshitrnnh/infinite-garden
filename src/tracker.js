@@ -316,11 +316,11 @@ export class BodyTracker {
         this.targets.bloomRatio = 0.05; // Closed flower
         this.targets.heightFactor = 1.0; // Stays full height, not bent down
       } else if (key === 'u') {
-        // HANDS STRAIGHT UP: branches up, flower blooms fully, stem grows tall
+        // HANDS STRAIGHT UP: branches up, stem grows tall, but petals stay upright (not spread out too much)
         this.targets.armStretchUp = 1.0;
         this.targets.armHeightL = 1.8;
         this.targets.armHeightR = 1.8;
-        this.targets.bloomRatio = 1.0; // Full radiant bloom
+        this.targets.bloomRatio = 0.16; // Hands straight up does not spread petals wide
         this.targets.heightFactor = 1.25;
       } else if (key === 'n') {
         // NEUTRAL / BODY STRAIGHT UP: flower upright chalice, branches neutral, stem 1.0
@@ -612,17 +612,18 @@ export class BodyTracker {
     const elbowDist = Math.hypot(lEl.x - rEl.x, lEl.y - rEl.y);
 
     // 5. FLOWER BLOOM & PETAL SPREAD FORMULATION:
-    // Strictly proportional to how spread out the palms are from the central straight body:
-    // - Palms near center: bloomRatio = 0.06 (lesser, compact upright bud)
-    // - Palms spread out: bloomRatio = 1.0 (more, petals fully spread out wide)
+    // Core physical principle:
+    // Petals spread strictly in proportion to how spread out the arms are sideways.
+    // If hands are straight up, the petals do NOT spread out too much (reaching sky stretches stem tall, but petals stay upright).
+    // Petals spread out wide ONLY in proportion to how far arms/palms are spread sideways.
     const lerpVal = (a, b, t) => a + (b - a) * t;
-    const palmBloom = lerpVal(0.06, 1.0, palmSpreadRatio);
+    const sidewaysPetalBloom = lerpVal(0.06, 1.0, palmSpreadRatio);
 
-    // Optional upward sky reach gesture
-    const upwardReachBloom = avgHandUp > 0.30 ? lerpVal(0.06, 0.85, Math.min(1.0, (avgHandUp - 0.30) * 1.6)) : 0.0;
+    // Subtle gentle opening (max ~0.16) when reaching straight up overhead without spreading sideways
+    const subtleUpwardBreath = avgHandUp > 0.35 ? Math.min(0.08, (avgHandUp - 0.35) * 0.12) : 0.0;
 
-    // Direct proportional bloom (uncompromised by torso lean so sitting at desk doesn't close it)
-    this.targets.bloomRatio = Math.max(0.06, Math.min(1.0, Math.max(palmBloom, upwardReachBloom)));
+    // Petals spread strictly proportional to sideways arm spread
+    this.targets.bloomRatio = Math.max(0.06, Math.min(1.0, sidewaysPetalBloom + subtleUpwardBreath));
 
     // 6. LEG LIFT & BALANCING (Works both with full-body standing and sitting/desk framing!)
     let liftL = 0;
