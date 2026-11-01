@@ -7,18 +7,18 @@ import { SESv2Client, SendEmailCommand } from '@aws-sdk/client-sesv2';
  * with optional fallback to legacy SMTP credentials.
  */
 function getEmailTransporter() {
-  const sesSmtpHost = process.env.SES_SMTP_HOST || 'dtbixh63sr7r.hkph.mail-manager-smtp.amazonaws.com';
-  const sesSmtpPort = parseInt(process.env.SES_SMTP_PORT || '587', 10);
-  const sesSmtpUser = process.env.SES_SMTP_USER || process.env.AWS_SES_SMTP_USER || 'inp-5htkshhflefy5ipkjefdqerg';
-  const sesSmtpPass = process.env.SES_SMTP_PASS || process.env.AWS_SES_SMTP_PASS || '8l25eQYnySm?$PMYMX(GF)3$yVvTdz@B';
+  const sesSmtpHost = process.env.SES_SMTP_HOST || 'smtpout.secureserver.net';
+  const sesSmtpPort = parseInt(process.env.SES_SMTP_PORT || '465', 10);
+  const sesSmtpUser = process.env.SES_SMTP_USER || process.env.AWS_SES_SMTP_USER || 'collectivebloom@harshitagrawal.com';
+  const sesSmtpPass = process.env.SES_SMTP_PASS || process.env.AWS_SES_SMTP_PASS || 'Popobear!7';
 
   const awsAccessKey = process.env.AWS_ACCESS_KEY_ID;
   const awsSecretKey = process.env.AWS_SECRET_ACCESS_KEY;
   const awsRegion = process.env.AWS_REGION || process.env.AWS_DEFAULT_REGION || 'us-east-1';
 
-  // 1. AWS SES SMTP Credentials (Primary)
+  // 1. SMTP Credentials (GoDaddy Outbound Relay / Titan / SES)
   if (sesSmtpUser && sesSmtpPass) {
-    console.log(`[Mailer] Initializing AWS SES SMTP (${sesSmtpHost}:${sesSmtpPort})`);
+    console.log(`[Mailer] Initializing Outbound SMTP (${sesSmtpHost}:${sesSmtpPort})`);
     return nodemailer.createTransport({
       host: sesSmtpHost,
       port: sesSmtpPort,
