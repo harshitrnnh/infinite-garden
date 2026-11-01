@@ -101,7 +101,7 @@ export class BotanicalArticulatedStem {
     this.currentWingspan = 0.5;
     this.currentLegL = 0;
     this.currentLegR = 0;
-    this.currentBloom = 0.65;
+    this.currentBloom = 0.08;
 
     this.initMaterials();
     this.buildSkeleton();
@@ -813,7 +813,7 @@ export class PoppyMorphology {
     this.family = 'Papaveraceae';
     this.tagline = '4 Ruffled Crinkled Petals • Velvet Stigmatic Capsule';
     this.petalHolders = [];
-    this.currentBloom = 0.65;
+    this.currentBloom = 0.08;
 
     // Build articulated botanical stem with companion poppy florets on lateral branches
     this.stem = new BotanicalArticulatedStem({
@@ -1008,7 +1008,7 @@ export class PeriwinkleMorphology {
     this.family = 'Apocynaceae';
     this.tagline = '5 Salverform Propeller Petals • Pentagonal Throat';
     this.petalHolders = [];
-    this.currentBloom = 0.65;
+    this.currentBloom = 0.08;
 
     this.stem = new BotanicalArticulatedStem({
       totalHeight: 1.55,
@@ -1185,7 +1185,7 @@ export class ChamomileMorphology {
     this.family = 'Asteraceae';
     this.tagline = '16 Radiating Ray Petals • Conical Golden Disk Florets';
     this.petalHolders = [];
-    this.currentBloom = 0.65;
+    this.currentBloom = 0.08;
 
     this.stem = new BotanicalArticulatedStem({
       totalHeight: 1.45,
@@ -1282,7 +1282,7 @@ export class ChamomileMorphology {
       group: fGroup,
       setBloom: (b) => {
         holders.forEach(m => {
-          m.rotation.x = THREE.MathUtils.lerp(0.40, 1.40, b);
+          m.rotation.x = THREE.MathUtils.lerp(0.25, 1.40, b);
           const s = THREE.MathUtils.lerp(0.85, 1.05, b);
           m.scale.set(s, s, s);
         });
@@ -1307,7 +1307,7 @@ export class ChamomileMorphology {
   setBloom(val) {
     this.currentBloom = val;
     this.petalHolders.forEach(p => {
-      p.mesh.rotation.x = THREE.MathUtils.lerp(0.45, 1.45, val);
+      p.mesh.rotation.x = THREE.MathUtils.lerp(0.25, 1.45, val);
       const s = THREE.MathUtils.lerp(0.85, 1.05, val);
       p.mesh.scale.set(s, s, s);
     });
@@ -1441,7 +1441,7 @@ export class ChampaMorphology {
     this.family = 'Apocynaceae';
     this.tagline = '5 Spiral Pinwheel Petals • Golden Sunlight Heart';
     this.petalHolders = [];
-    this.currentBloom = 0.65;
+    this.currentBloom = 0.08;
 
     // Articulated botanical stem with companion Champa florets on lateral branches
     this.stem = new BotanicalArticulatedStem({
@@ -1671,7 +1671,7 @@ export class MarigoldMorphology {
     this.family = 'Asteraceae (Genda)';
     this.tagline = 'Concentric Ruffled Rosette • Golden Saffron Pom-Pom';
     this.petalHolders = [];
-    this.currentBloom = 0.65;
+    this.currentBloom = 0.08;
 
     this.stem = new BotanicalArticulatedStem({
       totalHeight: 1.50,
@@ -1922,7 +1922,7 @@ export class LotusMorphology {
     this.family = 'Nelumbonaceae';
     this.tagline = 'Multi-Tiered Rose Petals • Golden Seed Pod Torus';
     this.petalHolders = [];
-    this.currentBloom = 0.65;
+    this.currentBloom = 0.08;
 
     this.stem = new BotanicalArticulatedStem({
       totalHeight: 1.55,
@@ -2155,7 +2155,7 @@ export class HibiscusMorphology {
     this.family = 'Malvaceae';
     this.tagline = 'Flared Scarlet Trumpet Petals • Projecting Staminal Column';
     this.petalHolders = [];
-    this.currentBloom = 0.65;
+    this.currentBloom = 0.08;
 
     this.stem = new BotanicalArticulatedStem({
       totalHeight: 1.55,
@@ -2264,7 +2264,7 @@ export class HibiscusMorphology {
       group: fGroup,
       setBloom: (b) => {
         holders.forEach(m => {
-          m.rotation.x = THREE.MathUtils.lerp(0.35, 0.95, b);
+          m.rotation.x = THREE.MathUtils.lerp(0.25, 1.15, b);
         });
       },
       setWireframe: (w) => {
@@ -2286,7 +2286,7 @@ export class HibiscusMorphology {
   setBloom(val) {
     this.currentBloom = val;
     this.petalHolders.forEach(p => {
-      p.mesh.rotation.x = THREE.MathUtils.lerp(0.55, 1.25, val);
+      p.mesh.rotation.x = THREE.MathUtils.lerp(0.25, 1.25, val);
       const s = THREE.MathUtils.lerp(0.85, 1.05, val);
       p.mesh.scale.set(s, s, s);
     });

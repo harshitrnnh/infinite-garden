@@ -284,7 +284,7 @@ export class LivingPlant {
 
     // Secondary animation state
     this.idleTime = 0;
-    this.currentBloom = 0.35;
+    this.currentBloom = 0.08;
     this.gustImpulse = 0;
     this.currentArmL = 0.35;
     this.currentArmR = 0.35;
@@ -2349,7 +2349,7 @@ export class LivingPlant {
 
     // 5. Blooming Petals Aperture
     // Directly governed by master kinematics.bloomRatio (body straightness, hands up/down, wingspan)
-    const targetBloom = THREE.MathUtils.clamp(kinematics.bloomRatio !== undefined ? kinematics.bloomRatio : 0.65, 0.04, 1.0);
+    const targetBloom = THREE.MathUtils.clamp(kinematics.bloomRatio !== undefined ? kinematics.bloomRatio : 0.06, 0.04, 1.0);
     this.currentBloom = THREE.MathUtils.lerp(this.currentBloom, targetBloom, 0.15);
 
     // Lateral arm stretch drive (hands spread out horizontally / wingspan)

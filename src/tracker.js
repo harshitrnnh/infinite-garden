@@ -22,7 +22,7 @@ export class BodyTracker {
       spineLeanX: 0,       // Left / Right lean (-1 to 1)
       spineLeanZ: 0,       // Forward / Back lean / bow (-1 to 1)
       heightFactor: 1.0,   // Stretch / Crouch (0.75 to 1.3)
-      bloomRatio: 0.25,    // Arm wingspan (0 = bud, 1 = open bloom)
+      bloomRatio: 0.06,    // Arm wingspan (0 = bud, 1 = open bloom)
       armHeightL: 0.5,     // Left hand elevation (0 to 1.8)
       armHeightR: 0.5,     // Right hand elevation (0 to 1.8)
       armExtensionL: 0.0,  // Left arm lateral reach (0 to 1.5)
@@ -323,7 +323,7 @@ export class BodyTracker {
         this.targets.bloomRatio = 1.0; // Full radiant bloom
         this.targets.heightFactor = 1.25;
       } else if (key === 'n') {
-        // NEUTRAL / BODY STRAIGHT UP: flower blooms, branches neutral, stem 1.0
+        // NEUTRAL / BODY STRAIGHT UP: flower upright chalice, branches neutral, stem 1.0
         this.targets.spineLeanX = 0.0;
         this.targets.spineLeanZ = 0.0;
         this.targets.bodyShiftX = 0.0;
@@ -333,15 +333,15 @@ export class BodyTracker {
         this.targets.armExtensionL = 0.0;
         this.targets.armExtensionR = 0.0;
         this.targets.wingspanSpread = 0.0;
-        this.targets.bloomRatio = 0.65; // Flower blooms when body is straight up
+        this.targets.bloomRatio = 0.06; // Petals compact upright when arms are not spread
         this.targets.heightFactor = 1.0;
       } else if (key === 'w') {
-        // Toggle spreading BOTH arms WIDE (wingspan: branches stretch wide out)
+        // Toggle spreading BOTH arms WIDE (wingspan: petals spread out completely)
         const isSpread = (this.targets.wingspanSpread || 0) > 0.5;
-        this.targets.wingspanSpread = isSpread ? 0.0 : 1.2;
-        this.targets.armExtensionL = isSpread ? 0.0 : 1.2;
-        this.targets.armExtensionR = isSpread ? 0.0 : 1.2;
-        this.targets.bloomRatio = isSpread ? 0.65 : 0.95;
+        this.targets.wingspanSpread = isSpread ? 0.0 : 1.4;
+        this.targets.armExtensionL = isSpread ? 0.0 : 1.3;
+        this.targets.armExtensionR = isSpread ? 0.0 : 1.3;
+        this.targets.bloomRatio = isSpread ? 0.06 : 1.0;
       } else if (key === 'm') {
         // Keyboard testing: trigger Namaste mudra easter egg
         this.triggerNamaste();
@@ -587,49 +587,36 @@ export class BodyTracker {
     // Total wingspan spread ratio across both arms (wrists + elbows)
     const wristDist = Math.hypot(lWr.x - rWr.x, lWr.y - rWr.y);
     const elbowDist = Math.hypot(lEl.x - rEl.x, lEl.y - rEl.y);
-    const wingspanFromWrists = (wristDist / shoulderWidth - 1.0) / 1.35;
-    const wingspanFromElbows = (elbowDist / shoulderWidth - 0.70) * 1.6;
-    const wingspanRatio = Math.max(0, Math.min(1.6, Math.max(wingspanFromWrists, wingspanFromElbows)));
-    this.targets.wingspanSpread = wingspanRatio;
+
+    // Lateral outstretchedness metrics
+    // When resting at sides or desk, wristDist/shoulderWidth is ~0.8 to 1.15.
+    // When stretched horizontally outward, wristDist/shoulderWidth goes from 1.15 up to 3.0+.
+    const wristSpreadNorm = Math.max(0, Math.min(1.0, (wristDist / shoulderWidth - 1.15) / 1.65));
+    const elbowSpreadNorm = Math.max(0, Math.min(1.0, (elbowDist / shoulderWidth - 0.95) / 1.15));
+    const avgArmExtension = (this.targets.armExtensionL + this.targets.armExtensionR) * 0.5;
+    const extSpreadNorm = Math.max(0, Math.min(1.0, (avgArmExtension - 0.15) / 1.15));
+
+    // Horizontal arm spread factor (0.0 when arms down/resting at desk, 1.0 when arms fully spread horizontally)
+    const horizontalArmSpread = Math.max(0, Math.min(1.0, Math.max(wristSpreadNorm, elbowSpreadNorm, extSpreadNorm)));
+    this.targets.horizontalArmSpread = horizontalArmSpread;
+    this.targets.wingspanSpread = horizontalArmSpread * 1.4;
 
     // 5. FLOWER BLOOMING FORMULATION:
-    // Rule A: If body is straight up, the flower blooms (neutral ~65%).
-    // Rule B: Blooms MORE with hands straight up (reaching 100% full bloom).
-    // Rule C: Hands straight down makes the flower closed / not bloomed (bud <= 5%).
-    // Rule D: Flower blooming is based on body bending: bending front, back, or sideways closes bloom.
-    // Rule E: Hands stretched out horizontally: main top flower petals spread out completely, corresponding to arm stretch!
-
-    // Horizontal arm stretch factor (0.0 when arms close/down, 1.0+ when arms fully spread horizontally)
-    const avgArmExtension = (this.targets.armExtensionL + this.targets.armExtensionR) * 0.5;
-    const horizontalArmSpread = Math.max(0, Math.min(1.0, Math.max(wingspanRatio / 1.15, avgArmExtension / 1.15)));
-
-    let armBloom = 0.05;
-    if (avgHandUp < -0.22) {
-      // Hands straight down at sides / waist: tightly close into bud (unless arms are stretched outward)
-      armBloom = Math.max(0.04, 0.65 + (avgHandUp + 0.22) * 2.4);
-    } else if (avgHandUp < 0.35) {
-      // Neutral hands: healthy open bloom (0.65 to 0.85)
-      armBloom = 0.65 + (avgHandUp + 0.22) * 0.35;
-    } else {
-      // Hands straight up: blooms more, reaching full 1.0 blossom!
-      armBloom = Math.min(1.0, 0.85 + (avgHandUp - 0.35) * 0.35);
-    }
-
-    // Spread arms horizontally drives bloom directly up to 1.0 full radiant blossom!
+    // Core Requirement: Petals fully spread out ONLY when hands are outstretched horizontally.
+    // Petal spread is strictly proportional to how spread out horizontally the arms are.
+    // When arms are down, resting at desk, or close to body: petals stay in compact upright chalice posture (~0.06).
     const lerpVal = (a, b, t) => a + (b - a) * t;
-    if (horizontalArmSpread > 0.08) {
-      const spreadBloomTarget = lerpVal(0.65, 1.0, horizontalArmSpread);
-      armBloom = Math.max(armBloom, spreadBloomTarget);
-    }
+    const horizontalPetalBloom = lerpVal(0.06, 1.0, horizontalArmSpread);
 
-    // Body straightness: 1.0 when body is straight up, drops when bending in any direction
+    // Optional upward sky reach gesture
+    const upwardReachBloom = Math.max(0, Math.min(0.85, (avgHandUp - 0.20) * 1.5));
+    const gestureBloom = Math.max(horizontalPetalBloom, upwardReachBloom > 0 ? lerpVal(0.06, 0.85, upwardReachBloom) : 0.06);
+
+    // Body straightness: bowing down closes the bloom
     const bendMagnitude = Math.hypot(this.targets.spineLeanX, this.targets.spineLeanZ);
-    const bodyStraightness = Math.max(0.12, Math.min(1.0, 1.0 - Math.max(0, bendMagnitude - 0.10) * 1.35));
+    const bodyStraightness = Math.max(0.12, Math.min(1.0, 1.0 - Math.max(0, bendMagnitude - 0.12) * 1.35));
 
-    // When arms are spread out horizontally, petals spread out completely corresponding to arm stretch
-    const baseBloom = armBloom * bodyStraightness;
-    const spreadOutBloom = lerpVal(baseBloom, 1.0, horizontalArmSpread);
-    this.targets.bloomRatio = Math.max(0.04, Math.min(1.0, spreadOutBloom));
+    this.targets.bloomRatio = Math.max(0.05, Math.min(1.0, gestureBloom * bodyStraightness));
 
     // 6. LEG LIFT & BALANCING (Works both with full-body standing and sitting/desk framing!)
     let liftL = 0;
