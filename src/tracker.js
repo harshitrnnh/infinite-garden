@@ -128,32 +128,42 @@ export class BodyTracker {
     this.onStatusChange('prompt', 'Please allow camera access in the browser prompt...');
 
     try {
-      // 1. Enumerate available camera devices to find widest lens if device has multiple front sensors
+      const isLaptopBloom = typeof window !== 'undefined' && (
+        window.location.pathname.includes('laptop-bloom') ||
+        (document.body && document.body.classList.contains('laptop-bloom-view'))
+      );
+
+      // 1. Enumerate available camera devices:
+      // On tablet-bloom, search for wide-angle front sensor (iPad kiosk).
+      // On laptop-bloom, use the default standard front camera (MacBook FaceTime HD normal view).
       let preferredDeviceId = null;
-      try {
-        if (navigator.mediaDevices && navigator.mediaDevices.enumerateDevices) {
-          const devices = await navigator.mediaDevices.enumerateDevices();
-          const videoInputs = devices.filter(d => d.kind === 'videoinput');
-          const wideFront = videoInputs.find(d => 
-            /front|user|facetime/i.test(d.label) && /wide|ultra|0/i.test(d.label)
-          );
-          if (wideFront) {
-            preferredDeviceId = wideFront.deviceId;
-            console.log('Detected preferred wide front camera:', wideFront.label);
+      if (!isLaptopBloom) {
+        try {
+          if (navigator.mediaDevices && navigator.mediaDevices.enumerateDevices) {
+            const devices = await navigator.mediaDevices.enumerateDevices();
+            const videoInputs = devices.filter(d => d.kind === 'videoinput');
+            const wideFront = videoInputs.find(d => 
+              /front|user|facetime/i.test(d.label) && /wide|ultra|0/i.test(d.label)
+            );
+            if (wideFront) {
+              preferredDeviceId = wideFront.deviceId;
+              console.log('Detected preferred wide front camera:', wideFront.label);
+            }
           }
+        } catch (e) {
+          // Safe to ignore if permissions not yet granted
         }
-      } catch (e) {
-        // Safe to ignore if permissions not yet granted
       }
 
-      // 2. Request native 4:3 camera resolution to capture 100% of the physical lens glass surface
-      // (Requesting 16:9 on an iPad cuts off top & bottom of the 4:3 sensor!)
+      // 2. Request camera resolution:
+      // On laptop-bloom: Standard HD 16:9 webcam format (1280x720).
+      // On tablet-bloom: Native 4:3 camera resolution to capture 100% of iPad sensor glass surface.
       const videoConstraints = {
         facingMode: preferredDeviceId ? undefined : 'user',
         deviceId: preferredDeviceId ? { exact: preferredDeviceId } : undefined,
         width: { ideal: 1280, min: 480 },
-        height: { ideal: 960, min: 480 },
-        aspectRatio: { ideal: 1.333333 }
+        height: { ideal: isLaptopBloom ? 720 : 960, min: 480 },
+        aspectRatio: { ideal: isLaptopBloom ? 1.777778 : 1.333333 }
       };
 
       let stream;
@@ -163,7 +173,7 @@ export class BodyTracker {
           audio: false
         });
       } catch (constraintErr) {
-        console.warn('Native 4:3 constraints failed, falling back to basic front camera:', constraintErr);
+        console.warn('Primary camera constraints failed, falling back to basic front camera:', constraintErr);
         stream = await navigator.mediaDevices.getUserMedia({
           video: { facingMode: 'user' },
           audio: false
@@ -173,16 +183,18 @@ export class BodyTracker {
       this.stream = stream;
       this.videoTrack = stream.getVideoTracks()[0] || null;
 
-      // Unclamp hardware camera zoom to minimum (widest possible angle / ultra-wide on iPad)
+      // Camera Hardware Zoom:
+      // On laptop-bloom: Normal 1.0x standard zoom (not zoomed out).
+      // On tablet-bloom: Minimum zoom (ultra-wide on iPad) for close-proximity 4ft full body tracking.
       if (this.videoTrack && typeof this.videoTrack.getCapabilities === 'function') {
         const caps = this.videoTrack.getCapabilities();
         if (caps.zoom) {
           try {
-            const minZoom = caps.zoom.min !== undefined ? caps.zoom.min : 1.0;
+            const targetZoom = isLaptopBloom ? 1.0 : (caps.zoom.min !== undefined ? caps.zoom.min : 1.0);
             await this.videoTrack.applyConstraints({
-              advanced: [{ zoom: minZoom }]
+              advanced: [{ zoom: targetZoom }]
             });
-            console.log('Applied camera hardware minimum zoom (wide angle):', minZoom);
+            console.log(`Applied camera hardware zoom (${isLaptopBloom ? 'normal 1.0x' : 'ultra-wide'}):`, targetZoom);
           } catch (zoomErr) {
             console.warn('Could not set hardware zoom:', zoomErr);
           }

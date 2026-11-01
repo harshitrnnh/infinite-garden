@@ -402,13 +402,14 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   // -----------------------------------------------------------------------------------
-  // TABLET BLOOM VIEWPORT & INLET CONTROLS (Vertical iPad Fullscreen Flower + Inlet Skeleton)
+  // TABLET & LAPTOP BLOOM VIEWPORT & INLET CONTROLS (Fullscreen Flower + Floating Inlet)
   // -----------------------------------------------------------------------------------
-  const isTabletBloom = window.location.pathname.includes('tablet-bloom') || document.body.classList.contains('tablet-bloom-view');
+  const isTabletBloom = window.location.pathname.includes('tablet-bloom') || window.location.pathname.includes('laptop-bloom') || document.body.classList.contains('tablet-bloom-view');
+  const isLaptopBloom = window.location.pathname.includes('laptop-bloom') || document.body.classList.contains('laptop-bloom-view');
 
   if (isTabletBloom) {
     // Natural frontal portrait view with subtle top angle into petals
-    const TABLET_BLOOM_RADIUS = 4.85; // Zoomed out so bloom and root are fully visible with comfortable margins
+    const TABLET_BLOOM_RADIUS = isLaptopBloom ? 4.35 : 4.85; // Natural framing for laptop widescreen or vertical tablet
     const TABLET_BLOOM_PHI = 1.10; // Gently elevated top angle (~63° from vertical / ~27° above horizontal)
     const TABLET_BLOOM_THETA = 0.04; // Centered
     const TABLET_BLOOM_LOOK_Y = 1.00; // Framed comfortably on flower center

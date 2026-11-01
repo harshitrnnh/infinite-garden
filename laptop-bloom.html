@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport"
+    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Collective Bloom — Laptop Bloom & Fullscreen Flower Choreography</title>
+  <meta name="description"
+    content="Fullscreen laptop flower choreography installation with floating dancer inlet view and webcam skeleton tracking.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;1,9..144,400&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="./src/style.css">
+</head>
+
+<body class="choreography-split-view tablet-bloom-view laptop-bloom-view">
+  <!-- Minimal Ambient Mist Vignette -->
+  <div class="mist-vignette"></div>
+
+  <!-- FULLSCREEN FLOWER CANVAS CONTAINER -->
+  <main class="tablet-main-viewport" id="split-viewport">
+    <!-- FULLSCREEN 3D LIVING FLOWER ORGANISM -->
+    <section class="split-pane split-right tablet-fullscreen-flower" id="flower-pane">
+      <div id="canvas-container"></div>
+
+      <!-- Flower Species & Mode Badge -->
+      <div class="pane-badge right-badge tablet-flower-badge">
+        <span class="flower-tag-dot"></span>
+        <span id="active-flower-title">PERIWINKLE</span>
+      </div>
+
+      <!-- Touch Orbit & Zoom Hint -->
+      <div class="orbit-hint-badge tablet-orbit-hint" title="Drag to look around, or tap to reset view">
+        <span>👆 Drag to Orbit • Tap to Reset View</span>
+      </div>
+    </section>
+
+    <!-- INLET (Picture-in-Picture Floating Dancer Skeleton Window) -->
+    <aside class="split-pane split-left tablet-camera-inlet" id="camera-pane">
+      <!-- Inlet Top Header Bar with Interactive Controls -->
+      <div class="inlet-top-bar">
+        <div class="inlet-badge">
+          <span class="live-pulse-dot"></span>
+          <span class="inlet-title">Dancer View</span>
+        </div>
+
+        <div class="inlet-action-group">
+          <!-- Zoom Controls (Wide-angle capture for nearby full body) -->
+          <div class="inlet-zoom-controls">
+            <button class="inlet-tool-btn" id="inlet-zoom-out"
+              title="Zoom Out (Wider FOV for nearby full body)">−</button>
+            <span class="inlet-zoom-label" id="inlet-zoom-val" title="Camera Field of View">85%</span>
+            <button class="inlet-tool-btn" id="inlet-zoom-in" title="Zoom In">+</button>
+          </div>
+
+          <!-- Framing Toggle: Fill vs Contain -->
+          <button class="inlet-tool-btn inlet-text-btn" id="inlet-fov-toggle" title="Toggle 1:1 Fill / Contain">
+            <span id="fov-label">Fill</span>
+          </button>
+
+          <!-- Toggle Inlet Size -->
+          <button class="inlet-tool-btn inlet-text-btn" id="inlet-size-toggle"
+            title="Toggle Inlet Window Size (Normal / Large / Compact)">⤢ Size</button>
+
+          <!-- Flip Corner: Top Right <-> Top Left -->
+          <button class="inlet-tool-btn" id="inlet-corner-toggle" title="Switch Corner Position">⇄</button>
+
+          <!-- Minimize / Expand Toggle -->
+          <button class="inlet-tool-btn" id="inlet-minimize-toggle" title="Minimize / Expand Inlet">
+            <span id="min-icon">−</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Camera Video Stage & Mirrored Skeleton Canvas -->
+      <div class="camera-stage inlet-camera-stage" id="inlet-stage">
+        <video id="webcam-feed" playsinline autoplay muted></video>
+        <canvas id="skeleton-canvas"></canvas>
+        <div class="camera-grade-overlay"></div>
+      </div>
+
+      <!-- Inlet Bottom Footer / 4ft Smart Tracking Status -->
+      <div class="inlet-bottom-footer">
+        <button class="inlet-tip-btn" id="inlet-centerstage-tip-btn" title="Camera Field of View & 4ft Tracking Tips">
+          <span>⚡ 4ft Tracking Tips</span>
+        </button>
+      </div>
+    </aside>
+
+    <!-- 4ft Camera & Tracking Guide Modal -->
+    <div class="centerstage-modal-backdrop hidden" id="centerstage-modal">
+      <div class="centerstage-modal-card">
+        <div class="modal-header">
+          <span class="modal-badge">📸 iPad 4-Foot Camera Tracking</span>
+          <button class="modal-close-btn" id="centerstage-close-btn">&times;</button>
+        </div>
+        <h3 class="modal-title">Optimized for 3.5 to 5 Feet</h3>
+        <p class="modal-desc">You do not need to step back! Our choreography vision model is calibrated for standing
+          right in front of your iPad:</p>
+
+        <div class="centerstage-steps">
+          <div class="cs-step">
+            <span class="cs-step-num">1</span>
+            <div class="cs-step-text">
+              <strong>Elbow & Wrist Dual Tracking</strong>
+              <span>When spreading arms wide or reaching overhead, the system tracks both elbows and wrists so hands
+                never get lost even if near the frame edge.</span>
+            </div>
+          </div>
+          <div class="cs-step">
+            <span class="cs-step-num">2</span>
+            <div class="cs-step-text">
+              <strong>Native 4:3 Sensor Angle</strong>
+              <span>We stream the full native camera sensor without 16:9 cropping to capture the absolute widest
+                physical lens angle of your iPad.</span>
+            </div>
+          </div>
+          <div class="cs-step">
+            <span class="cs-step-num">3</span>
+            <div class="cs-step-text">
+              <strong>iPad Placement & Tilt</strong>
+              <span>Angle the iPad slightly upward so your chest, head, and waist are visible. Just sway and lift your
+                arms to bloom!</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button class="hud-btn primary glow-btn" id="centerstage-gotit-btn" style="width: 100%;">Got it! ✨</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Dummy divider hidden in CSS for backward-compatibility with main.js -->
+    <div class="split-divider" style="display:none !important;"></div>
+  </main>
+
+  <!-- BOTTOM RECORDING CONTROLS DOCK (7 Flower Species Selector right above Record Button) -->
+  <footer class="studio-footer tablet-studio-footer">
+    <div class="record-center-dock">
+      <!-- 7 BOTANICAL FLOWER SPECIES SELECTOR -->
+      <div class="species-selector-strip tablet-species-strip" id="species-selector-strip">
+        <button class="flower-card species-pill active" data-species="periwinkle" title="Periwinkle">
+          <span class="pill-dot periwinkle-dot"></span>
+          <span class="pill-name">Periwinkle</span>
+        </button>
+
+        <button class="flower-card species-pill" data-species="poppy" title="Wild Poppy">
+          <span class="pill-dot poppy-dot"></span>
+          <span class="pill-name">Poppy</span>
+        </button>
+
+        <button class="flower-card species-pill" data-species="chamomile" title="Chamomile Wheat">
+          <span class="pill-dot chamomile-dot"></span>
+          <span class="pill-name">Chamomile</span>
+        </button>
+
+        <button class="flower-card species-pill" data-species="champa" title="Champa (Frangipani)">
+          <span class="pill-dot champa-dot"></span>
+          <span class="pill-name">Champa</span>
+        </button>
+
+        <button class="flower-card species-pill" data-species="marigold" title="Festive Marigold">
+          <span class="pill-dot marigold-dot"></span>
+          <span class="pill-name">Marigold</span>
+        </button>
+
+        <button class="flower-card species-pill" data-species="lotus" title="Sacred Lotus">
+          <span class="pill-dot lotus-dot"></span>
+          <span class="pill-name">Lotus</span>
+        </button>
+
+        <button class="flower-card species-pill" data-species="hibiscus" title="Royal Hibiscus">
+          <span class="pill-dot hibiscus-dot"></span>
+          <span class="pill-name">Hibiscus</span>
+        </button>
+      </div>
+
+      <!-- MAIN RECORD DANCE BUTTON -->
+      <button class="studio-record-btn tablet-record-btn" id="record-choreography-btn">
+        <span class="record-pulse-dot"></span>
+        <span id="choreograph-btn-label">Record Dance (10s)</span>
+      </button>
+      <p class="record-hint">
+        Tap to record 10s dance • Move arms & body to shape the living bloom
+      </p>
+    </div>
+  </footer>
+
+  <!-- 1. Countdown Overlay (3, 2, 1, DANCE!) -->
+  <div class="record-countdown-overlay hidden" id="record-countdown-overlay">
+    <div class="countdown-circle">
+      <span class="countdown-num" id="countdown-num">3</span>
+      <span class="countdown-text">Prepare your dance...</span>
+    </div>
+  </div>
+
+  <!-- 2. Active Recording Floating HUD Bar -->
+  <div class="recording-active-hud hidden" id="recording-active-hud">
+    <div class="record-hud-card">
+      <div class="record-indicator">
+        <span class="live-rec-dot"></span>
+        <span class="rec-title">Recording Choreography</span>
+      </div>
+      <div class="record-progress-container">
+        <div class="record-progress-bar" id="record-progress-bar"></div>
+      </div>
+      <div class="record-meta">
+        <span class="record-time" id="record-timer-text">0.0s / 10.0s</span>
+        <span class="record-tip">Sway, reach upward, spread arms & bloom!</span>
+        <button class="record-cancel-btn" id="record-cancel-btn">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. Planting Dialog Modal (After Recording Finishes - Clean 2-Button Interaction) -->
+  <div class="planting-modal-backdrop hidden" id="planting-modal">
+    <div class="planting-modal-card">
+      <div class="modal-header">
+        <span class="modal-badge">🌸 Choreography Recorded</span>
+        <button class="modal-close-btn" id="planting-cancel-btn">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <h3 class="modal-title">Plant in Collective Bloom</h3>
+        <p class="modal-desc">Your 10-second physical dance has been recorded into botanical memory.</p>
+
+        <div class="form-group">
+          <div class="form-label-row">
+            <label for="flower-name-input">Title or Message (Tag):</label>
+            <span class="char-counter" id="title-char-count"><span id="char-num">0</span>/20</span>
+          </div>
+          <div class="input-with-button">
+            <input type="text" id="flower-name-input" placeholder="Tag your flower (e.g. Sacred Bloom)" maxlength="20" autocomplete="off">
+            <button class="dice-btn" id="random-name-btn" title="Generate Poetic Name">🎲 Poetic</button>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="choreographer-input">Name (Choreographer):</label>
+          <input type="text" id="choreographer-input" placeholder="Your name (optional)" maxlength="25">
+        </div>
+
+        <!-- Email Option for 10s Animation Delivery -->
+        <div class="form-group email-option-group">
+          <div class="email-toggle-row">
+            <label class="custom-checkbox-label" for="send-email-toggle">
+              <input type="checkbox" id="send-email-toggle" checked>
+              <span class="custom-checkbox-box"></span>
+              <span class="checkbox-label-text">Send 10s MP4 animation video to my email</span>
+            </label>
+          </div>
+          <div class="email-input-container" id="email-input-container">
+            <div class="email-input-field-wrap">
+              <span class="email-prefix-icon">✉️</span>
+              <input type="email" id="visitor-email-input" placeholder="Enter your email (e.g. dancer@ethereum.org)"
+                autocomplete="email">
+            </div>
+            <p class="email-subtext">You will receive the 10-second MP4 dance video and 9:16 video postcard.</p>
+          </div>
+        </div>
+
+        <div class="species-confirm-pill" id="species-confirm-pill">
+          <span class="species-pill-icon" id="species-pill-icon">🌸</span>
+          <span class="species-pill-name" id="species-pill-name">Periwinkle</span>
+          <span class="species-pill-note">• 10s Botanical Movement Loop</span>
+        </div>
+      </div>
+
+      <!-- Exactly 2 Buttons: Re-record and Plant -->
+      <div class="modal-footer modal-footer-two-btn">
+        <button class="hud-btn" id="planting-rerecord-btn" type="button">🔄 Re-record [R]</button>
+        <button class="hud-btn primary glow-btn" id="planting-submit-btn" type="button">🌱 Plant in Garden
+          [ENTER]</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. Clean Simple Confirmation Toast (No QR, No Download Buttons) -->
+  <div class="delivery-toast hidden" id="delivery-toast">
+    <div class="toast-card tablet-toast-card">
+      <div class="toast-header">
+        <span class="toast-icon">🌱</span>
+        <div class="toast-title-group">
+          <h4 class="toast-title">Planted in Collective Bloom!</h4>
+          <span class="toast-timestamp" id="toast-time">Just now</span>
+        </div>
+        <button class="toast-close-btn" id="toast-close-btn">&times;</button>
+      </div>
+      <p class="toast-message" id="toast-message">
+        Your living flower has sprouted in Collective Bloom!
+      </p>
+    </div>
+  </div>
+
+  <!-- Camera Permission Banner -->
+  <div class="camera-prompt-banner hidden" id="camera-prompt-banner">
+    <div class="prompt-card">
+      <span class="prompt-icon">📷</span>
+      <div class="prompt-text">
+        <strong id="prompt-title">Webcam Permission Needed</strong>
+        <span id="prompt-desc">Click below to allow camera access so your movements can shape the living plant.</span>
+      </div>
+      <button class="prompt-btn" id="prompt-enable-btn">Enable Camera</button>
+      <button class="dismiss-guide-btn" id="prompt-dismiss-btn" title="Dismiss banner">Dismiss</button>
+    </div>
+  </div>
+
+  <!-- Hidden Compatibility Mounts (Ensures zero JS errors with existing manager objects) -->
+  <div class="hidden-compatibility-mounts" style="display:none !important;">
+    <select id="flower-palette">
+      <option value="periwinkle" selected>Periwinkle</option>
+      <option value="poppy">Poppy</option>
+      <option value="chamomile">Chamomile</option>
+      <option value="meadow">Meadow</option>
+    </select>
+    <div id="pip-container">
+      <button id="pip-close-btn"></button>
+    </div>
+    <div id="visitor-guide"><button id="dismiss-guide-btn"></button></div>
+    <div id="recording-guide-modal">
+      <div id="guide-modal-backdrop"></div>
+      <button id="guide-modal-close-btn"></button>
+      <button id="guide-ready-btn"></button>
+      <button id="open-guide-btn"></button>
+    </div>
+    <div id="flower-inspect-card">
+      <span id="inspect-flower-name"></span>
+      <strong id="inspect-species-name"></strong>
+      <strong id="inspect-choreographer"></strong>
+      <span id="inspect-loop-time"></span>
+      <button id="inspect-close-btn"></button>
+      <button id="inspect-next-btn"></button>
+      <button id="inspect-return-btn"></button>
+    </div>
+    <button id="launch-tv-btn"></button>
+    <div id="tv-hud">
+      <span id="tv-count-text"></span>
+      <div id="tv-celebration-banner">
+        <span id="celebration-title"></span>
+        <span id="celebration-desc"></span>
+      </div>
+    </div>
+    <div id="live-metrics">
+      <strong id="metric-bloom"></strong>
+      <strong id="metric-lean"></strong>
+      <strong id="metric-height"></strong>
+    </div>
+    <div id="garden-count-badge"><span id="garden-count-text"></span></div>
+    <div id="keyboard-legend-bar"></div>
+    <button id="toggle-panorama-btn"><span id="panorama-btn-label"></span></button>
+    <button id="toggle-camera-btn"><span id="camera-btn-label"></span></button>
+    <button id="toggle-pip-btn"></button>
+    <button id="toggle-wind-btn"></button>
+    <button id="toggle-ui-btn"></button>
+    <button id="restore-ui-btn"></button>
+    <div id="fallback-hint"></div>
+    <span id="story-name"></span>
+    <span id="story-tagline"></span>
+    <div id="tracking-status" style="display:none;"><span id="status-text"></span></div>
+    <button id="fullscreen-btn" style="display:none;"></button>
+    <button id="planting-email-btn" style="display:none;"></button>
+    <button id="toast-download-btn" style="display:none;"></button>
+    <button id="toast-postcard-btn" style="display:none;"></button>
+    <button id="toast-ok-btn" style="display:none;"></button>
+    <div id="toast-qr-row" style="display:none;"><img id="toast-qr-img" /></div>
+    <canvas id="postcard-preview-canvas" width="1080" height="1920" style="display:none;"></canvas>
+    <img id="postcard-qr-img" style="display:none;" />
+    <button id="planting-instagram-btn" style="display:none;"></button>
+    <button id="planting-postcard-btn" style="display:none;"></button>
+    <button id="planting-download-btn" style="display:none;"></button>
+    <span id="ig-btn-label" style="display:none;"></span>
+  </div>
+
+  <script type="module" src="./src/main.js"></script>
+</body>
+
+</html>

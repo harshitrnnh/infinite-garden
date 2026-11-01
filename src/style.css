@@ -2877,6 +2877,27 @@ body.choreography-split-view {
   height: 260px !important;
 }
 
+/* LAPTOP BLOOM (MacBook Pro widescreen view: larger horizontal width & slightly taller height) */
+.laptop-bloom-view .tablet-camera-inlet {
+  width: 380px !important;
+  height: 350px !important;
+  max-width: 48vw !important;
+  max-height: 50vh !important;
+  border-radius: 22px !important;
+}
+
+.laptop-bloom-view .tablet-camera-inlet.inlet-size-large {
+  width: 460px !important;
+  height: 420px !important;
+  max-width: 58vw !important;
+  max-height: 58vh !important;
+}
+
+.laptop-bloom-view .tablet-camera-inlet.inlet-size-compact {
+  width: 300px !important;
+  height: 280px !important;
+}
+
 /* Minimized Floating Pill State */
 .tablet-bloom-view .tablet-camera-inlet.minimized {
   height: 44px !important;
