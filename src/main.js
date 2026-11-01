@@ -41,9 +41,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Countdown & Recording HUD
   const recordCountdownOverlay = document.getElementById('record-countdown-overlay');
   const countdownNum = document.getElementById('countdown-num');
-  const countdownCueMain = document.getElementById('countdown-cue-main');
-  const countdownCueSub = document.getElementById('countdown-cue-sub');
-  const countdownCuesStrip = document.getElementById('countdown-cues-strip');
+  const countdownText = document.getElementById('countdown-text');
   const recordingActiveHud = document.getElementById('recording-active-hud');
   const recordProgressBar = document.getElementById('record-progress-bar');
   const recordTimerText = document.getElementById('record-timer-text');
@@ -639,55 +637,16 @@ document.addEventListener('DOMContentLoaded', async () => {
   // CHOREOGRAPHY RECORDING WORKFLOW
   // -----------------------------------------------------------------------------------
   const COUNTDOWN_CUES = {
-    5: {
-      main: '👐 Stretch your arms wide!',
-      sub: 'Spread sideways to bloom petals open flat'
-    },
-    4: {
-      main: '🌊 Sway a little side to side!',
-      sub: 'Curve your stem with the breeze and tilt the bloom'
-    },
-    3: {
-      main: '🦒 Stretch tall or bow low!',
-      sub: 'Reach for the sky or bend deep to reshape the spine'
-    },
-    2: {
-      main: '🙏 Do Namaste for a surprise!',
-      sub: 'Press palms together to sprout a secret blooming branch!'
-    },
-    1: {
-      main: '✨ Have fun & let your bloom flow!',
-      sub: 'Dance freely — your living sculpture captures every move!'
-    }
+    5: 'Stretch your arms',
+    4: 'Sway a little',
+    3: 'Bend or stretch up',
+    2: 'Do Namaste for surprise',
+    1: 'Have fun!'
   };
 
   const updateCountdownCues = (count) => {
-    if (countdownNum) {
-      countdownNum.textContent = count;
-      countdownNum.classList.remove('tick-pulse');
-      void countdownNum.offsetWidth; // Trigger reflow for tick animation
-      countdownNum.classList.add('tick-pulse');
-    }
-    const cue = COUNTDOWN_CUES[count];
-    if (cue) {
-      if (countdownCueMain) countdownCueMain.textContent = cue.main;
-      if (countdownCueSub) countdownCueSub.textContent = cue.sub;
-    }
-    if (countdownCuesStrip) {
-      const steps = countdownCuesStrip.querySelectorAll('.cue-step');
-      steps.forEach((step) => {
-        const stepNum = parseInt(step.getAttribute('data-step'), 10);
-        if (stepNum === count) {
-          step.classList.add('active');
-          step.classList.remove('passed');
-        } else if (stepNum > count) {
-          step.classList.add('passed');
-          step.classList.remove('active');
-        } else {
-          step.classList.remove('active', 'passed');
-        }
-      });
-    }
+    if (countdownNum) countdownNum.textContent = count;
+    if (countdownText) countdownText.textContent = COUNTDOWN_CUES[count] || '';
   };
 
   const startRecordingChoreography = () => {
