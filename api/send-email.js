@@ -153,7 +153,7 @@ export default async function handler(req, res) {
       console.log(`Attached 9:16 video postcard duplicate: ${rawVideoBuffer.length} bytes (${(rawVideoBuffer.length / 1024 / 1024).toFixed(2)} MB)`);
     } else if (postcardBuffer && postcardIsImage) {
       attachments.push({
-        filename: `${safeFileBase}_instagram_postcard_9x16.png`,
+        filename: `${safeFileBase}_postcard_9x16.png`,
         content: postcardBuffer,
         contentType: 'image/png'
       });
@@ -190,16 +190,15 @@ export default async function handler(req, res) {
             <div class="flower-meta">${displayChoreographer ? `Choreographed by ${displayChoreographer} • ` : ''}${displaySpecies.toUpperCase()}</div>
           </div>
           <p style="font-size: 15px; line-height: 1.6; color: #cbd5e1;">
-            Thank you for bringing your movement to Collective Bloom! Your 10-second choreography is now woven into the shared 2,000-flower living artwork running live at Devcon.
+            Thank you for bringing your movement to Collective Bloom! Your 10-second choreography is now woven into the shared Collective Bloom Garden grown by gardeners at Devcon, Mumbai 2026.
           </p>
           <div style="background: rgba(56, 189, 248, 0.08); border-radius: 8px; padding: 14px 18px; margin: 18px 0; border-left: 3px solid #38bdf8;">
             <p style="margin: 0 0 6px 0; font-weight: 600; color: #f8fafc; font-size: 14px;">Attached 10-Second Videos in this Email:</p>
             <ul style="margin: 0; padding-left: 18px; font-size: 13px; color: #94a3b8; line-height: 1.6;">
               <li><strong>🎬 Raw Choreography Video (.mp4)</strong>: Your 10-second full dance animation of the living flower.</li>
-              <li><strong>📱 Instagram Story Postcard Video (.mp4)</strong>: Vertical 9:16 video postcard with Devcon artwork stamp, ready for Instagram Stories, Reels, & Status.</li>
+              <li><strong>📱 Video Postcard for stories (.mp4)</strong>: Vertical 9:16 video postcard with Devcon artwork stamp, ready for stories, reels, & status.</li>
             </ul>
           </div>
-          ${videoUrl ? `<p style="font-size: 14px; color: #94a3b8;">You can also stream or download your recorded animation here: <br><a href="${videoUrl}" style="color: #38bdf8; word-break: break-all;">${videoUrl}</a></p>` : ''}
           <div class="btn-container">
             <a href="${meadowUrl}" class="btn">Explore Collective Bloom & Find Your Flower</a>
           </div>
