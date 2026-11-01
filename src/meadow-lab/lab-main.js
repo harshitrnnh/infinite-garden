@@ -282,11 +282,7 @@ class MeadowVisualLab {
     }
 
     // Terrain elevation function matching meadow-scene.js ground plane
-    const getTerrainY = (x, z) => {
-      return Math.sin(x * 0.25) * Math.cos(z * 0.25) * 0.35 +
-             Math.sin(x * 0.08 + z * 0.08) * 0.40 -
-             Math.hypot(x, z) * 0.006;
-    };
+    const getTerrainY = (x, z) => this.getTerrainHeight(x, z);
 
     // Dynamic field radius based on requested density (46m for 2,000 flowers!)
     const maxGladeRadius = count > 500 ? 46.0 : (count > 200 ? 25.0 : 12.5);
@@ -504,6 +500,55 @@ class MeadowVisualLab {
   }
 
   /**
+   * Terrain elevation function matching meadow-scene.js ground plane.
+   */
+  getTerrainHeight(x, z) {
+    return Math.sin(x * 0.25) * Math.cos(z * 0.25) * 0.35 +
+           Math.sin(x * 0.08 + z * 0.08) * 0.40 -
+           Math.hypot(x, z) * 0.006;
+  }
+
+  /**
+   * Generates a luminous, feathered full 360° circle ring texture for the flower ground highlight.
+   */
+  getRingTexture() {
+    if (this._cachedRingTexture) return this._cachedRingTexture;
+    const canvas = document.createElement('canvas');
+    canvas.width = 512;
+    canvas.height = 512;
+    const ctx = canvas.getContext('2d');
+    const cx = 256;
+    const cy = 256;
+
+    ctx.clearRect(0, 0, 512, 512);
+
+    // 1. Soft atmospheric light halo
+    const haloGrad = ctx.createRadialGradient(cx, cy, 60, cx, cy, 250);
+    haloGrad.addColorStop(0, 'rgba(255, 245, 200, 0)');
+    haloGrad.addColorStop(0.5, 'rgba(255, 230, 150, 0.08)');
+    haloGrad.addColorStop(0.72, 'rgba(255, 215, 120, 0.35)');
+    haloGrad.addColorStop(0.82, 'rgba(255, 245, 210, 0.75)');
+    haloGrad.addColorStop(0.90, 'rgba(255, 215, 120, 0.35)');
+    haloGrad.addColorStop(1, 'rgba(255, 215, 120, 0)');
+    ctx.fillStyle = haloGrad;
+    ctx.beginPath();
+    ctx.arc(cx, cy, 250, 0, Math.PI * 2);
+    ctx.fill();
+
+    // 2. Crisp, luminous full-circle ring core
+    ctx.beginPath();
+    ctx.arc(cx, cy, 205, 0, Math.PI * 2);
+    ctx.lineWidth = 12;
+    ctx.strokeStyle = 'rgba(255, 250, 230, 0.95)';
+    ctx.shadowColor = '#fef08a';
+    ctx.shadowBlur = 16;
+    ctx.stroke();
+
+    this._cachedRingTexture = new THREE.CanvasTexture(canvas);
+    return this._cachedRingTexture;
+  }
+
+  /**
    * Generates a smooth, feathered radial gradient canvas texture for the celestial glow aura.
    */
   getGlowSpriteTexture() {
@@ -598,19 +643,34 @@ class MeadowVisualLab {
     this.sceneEnv.scene.add(aura);
     this.glowSprite = aura;
 
-    // 4. Subtle, delicate ground beacon ring on the meadow grass
-    const ringGeo = new THREE.RingGeometry(0.35, 0.85, 48);
+    // 4. Luminous full 360° circle ring of light conforming to meadow terrain
+    const ringGeo = new THREE.PlaneGeometry(2.4, 2.4, 16, 16);
+    ringGeo.rotateX(-Math.PI / 2);
+
+    // Conform plane vertices to match the undulating meadow ground curve
+    const posAttr = ringGeo.attributes.position;
+    for (let i = 0; i < posAttr.count; i++) {
+      const vx = posAttr.getX(i) + pos.x;
+      const vz = posAttr.getZ(i) + pos.z;
+      const targetY = this.getTerrainHeight(vx, vz) + 0.04;
+      posAttr.setY(i, targetY - (pos.y || 0));
+    }
+    ringGeo.computeVertexNormals();
+
     const ringMat = new THREE.MeshBasicMaterial({
-      color: 0xe8d08c,
+      map: this.getRingTexture(),
       transparent: true,
-      opacity: 0.18,
-      side: THREE.DoubleSide,
+      opacity: 0.65,
       blending: THREE.AdditiveBlending,
-      depthWrite: false
+      depthWrite: false,
+      polygonOffset: true,
+      polygonOffsetFactor: -4,
+      polygonOffsetUnits: -4,
+      side: THREE.DoubleSide
     });
     const ring = new THREE.Mesh(ringGeo, ringMat);
-    ring.rotation.x = -Math.PI / 2;
-    ring.position.set(pos.x, (pos.y || 0) + 0.02, pos.z);
+    ring.position.set(pos.x, pos.y || 0, pos.z);
+    ring.renderOrder = 5;
     this.sceneEnv.scene.add(ring);
     this.groundRing = ring;
 
