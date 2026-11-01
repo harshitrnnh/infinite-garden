@@ -1076,16 +1076,18 @@ export class PoeticFlower {
       this.headGroup.rotation.x = 0.28 + cumX * 0.40;
     }
 
-    // 3. Dynamic Petal Bloom (Species-specific unfurling with custom angle ranges)
+    // 3. Dynamic Petal Bloom (Species-specific unfurling + horizontal arms spread completely)
+    const wingspanDrive = THREE.MathUtils.clamp((this.currentWingspan - 0.35) * 1.4, 0.0, 1.4);
     for (let p = 0; p < this.petalHolders.length; p++) {
       const ph = this.petalHolders[p];
       const minA = (ph.minAngle !== undefined) ? ph.minAngle : (ph.isInner ? 0.18 : 0.24);
       const maxA = (ph.maxAngle !== undefined) ? ph.maxAngle : (ph.isInner ? 0.65 : 0.92);
-      const targetAngle = THREE.MathUtils.lerp(minA, maxA, this.currentBloom) + (ph.offset || 0);
+      const extraSpread = wingspanDrive * 0.25;
+      const targetAngle = THREE.MathUtils.lerp(minA, maxA + extraSpread, this.currentBloom) + (ph.offset || 0);
       ph.mesh.rotation.x = targetAngle;
 
-      // Petals expand slightly when fully unfurled
-      const petalScale = THREE.MathUtils.lerp(0.88, 1.12, this.currentBloom);
+      // Petals expand and spread radially when arms are stretched out horizontally
+      const petalScale = THREE.MathUtils.lerp(0.88, 1.12 + wingspanDrive * 0.16, this.currentBloom);
       ph.mesh.scale.set(petalScale, petalScale, petalScale);
     }
 

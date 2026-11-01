@@ -2286,6 +2286,11 @@ export class LivingPlant {
     const targetBloom = THREE.MathUtils.clamp(kinematics.bloomRatio !== undefined ? kinematics.bloomRatio : 0.65, 0.04, 1.0);
     this.currentBloom = THREE.MathUtils.lerp(this.currentBloom, targetBloom, 0.15);
 
+    // Lateral arm stretch drive (hands spread out horizontally / wingspan)
+    const wingspanRatio = kinematics.wingspanSpread ?? 0;
+    const armExt = ((kinematics.armExtensionL ?? 0) + (kinematics.armExtensionR ?? 0)) * 0.5;
+    const horizontalSpreadDrive = THREE.MathUtils.clamp(Math.max(wingspanRatio, armExt), 0.0, 1.5);
+
     this.petals.forEach((p) => {
       let layerBloom = this.currentBloom;
       if (p.layer === 'inner') {
@@ -2298,14 +2303,20 @@ export class LivingPlant {
         layerBloom = Math.max(0, (this.currentBloom - 0.03) / 0.97);
       }
 
-      const targetAngleY = THREE.MathUtils.lerp(p.closedAngleY, p.openAngleY, layerBloom);
-      p.currentAngleY = THREE.MathUtils.lerp(p.currentAngleY, targetAngleY, 0.15);
+      // When arms spread out horizontally, main top flower petals spread out completely corresponding to arm stretch
+      const spreadExtraAngle = THREE.MathUtils.clamp(horizontalSpreadDrive * 0.28, 0.0, 0.36) * layerBloom;
+      const targetAngleY = THREE.MathUtils.lerp(p.closedAngleY, p.openAngleY - spreadExtraAngle, layerBloom);
+      p.currentAngleY = THREE.MathUtils.lerp(p.currentAngleY, targetAngleY, 0.18);
       p.hinge.rotation.y = -p.currentAngleY;
+
+      // Radial petal expansion: petals expand and fan outward corresponding to arm stretch
+      const petalSpreadScale = 1.0 + Math.min(1.0, horizontalSpreadDrive) * 0.18 * layerBloom;
+      p.hinge.scale.set(petalSpreadScale, 1.0 + Math.min(1.0, horizontalSpreadDrive) * 0.06 * layerBloom, petalSpreadScale);
     });
 
-    // Stamens spread and emerge with full bloom
+    // Stamens spread and emerge with full bloom & horizontal arm stretch
     this.stamens.forEach((stamen) => {
-      stamen.hinge.rotation.y = THREE.MathUtils.lerp(0.35, -0.15, this.currentBloom);
+      stamen.hinge.rotation.y = THREE.MathUtils.lerp(0.35, -0.15 - Math.min(1.0, horizontalSpreadDrive) * 0.12, this.currentBloom);
     });
 
     // Core light glow intensifies as bloom opens, multiplying with sky reach
