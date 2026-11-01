@@ -101,7 +101,10 @@ export default async function handler(req, res) {
     const displayFlower = (flowerName && flowerName.trim()) ? flowerName.trim() : (species ? `${species.charAt(0).toUpperCase() + species.slice(1)} Flower` : 'Collective Bloom Flower');
     const displayChoreographer = (choreographer && choreographer.trim() && choreographer.toLowerCase() !== 'devcon gardener' && choreographer.toLowerCase() !== 'anonymous dancer') ? choreographer.trim() : '';
     const displaySpecies = species || 'Living Flower';
-    const meadowUrl = process.env.PUBLIC_SITE_URL || 'https://collective-bloom-kappa.vercel.app/visual-lab';
+    const meadowUrl = process.env.PUBLIC_SITE_URL || 'https://collective-bloom-kappa.vercel.app/infinite-garden';
+    const gardenLink = (displayFlower && displayFlower !== 'Collective Bloom Flower')
+      ? `${meadowUrl}?search=${encodeURIComponent(displayFlower)}`
+      : meadowUrl;
     const safeFileBase = displayFlower.replace(/[^a-zA-Z0-9_-]/g, '_');
 
     const attachments = [];
@@ -244,7 +247,7 @@ export default async function handler(req, res) {
             <div class="flower-meta">${displayChoreographer ? `Choreographed by ${displayChoreographer} • ` : ''}${displaySpecies.toUpperCase()}</div>
           </div>
           <p style="font-size: 15px; line-height: 1.6; color: #cbd5e1;">
-            Thank you for bringing your movement to Collective Bloom! Your 10-second choreography is now woven into the shared Collective Bloom Garden grown by gardeners at Devcon, Mumbai 2026.
+            Thank you for bringing your movement to Collective Bloom! Your 10-second choreography is now woven into the shared Infinite Garden grown by gardeners at Devcon, Mumbai 2026.
           </p>
           <div style="background: rgba(56, 189, 248, 0.08); border-radius: 8px; padding: 14px 18px; margin: 18px 0; border-left: 3px solid #38bdf8;">
             <p style="margin: 0 0 6px 0; font-weight: 600; color: #f8fafc; font-size: 14px;">Attached 10-Second Videos in this Email:</p>
@@ -254,7 +257,7 @@ export default async function handler(req, res) {
             </ul>
           </div>
           <div class="btn-container">
-            <a href="${meadowUrl}" class="btn">Explore Collective Bloom & Find Your Flower</a>
+            <a href="${gardenLink}" class="btn">Explore Infinite Garden & Find Your Flower</a>
           </div>
           <div class="footer">
             Collective Bloom • Devcon, Mumbai 2026 • An Artwork by Harshit Agrawal (@harshitrnnh)

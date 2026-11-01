@@ -830,6 +830,13 @@ class MeadowVisualLab {
         const reversed = [...cloudFlowers].reverse();
         reversed.forEach((f) => handleNewPlant(f, false));
       }
+      try {
+        const urlParams = new URLSearchParams(window.location.search);
+        const initialQuery = urlParams.get('search') || urlParams.get('flower');
+        if (initialQuery && initialQuery.trim()) {
+          setTimeout(() => this.doSearch(initialQuery.trim()), 300);
+        }
+      } catch (_) {}
     }).catch(() => {});
   }
 
@@ -1187,6 +1194,17 @@ class MeadowVisualLab {
         input.focus();
       });
     }
+
+    // Direct URL parameter auto-search (?search= or ?flower=)
+    try {
+      const urlParams = new URLSearchParams(window.location.search);
+      const initialQuery = urlParams.get('search') || urlParams.get('flower');
+      if (initialQuery && initialQuery.trim()) {
+        const q = initialQuery.trim();
+        input.value = q;
+        setTimeout(() => this.doSearch(q), 500);
+      }
+    } catch (_) {}
   }
 
   switchHeroPalette(paletteKey) {

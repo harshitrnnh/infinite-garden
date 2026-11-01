@@ -13,6 +13,7 @@ export default defineConfig({
         main: resolve(import.meta.dirname, 'index.html'),
         tabletBloom: resolve(import.meta.dirname, 'tablet-bloom.html'),
         laptopBloom: resolve(import.meta.dirname, 'laptop-bloom.html'),
+        infiniteGarden: resolve(import.meta.dirname, 'infinite-garden.html'),
         visualLab: resolve(import.meta.dirname, 'visual-lab.html'),
         flowerGeometries: resolve(import.meta.dirname, 'flower-geometries.html')
       }

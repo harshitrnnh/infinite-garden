@@ -667,9 +667,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
-  // Instagram Postcard & Dynamic Mobile QR Generator (Points directly to Visual Lab Meadow)
-  const getShareUrl = () => {
-    return 'https://collective-bloom-kappa.vercel.app/visual-lab';
+  // Instagram Postcard & Dynamic Mobile QR Generator (Points directly to Infinite Garden Meadow)
+  const getShareUrl = (flowerNameToSearch = null) => {
+    const name = flowerNameToSearch || flowerNameInput?.value?.trim()?.slice(0, 20);
+    if (name && name.toLowerCase() !== 'luna bloom') {
+      return `https://collective-bloom-kappa.vercel.app/infinite-garden?search=${encodeURIComponent(name)}`;
+    }
+    return 'https://collective-bloom-kappa.vercel.app/infinite-garden';
   };
 
   const getPostcardMeta = () => {
@@ -766,10 +770,11 @@ document.addEventListener('DOMContentLoaded', async () => {
           downloadToDisk(lastRecordedChoreography.postcardVideoBlob, filename, lastRecordedChoreography.postcardVideoBlob.type);
         } else if (lastRecordedChoreography.videoBlob) {
           if (igBtnLabel) igBtnLabel.textContent = 'Rendering Story...';
+          const shareQrUrl = getShareUrl(meta.flowerName);
           const result = await instagramPostcard.compositeVideoFromBlob(
             lastRecordedChoreography.videoBlob,
             meta,
-            currentQrDownloadUrl,
+            shareQrUrl,
             (progress) => {
               if (igBtnLabel) igBtnLabel.textContent = `Story ${(progress * 100).toFixed(0)}%`;
             }
@@ -926,10 +931,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             artistName: 'Harshit Agrawal (@harshitrnnh)',
             eventTitle: 'Devcon, Mumbai 2026'
           };
+          const shareQrUrl = getShareUrl(flowerName);
           const compResult = await instagramPostcard.compositeVideoFromBlob(
             lastRecordedChoreography.videoBlob,
             compMeta,
-            currentQrDownloadUrl
+            shareQrUrl
           );
           if (compResult && compResult.videoBlob) {
             postcardBlob = compResult.videoBlob;

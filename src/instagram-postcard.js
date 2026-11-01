@@ -215,7 +215,7 @@ export class InstagramPostcardGenerator {
       ctx.fillText(meta.speciesName, cardX + 26, cardY + 88);
     }
 
-    // 3. QR Code linking to Visual Lab Meadow
+    // 3. QR Code linking to Infinite Garden Meadow
     if (qrImage) {
       const qrSize = 84;
       const qrX = cardX + cardW - qrSize - 20;
@@ -224,10 +224,10 @@ export class InstagramPostcardGenerator {
       ctx.drawImage(qrImage, qrX, qrY, qrSize, qrSize);
 
       ctx.textAlign = 'right';
-      ctx.font = '600 10.5px system-ui, -apple-system, sans-serif';
+      ctx.font = '600 10px system-ui, -apple-system, sans-serif';
       ctx.fillStyle = '#e8c15a';
       ctx.letterSpacing = '1px';
-      ctx.fillText('VISUAL LAB', qrX - 12, qrY + 38);
+      ctx.fillText('INFINITE GARDEN', qrX - 12, qrY + 38);
 
       ctx.font = '400 10px system-ui, -apple-system, sans-serif';
       ctx.fillStyle = '#9cb5a2';
@@ -360,9 +360,9 @@ export class InstagramPostcardGenerator {
    * composites each frame inside the 9:16 vertical Instagram postcard layout,
    * and returns an MP4 (or WebM fallback) video blob ready for mobile & Instagram.
    */
-  async compositeVideoFromBlob(videoBlob, meta = {}, qrUrl = 'https://collective-bloom-kappa.vercel.app/visual-lab', onProgress = null) {
+  async compositeVideoFromBlob(videoBlob, meta = {}, qrUrl = 'https://collective-bloom-kappa.vercel.app/infinite-garden', onProgress = null) {
     let qrImage = null;
-    const targetQrUrl = qrUrl || 'https://collective-bloom-kappa.vercel.app/visual-lab';
+    const targetQrUrl = qrUrl || 'https://collective-bloom-kappa.vercel.app/infinite-garden';
     if (targetQrUrl) {
       try {
         const qrDataUrl = await this.generateQRCodeDataUrl(targetQrUrl);

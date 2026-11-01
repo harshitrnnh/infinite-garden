@@ -1,9 +1,10 @@
 {
   "cleanUrls": true,
   "rewrites": [
+    { "source": "/infinite-garden", "destination": "/infinite-garden.html" },
+    { "source": "/visual-lab", "destination": "/infinite-garden.html" },
     { "source": "/tablet-bloom", "destination": "/tablet-bloom.html" },
     { "source": "/laptop-bloom", "destination": "/laptop-bloom.html" },
-    { "source": "/visual-lab", "destination": "/visual-lab.html" },
     { "source": "/flower-geometries", "destination": "/flower-geometries.html" }
   ]
 }
