@@ -382,18 +382,51 @@ export class InstagramPostcardGenerator {
     const video = document.createElement('video');
     video.muted = true;
     video.playsInline = true;
+    video.loop = true; // Prevents browser from stalling before target duration
+    // Must be in DOM offscreen so browser decodes all frames with GPU acceleration
+    video.style.position = 'fixed';
+    video.style.left = '-9999px';
+    video.style.top = '-9999px';
+    video.style.width = '1px';
+    video.style.height = '1px';
+    video.style.opacity = '0.01';
+    video.style.pointerEvents = 'none';
+    if (typeof document !== 'undefined' && document.body) {
+      document.body.appendChild(video);
+    }
     video.src = URL.createObjectURL(videoBlob);
 
-    await new Promise((resolve, reject) => {
-      video.onloadedmetadata = () => resolve();
-      video.onerror = (e) => reject(e);
-      setTimeout(resolve, 2000); // Fail-safe
+    await new Promise((resolve) => {
+      let resolved = false;
+      const done = () => {
+        if (!resolved) {
+          resolved = true;
+          resolve();
+        }
+      };
+      video.onloadedmetadata = () => {
+        // Fix for Chrome WebM duration bug: seek to tail to force full cluster parsing
+        if (video.duration === Infinity || !isFinite(video.duration)) {
+          video.currentTime = 1e101;
+          video.ontimeupdate = () => {
+            video.ontimeupdate = null;
+            video.currentTime = 0;
+            done();
+          };
+        } else {
+          done();
+        }
+      };
+      video.onerror = done;
+      setTimeout(done, 1500); // Fail-safe
     });
 
-    const duration = Math.min(10.5, Math.max(1.0, video.duration || 10.0));
-    const { recorder, stop, mimeType } = this.startPostcardVideoRecording(30);
+    // The full recorded choreography session is strictly 10.0 seconds
+    const targetDuration = 10.0;
+    const { recorder, stop, mimeType } = this.startPostcardVideoRecording(25);
 
     try {
+      video.currentTime = 0;
       await video.play();
     } catch (_) {}
 
@@ -404,7 +437,12 @@ export class InstagramPostcardGenerator {
       const frameStep = () => {
         if (isDone) return;
         const elapsed = (performance.now() - startTime) / 1000;
-        const progress = Math.min(1.0, elapsed / duration);
+        const progress = Math.min(1.0, elapsed / targetDuration);
+
+        // Watchdog: If playback paused prematurely before 10s, resume it immediately
+        if (video.paused && elapsed < targetDuration - 0.25) {
+          try { video.play(); } catch (_) {}
+        }
 
         this.renderFrame(video, meta, qrImage);
 
@@ -412,10 +450,14 @@ export class InstagramPostcardGenerator {
           onProgress(progress, elapsed);
         }
 
-        if (elapsed >= duration || video.ended) {
+        // Strictly guarantee the full 10.0 seconds of recording is captured
+        if (elapsed >= targetDuration) {
           isDone = true;
           try { video.pause(); } catch (_) {}
           URL.revokeObjectURL(video.src);
+          if (video.parentNode) {
+            video.parentNode.removeChild(video);
+          }
           stop().then((result) => {
             resolve({
               ...result,
