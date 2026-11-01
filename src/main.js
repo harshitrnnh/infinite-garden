@@ -252,11 +252,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   };
 
   tracker.onNamaste = () => {
-    // Feature of branch getting added is active ONLY during active choreography recording!
-    if (!choreographyRecorder || !choreographyRecorder.isRecording) {
+    // Feature of branch getting added is active during countdown OR recording!
+    if (!choreographyRecorder || (!choreographyRecorder.isRecording && !choreographyRecorder.isCountingDown)) {
       return;
     }
-    console.log('🙏 Namaste detected during recording! Sprouting new living flower branch...');
+    console.log('🙏 Namaste detected! Sprouting new living flower branch...');
     if (plant && typeof plant.sproutNamasteBranch === 'function') {
       plant.sproutNamasteBranch();
     }
@@ -701,6 +701,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     togglePanoramaBtn.classList.remove('active');
     panoramaBtnLabel.textContent = 'Meadow Walk';
 
+    // Clean flower & namaste state before countdown begins
+    if (plant && typeof plant.resetNamasteBranches === 'function') {
+      plant.resetNamasteBranches();
+    }
+    if (tracker) {
+      tracker.namasteCount = 0;
+      tracker.namasteFrames = 0;
+      tracker.namasteTriggered = false;
+    }
+
     // Show countdown overlay & initialize cues at 5
     updateCountdownCues(5);
     recordCountdownOverlay.classList.remove('hidden');
@@ -710,16 +720,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         updateCountdownCues(count);
       },
       () => {
-        // Countdown completed: start recording
-        // Ensure flower starts clean at default
-        if (plant && typeof plant.resetNamasteBranches === 'function') {
-          plant.resetNamasteBranches();
-        }
-        if (tracker) {
-          tracker.namasteCount = 0;
-          tracker.namasteFrames = 0;
-          tracker.namasteTriggered = false;
-        }
+        // Countdown completed: start 10s recording window
         recordCountdownOverlay.classList.add('hidden');
         recordingActiveHud.classList.remove('hidden');
         recordProgressBar.style.width = '0%';
@@ -742,16 +743,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         );
         lastRecordedChoreography.namasteBranchCount = branchesGrownDuringDance;
 
-        // Post recording: Flower immediately resets to the clean default
-        if (plant && typeof plant.resetNamasteBranches === 'function') {
-          plant.resetNamasteBranches();
-        }
-        if (tracker) {
-          tracker.namasteCount = 0;
-          tracker.namasteFrames = 0;
-          tracker.namasteTriggered = false;
-        }
-
+        // Keep the sprouted branches intact on plant so the postcard preview and thumbnail match exactly!
         openPlantingModal();
       }
     );
@@ -971,6 +963,14 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   plantingCancelBtn.addEventListener('click', () => {
     plantingModal.classList.add('hidden');
+    if (plant && typeof plant.resetNamasteBranches === 'function') {
+      plant.resetNamasteBranches();
+    }
+    if (tracker) {
+      tracker.namasteCount = 0;
+      tracker.namasteFrames = 0;
+      tracker.namasteTriggered = false;
+    }
   });
 
   plantingRerecordBtn.addEventListener('click', () => {
@@ -1221,6 +1221,16 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     plantingModal.classList.add('hidden');
     updateGardenCountUI();
+
+    // Reset hero studio flower for the next visitor
+    if (plant && typeof plant.resetNamasteBranches === 'function') {
+      plant.resetNamasteBranches();
+    }
+    if (tracker) {
+      tracker.namasteCount = 0;
+      tracker.namasteFrames = 0;
+      tracker.namasteTriggered = false;
+    }
 
     // Broadcast across windows to the TV display in real-time
     if (gardenChannel) {

@@ -564,7 +564,7 @@ export class BotanicalArticulatedStem {
       }
 
       if (b.growthScale !== undefined && b.growthScale < (b.targetGrowthScale || 1.0)) {
-        b.growthScale = THREE.MathUtils.lerp(b.growthScale, b.targetGrowthScale || 1.0, 0.08);
+        b.growthScale = THREE.MathUtils.lerp(b.growthScale, b.targetGrowthScale || 1.0, 0.16);
       }
       const growthMult = b.growthScale !== undefined ? b.growthScale : 1.0;
 
@@ -656,8 +656,8 @@ export class BotanicalArticulatedStem {
     const baseY = (side === 1 ? -0.32 : 0.32) + (Math.random() - 0.5) * 0.15;
     branch.rotation.set(baseX, baseY, baseZ);
 
-    // Sprouting animation: full size immediately if loaded/planted, or microscopic bud if actively sprouting
-    const initialGrowth = immediate ? 1.0 : 0.001;
+    // Sprouting animation: full size immediately if loaded/planted, or prominent shoot (0.45) if actively sprouting
+    const initialGrowth = immediate ? 1.0 : 0.45;
     branch.scale.set(initialGrowth, initialGrowth, initialGrowth);
 
     // Arching sculpted branch stem
