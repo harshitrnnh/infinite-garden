@@ -1,4 +1,66 @@
 import nodemailer from 'nodemailer';
+import { SESv2Client, SendEmailCommand } from '@aws-sdk/client-sesv2';
+
+/**
+ * Creates and configures the email transporter.
+ * Prioritizes Amazon SES (via SESv2 SDK or SES SMTP) from collectivebloom@harshitagrawal.com,
+ * with optional fallback to legacy SMTP credentials.
+ */
+function getEmailTransporter() {
+  const awsAccessKey = process.env.AWS_ACCESS_KEY_ID;
+  const awsSecretKey = process.env.AWS_SECRET_ACCESS_KEY;
+  const awsRegion = process.env.AWS_REGION || process.env.AWS_DEFAULT_REGION || 'us-east-1';
+
+  const sesSmtpUser = process.env.SES_SMTP_USER || process.env.AWS_SES_SMTP_USER;
+  const sesSmtpPass = process.env.SES_SMTP_PASS || process.env.AWS_SES_SMTP_PASS;
+  const sesSmtpHost = process.env.SES_SMTP_HOST || `email-smtp.${awsRegion}.amazonaws.com`;
+  const sesSmtpPort = parseInt(process.env.SES_SMTP_PORT || '465', 10);
+
+  // 1. AWS IAM Access Key & Secret (SESv2 SDK)
+  if (awsAccessKey && awsSecretKey) {
+    console.log(`[Mailer] Initializing AWS SESv2 client (region: ${awsRegion})`);
+    const sesClient = new SESv2Client({
+      region: awsRegion,
+      credentials: {
+        accessKeyId: awsAccessKey,
+        secretAccessKey: awsSecretKey
+      }
+    });
+    return nodemailer.createTransport({
+      SES: { sesClient, SendEmailCommand }
+    });
+  }
+
+  // 2. AWS SES SMTP Credentials
+  if (sesSmtpUser && sesSmtpPass) {
+    console.log(`[Mailer] Initializing AWS SES SMTP (${sesSmtpHost}:${sesSmtpPort})`);
+    return nodemailer.createTransport({
+      host: sesSmtpHost,
+      port: sesSmtpPort,
+      secure: sesSmtpPort === 465,
+      auth: {
+        user: sesSmtpUser,
+        pass: sesSmtpPass
+      }
+    });
+  }
+
+  // 3. Optional fallback: Gmail SMTP if explicitly set
+  const gmailUser = process.env.GMAIL_USER;
+  const gmailPass = process.env.GMAIL_APP_PASSWORD;
+  if (gmailUser && gmailPass) {
+    console.log('[Mailer] Using legacy Gmail SMTP transport fallback');
+    return nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: gmailUser,
+        pass: gmailPass.replace(/\s+/g, '')
+      }
+    });
+  }
+
+  return null;
+}
 
 export default async function handler(req, res) {
   // Set CORS headers
@@ -25,24 +87,16 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Valid recipient email is required.' });
     }
 
-    const gmailUser = process.env.GMAIL_USER || 'infinitegardencollectivebloom@gmail.com';
-    const gmailAppPassword = (process.env.GMAIL_APP_PASSWORD || 'lzammnxlcwxcscsz').replace(/\s+/g, '');
-
-    if (!gmailUser || !gmailAppPassword) {
-      console.warn('GMAIL_USER or GMAIL_APP_PASSWORD not configured on Vercel environment.');
+    const transporter = getEmailTransporter();
+    if (!transporter) {
+      console.warn('[Mailer] Amazon SES credentials not configured in environment.');
       return res.status(500).json({
-        error: 'Email service credentials not configured. Please set GMAIL_USER and GMAIL_APP_PASSWORD.'
+        error: 'Amazon SES credentials not configured. Please set AWS_ACCESS_KEY_ID & AWS_SECRET_ACCESS_KEY (or SES_SMTP_USER & SES_SMTP_PASS) in environment variables.'
       });
     }
 
-    // Configure Nodemailer Gmail Transporter
-    const transporter = nodemailer.createTransport({
-      service: 'gmail',
-      auth: {
-        user: gmailUser,
-        pass: gmailAppPassword
-      }
-    });
+    const fromEmail = process.env.SES_FROM_EMAIL || 'collectivebloom@harshitagrawal.com';
+    const replyToEmail = process.env.REPLY_TO_EMAIL || 'collectivebloom@harshitagrawal.com';
 
     const displayFlower = (flowerName && flowerName.trim()) ? flowerName.trim() : (species ? `${species.charAt(0).toUpperCase() + species.slice(1)} Flower` : 'Collective Bloom Flower');
     const displayChoreographer = (choreographer && choreographer.trim() && choreographer.toLowerCase() !== 'devcon gardener' && choreographer.toLowerCase() !== 'anonymous dancer') ? choreographer.trim() : '';
@@ -211,7 +265,8 @@ export default async function handler(req, res) {
     `;
 
     const mailOptions = {
-      from: `"Devcon Collective Bloom" <${gmailUser}>`,
+      from: `"Devcon Collective Bloom" <${fromEmail}>`,
+      replyTo: `"Collective Bloom" <${replyToEmail}>`,
       to: toEmail,
       subject: `🌸 Your Devcon Flower "${displayFlower}" is Blooming in Collective Bloom!`,
       html: htmlContent,
