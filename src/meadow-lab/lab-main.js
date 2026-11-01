@@ -689,9 +689,9 @@ class MeadowVisualLab {
 
     this.activeCelebratedFlower = flower;
 
-    // Summon butterflies to the searched / spotlighted flower!
+    // Summon 1 butterfly momentarily (~5s) to visit the searched flower and then leave
     if (this.butterflies) {
-      this.butterflies.summonToFlower(flower, durationSeconds);
+      this.butterflies.summonToFlower(flower, 5.0);
     }
 
     // 5. Highlight this flower's floating tag above it & ensure CSS2DRenderer is active

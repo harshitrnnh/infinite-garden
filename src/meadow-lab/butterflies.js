@@ -135,9 +135,9 @@ export class MeadowButterflies {
         perchTimer: 0,
         perchDuration: 0,
         targetFlower: null,
-        flapFrequency: 14.0 + Math.random() * 6.0,
+        flapFrequency: 7.5 + Math.random() * 2.5, // gentle, serene butterfly wingbeat rate
         flapPhase: Math.random() * Math.PI * 2,
-        flightSpeed: 1.1 + Math.random() * 0.6,
+        flightSpeed: 1.0 + Math.random() * 0.4,
         orbitAngle: Math.random() * Math.PI * 2,
         orbitRadius: 0.35 + Math.random() * 0.35
       };
@@ -183,36 +183,32 @@ export class MeadowButterflies {
   }
 
   /**
-   * Summon one or two butterflies directly to a searched/spotlighted flower!
+   * Summon 1 butterfly directly to a searched/spotlighted flower momentarily!
    */
-  summonToFlower(flower, durationSeconds = 18) {
-    if (!flower) return;
+  summonToFlower(flower, durationSeconds = 5.0) {
+    if (!flower || this.butterflies.length === 0) return;
     const pos = flower.group ? flower.group.position : flower.position;
     if (!pos) return;
 
-    // Find the two closest or best suited butterflies to fly to the searched flower
+    // Find the single closest butterfly to fly to the searched flower
     const sorted = [...this.butterflies].sort((a, b) => {
       const dA = a.position.distanceToSquared(pos);
       const dB = b.position.distanceToSquared(pos);
       return dA - dB;
     });
 
-    // Send the closest 1 or 2 butterflies on a graceful mission to the flower
-    const countToSummon = Math.min(2, sorted.length);
-    for (let i = 0; i < countToSummon; i++) {
-      const b = sorted[i];
-      b.state = 'summoned';
-      b.targetFlower = flower;
-      b.summonDuration = durationSeconds;
-      b.summonTimer = 0;
-      b.flightSpeed = 1.8 + Math.random() * 0.5; // fly briskly with joyful urgency
-      b.orbitAngle = Math.random() * Math.PI * 2;
-      b.orbitRadius = 0.28 + i * 0.18;
-      b.orbitSpeed = (i === 0 ? 1 : -1) * (1.6 + Math.random() * 0.6);
+    const b = sorted[0];
+    b.state = 'summoned';
+    b.targetFlower = flower;
+    b.summonDuration = durationSeconds; // Momentary visit (~5s)
+    b.summonTimer = 0;
+    b.flightSpeed = 1.6 + Math.random() * 0.3;
+    b.orbitAngle = Math.random() * Math.PI * 2;
+    b.orbitRadius = 0.30;
+    b.orbitSpeed = 1.2;
 
-      const crownY = (pos.y || 0) + 1.42 + (i * 0.15);
-      b.targetPos.set(pos.x, crownY, pos.z);
-    }
+    const crownY = (pos.y || 0) + 1.45;
+    b.targetPos.set(pos.x, crownY, pos.z);
   }
 
   update(time, dt = 0.016) {
@@ -248,18 +244,26 @@ export class MeadowButterflies {
           b.velocity.copy(dir.multiplyScalar(2.4));
         }
 
-        // Return to normal meadow roaming after summon duration completes
-        if (b.summonTimer > (b.summonDuration || 18)) {
+        // Return to normal meadow roaming after momentary visit completes and fly away
+        if (b.summonTimer > (b.summonDuration || 5.0)) {
           b.state = 'roaming';
-          b.flightSpeed = 1.1 + Math.random() * 0.6;
-          this.pickNewTarget(b);
+          b.flightSpeed = 1.0 + Math.random() * 0.4;
+          b.targetFlower = null;
+          // Pick a graceful departure vector away from the searched flower
+          const leaveAng = Math.random() * Math.PI * 2;
+          const leaveDist = 8.0 + Math.random() * 12.0;
+          b.targetPos.set(
+            flPos.x + Math.cos(leaveAng) * leaveDist,
+            crownY + 0.8 + Math.random() * 1.5,
+            flPos.z + Math.sin(leaveAng) * leaveDist
+          );
         }
       } else if (b.state === 'perching') {
         b.perchTimer += dt;
         b.velocity.set(0, 0, 0);
 
         // Gentle resting flutter while sipping nectar
-        const restFlap = Math.sin(time * 3.0 + b.id) * 0.18 + 0.35; // wings held upright at ~35-50°
+        const restFlap = Math.sin(time * 2.4 + b.id) * 0.12 + 0.30; // wings held upright at ~30-40°
         b.leftPivot.rotation.z = -restFlap;
         b.rightPivot.rotation.z = restFlap;
 
@@ -288,12 +292,12 @@ export class MeadowButterflies {
         const desired = new THREE.Vector3().subVectors(b.targetPos, b.position).normalize();
         desired.multiplyScalar(b.flightSpeed);
 
-        // Add soft organic sinusoidal flutter turbulence
-        desired.x += Math.sin(time * 2.8 + b.id * 1.5) * 0.35;
-        desired.y += Math.cos(time * 4.2 + b.id * 2.0) * 0.22;
-        desired.z += Math.cos(time * 3.1 + b.id * 1.1) * 0.35;
+        // Soft organic sinusoidal flight sway (calm and graceful)
+        desired.x += Math.sin(time * 1.8 + b.id * 1.5) * 0.16;
+        desired.y += Math.cos(time * 2.2 + b.id * 2.0) * 0.10;
+        desired.z += Math.cos(time * 1.9 + b.id * 1.1) * 0.16;
 
-        b.velocity.lerp(desired, 0.06);
+        b.velocity.lerp(desired, 0.05);
 
         // Keep safely above terrain ground
         if (this.getTerrainHeight) {
@@ -310,27 +314,27 @@ export class MeadowButterflies {
       // Smooth body banking and look-ahead heading
       if (b.velocity.lengthSq() > 0.001) {
         const lookTarget = b.position.clone().add(b.velocity);
-        // Add vertical bob to lookTarget so butterfly tilts naturally with each flap
-        lookTarget.y += Math.sin(time * b.flapFrequency + b.flapPhase) * 0.02;
+        // Soft subtle vertical bob
+        lookTarget.y += Math.sin(time * b.flapFrequency + b.flapPhase) * 0.006;
 
         const currentRot = b.group.quaternion.clone();
         b.group.lookAt(lookTarget);
-        b.group.quaternion.slerp(currentRot, 0.4); // smooth banking turn
+        b.group.quaternion.slerp(currentRot, 0.35); // smooth banking turn
       }
 
       // 3. WING FLAPPING
-      // Flap wings dynamically: rapid rhythmic flutter when flying, smoother glide when descending
+      // Calmer, elegant natural butterfly wingbeat
       const speed = b.velocity.length();
-      const currentFreq = b.flapFrequency * (0.8 + speed * 0.4);
+      const currentFreq = b.flapFrequency * (0.75 + Math.min(speed, 1.6) * 0.25);
       const flapSine = Math.sin(time * currentFreq + b.flapPhase);
-      const flapAngle = flapSine * 0.82; // flap range -47° to +47°
+      const flapAngle = flapSine * 0.58; // gentle flap range ~33°
 
       b.leftPivot.rotation.z = -flapAngle;
       b.rightPivot.rotation.z = flapAngle;
 
-      // Slight secondary pitch flutter on wings
-      b.leftPivot.rotation.x = Math.sin(time * currentFreq * 0.5) * 0.10;
-      b.rightPivot.rotation.x = Math.sin(time * currentFreq * 0.5) * 0.10;
+      // Subtle secondary pitch flutter on wings
+      b.leftPivot.rotation.x = Math.sin(time * currentFreq * 0.5) * 0.04;
+      b.rightPivot.rotation.x = Math.sin(time * currentFreq * 0.5) * 0.04;
     }
   }
 
@@ -344,3 +348,4 @@ export class MeadowButterflies {
     if (this.bodyMaterial) this.bodyMaterial.dispose();
   }
 }
+
