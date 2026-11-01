@@ -920,7 +920,7 @@ export class PoppyMorphology {
       group: fGroup,
       setBloom: (b) => {
         holders.forEach(m => {
-          m.rotation.x = THREE.MathUtils.lerp(0.18, 1.50, b);
+          m.rotation.x = THREE.MathUtils.lerp(0.16, 1.15, b);
           const s = THREE.MathUtils.lerp(0.85, 1.12, b);
           m.scale.set(s, s, s);
         });
@@ -944,7 +944,8 @@ export class PoppyMorphology {
   setBloom(val) {
     this.currentBloom = val;
     this.petalHolders.forEach(p => {
-      p.mesh.rotation.x = THREE.MathUtils.lerp(0.18, 1.62, val);
+      // Clamped to 1.16 rad so petal tip reaches max 90° horizontal, strictly zero drooping
+      p.mesh.rotation.x = THREE.MathUtils.lerp(0.16, 1.16, val);
       const s = THREE.MathUtils.lerp(0.85, 1.15, val);
       p.mesh.scale.set(s, s, s);
     });
@@ -1104,7 +1105,7 @@ export class PeriwinkleMorphology {
       group: fGroup,
       setBloom: (b) => {
         holders.forEach(m => {
-          m.rotation.x = THREE.MathUtils.lerp(0.20, 1.50, b);
+          m.rotation.x = THREE.MathUtils.lerp(0.18, 1.18, b);
           const s = THREE.MathUtils.lerp(0.85, 1.12, b);
           m.scale.set(s, s, s);
         });
@@ -1128,7 +1129,8 @@ export class PeriwinkleMorphology {
   setBloom(val) {
     this.currentBloom = val;
     this.petalHolders.forEach(p => {
-      p.mesh.rotation.x = THREE.MathUtils.lerp(0.20, 1.62, val);
+      // Clamped to 1.20 rad so petal tip reaches max 90° horizontal, strictly zero drooping
+      p.mesh.rotation.x = THREE.MathUtils.lerp(0.18, 1.20, val);
       const s = THREE.MathUtils.lerp(0.85, 1.15, val);
       p.mesh.scale.set(s, s, s);
     });
@@ -1282,7 +1284,7 @@ export class ChamomileMorphology {
       group: fGroup,
       setBloom: (b) => {
         holders.forEach(m => {
-          m.rotation.x = THREE.MathUtils.lerp(0.20, 1.50, b);
+          m.rotation.x = THREE.MathUtils.lerp(0.18, 1.20, b);
           const s = THREE.MathUtils.lerp(0.85, 1.10, b);
           m.scale.set(s, s, s);
         });
@@ -1307,7 +1309,8 @@ export class ChamomileMorphology {
   setBloom(val) {
     this.currentBloom = val;
     this.petalHolders.forEach(p => {
-      p.mesh.rotation.x = THREE.MathUtils.lerp(0.20, 1.65, val);
+      // Clamped to 1.22 rad so petal tip reaches max 90° horizontal, strictly zero drooping
+      p.mesh.rotation.x = THREE.MathUtils.lerp(0.18, 1.22, val);
       const s = THREE.MathUtils.lerp(0.85, 1.10, val);
       p.mesh.scale.set(s, s, s);
     });
@@ -1573,7 +1576,7 @@ export class ChampaMorphology {
       group: fGroup,
       setBloom: (b) => {
         holders.forEach(h => {
-          h.mesh.rotation.x = THREE.MathUtils.lerp(h.baseRotX * 0.22, h.baseRotX * 1.95, b);
+          h.mesh.rotation.x = THREE.MathUtils.lerp(h.baseRotX * 0.22, h.baseRotX * 1.42, b);
           h.mesh.rotation.z = THREE.MathUtils.lerp(h.baseRotZ * 1.80, h.baseRotZ * 0.70, b);
           const s = h.baseScale * THREE.MathUtils.lerp(0.85, 1.10, b);
           h.mesh.scale.set(s, s, s);
@@ -1591,7 +1594,8 @@ export class ChampaMorphology {
   setBloom(val) {
     this.currentBloom = val;
     this.petalHolders.forEach(p => {
-      p.mesh.rotation.x = THREE.MathUtils.lerp(p.baseRotX * 0.22, p.baseRotX * 2.10, val);
+      // Clamped to baseRotX * 1.42 so petal tips reach max 90° horizontal, strictly zero drooping
+      p.mesh.rotation.x = THREE.MathUtils.lerp(p.baseRotX * 0.22, p.baseRotX * 1.42, val);
       p.mesh.rotation.z = THREE.MathUtils.lerp(p.baseRotZ * 1.80, p.baseRotZ * 0.70, val);
       const s = p.baseScale * THREE.MathUtils.lerp(0.85, 1.12, val);
       p.mesh.scale.set(s, s, s);
@@ -1762,7 +1766,7 @@ export class MarigoldMorphology {
       mesh.rotation.x = 1.05;
       holder.add(mesh);
       this.headGroup.add(holder);
-      this.petalHolders.push({ holder, mesh, baseRotX: 1.05, openAngle: 1.45 });
+      this.petalHolders.push({ holder, mesh, baseRotX: 1.05, openAngle: 1.20 });
     }
 
     // Tier 4: Base collar (12 spreading petals)
@@ -1773,10 +1777,10 @@ export class MarigoldMorphology {
       const mesh = new THREE.Mesh(collarGeo, this.petalMat);
       mesh.castShadow = true;
       mesh.position.set(0, 0.000, 0.075);
-      mesh.rotation.x = 1.30;
+      mesh.rotation.x = 1.20;
       holder.add(mesh);
       this.headGroup.add(holder);
-      this.petalHolders.push({ holder, mesh, baseRotX: 1.30, openAngle: 1.65 });
+      this.petalHolders.push({ holder, mesh, baseRotX: 1.20, openAngle: 1.35 });
     }
 
     this.stem.receptacle.add(this.headGroup);
@@ -1830,7 +1834,8 @@ export class MarigoldMorphology {
   setBloom(val) {
     this.currentBloom = val;
     this.petalHolders.forEach(p => {
-      const targetAngle = THREE.MathUtils.lerp(p.baseRotX * 0.22, p.openAngle * 1.08, val);
+      // Clamped to max 1.35 rad so outer whorl reaches max 90° horizontal, strictly zero drooping
+      const targetAngle = THREE.MathUtils.lerp(p.baseRotX * 0.22, Math.min(1.35, p.openAngle), val);
       p.mesh.rotation.x = targetAngle;
       const s = THREE.MathUtils.lerp(0.85, 1.10, val);
       p.mesh.scale.set(s, s, s);
@@ -2019,7 +2024,7 @@ export class LotusMorphology {
       mesh.rotation.x = 0.85;
       holder.add(mesh);
       this.headGroup.add(holder);
-      this.petalHolders.push({ holder, mesh, tier: 'mid', baseRotX: 0.85, openAngle: 1.25 });
+      this.petalHolders.push({ holder, mesh, tier: 'mid', baseRotX: 0.85, openAngle: 1.05 });
     }
 
     // Tier 3: Outer Whorl (8 broad outer petals floating gracefully)
@@ -2031,10 +2036,10 @@ export class LotusMorphology {
       const mesh = new THREE.Mesh(outerGeo, this.petalMat);
       mesh.castShadow = true;
       mesh.position.set(0, 0.005, 0.095);
-      mesh.rotation.x = 1.15;
+      mesh.rotation.x = 1.05;
       holder.add(mesh);
       this.headGroup.add(holder);
-      this.petalHolders.push({ holder, mesh, tier: 'outer', baseRotX: 1.15, openAngle: 1.55 });
+      this.petalHolders.push({ holder, mesh, tier: 'outer', baseRotX: 1.05, openAngle: 1.28 });
     }
 
     // Mount physically into the top receptacle of the articulated stem!
@@ -2091,7 +2096,8 @@ export class LotusMorphology {
   setBloom(val) {
     this.currentBloom = val;
     this.petalHolders.forEach(p => {
-      const targetAngle = THREE.MathUtils.lerp(p.baseRotX * 0.22, p.openAngle * 1.08, val);
+      // Clamped to max 1.35 rad so outer whorl reaches max 90° horizontal, strictly zero drooping
+      const targetAngle = THREE.MathUtils.lerp(p.baseRotX * 0.22, Math.min(1.35, p.openAngle), val);
       p.mesh.rotation.x = targetAngle;
       const s = THREE.MathUtils.lerp(0.85, 1.10, val);
       p.mesh.scale.set(s, s, s);
@@ -2264,7 +2270,7 @@ export class HibiscusMorphology {
       group: fGroup,
       setBloom: (b) => {
         holders.forEach(m => {
-          m.rotation.x = THREE.MathUtils.lerp(0.20, 1.50, b);
+          m.rotation.x = THREE.MathUtils.lerp(0.18, 1.18, b);
         });
       },
       setWireframe: (w) => {
@@ -2286,7 +2292,8 @@ export class HibiscusMorphology {
   setBloom(val) {
     this.currentBloom = val;
     this.petalHolders.forEach(p => {
-      p.mesh.rotation.x = THREE.MathUtils.lerp(0.20, 1.62, val);
+      // Clamped to 1.20 rad so petal tip reaches max 90° horizontal, strictly zero drooping
+      p.mesh.rotation.x = THREE.MathUtils.lerp(0.18, 1.20, val);
       const s = THREE.MathUtils.lerp(0.85, 1.15, val);
       p.mesh.scale.set(s, s, s);
     });

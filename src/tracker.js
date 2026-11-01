@@ -316,12 +316,16 @@ export class BodyTracker {
         this.targets.bloomRatio = 0.05; // Closed flower
         this.targets.heightFactor = 1.0; // Stays full height, not bent down
       } else if (key === 'u') {
-        // HANDS STRAIGHT UP: branches up, stem grows tall, but petals stay upright (not spread out too much)
+        // HANDS STRAIGHT UP: branches up, stem grows tall, but petals stay proportionally closed up
         this.targets.armStretchUp = 1.0;
         this.targets.armHeightL = 1.8;
         this.targets.armHeightR = 1.8;
-        this.targets.bloomRatio = 0.16; // Hands straight up does not spread petals wide
-        this.targets.heightFactor = 1.25;
+        this.targets.armExtensionL = 0.0;
+        this.targets.armExtensionR = 0.0;
+        this.targets.wingspanSpread = 0.0;
+        this.targets.horizontalArmSpread = 0.0;
+        this.targets.bloomRatio = 0.06; // Hands straight up keeps petals proportionally closed up
+        this.targets.heightFactor = 1.28;
       } else if (key === 'n') {
         // NEUTRAL / BODY STRAIGHT UP: flower upright chalice, branches neutral, stem 1.0
         this.targets.spineLeanX = 0.0;
@@ -571,41 +575,50 @@ export class BodyTracker {
     // FLOWER HEIGHT:
     this.targets.heightFactor = 1.0 + this.targets.armStretchUp * 0.28;
 
-    // 4. PALM / HAND DISTANCE FROM CENTRAL STRAIGHT BODY:
-    // User physical rule:
-    // - If palms are near the central body -> bloom / petal spread is lesser (closed/compact ~0.06)
-    // - If palms are spread out or further from central straight body -> bloom is more (up to 1.0 full bloom)
+    // 4. PALM / HAND LATERAL OUTSTRETCHED SPREAD:
+    // Core physical rules:
+    // - Hands outstretched horizontally -> petals spread out to max 90° horizontal disk.
+    // - Hands straight up vertically overhead -> petals do NOT spread out, instead proportionally closen up (~0.06).
+    // - Hands at central body (resting, typing, hips) -> petals stay in compact upright bud (~0.06).
     const bodyCenterX = (lHip && rHip && (lHip.visibility > 0.25 || rHip.visibility > 0.25))
       ? (midShoulderX + (lHip.x + rHip.x) * 0.5) * 0.5
       : midShoulderX;
 
-    // Distances of left and right wrists/palms from the central vertical body line
-    const lPalmDist = Math.abs(lWr.x - bodyCenterX);
-    const rPalmDist = Math.abs(rWr.x - bodyCenterX);
+    const halfShoulder = shoulderWidth * 0.50;
 
-    // Elbow backup when arms extend to frame edges or hands leave frame
-    const lElbowDist = Math.abs(lEl.x - bodyCenterX) * 1.45;
-    const rElbowDist = Math.abs(rEl.x - bodyCenterX) * 1.45;
+    // Distances of left and right wrists/palms and elbows from the central vertical body line
+    const lWrXDist = Math.abs(lWr.x - bodyCenterX);
+    const rWrXDist = Math.abs(rWr.x - bodyCenterX);
+    const lElXDist = Math.abs(lEl.x - bodyCenterX);
+    const rElXDist = Math.abs(rEl.x - bodyCenterX);
 
-    const leftReach = Math.max(lPalmDist, lElbowDist);
-    const rightReach = Math.max(rPalmDist, rElbowDist);
+    // Lateral reach beyond shoulder width:
+    // When hands reach straight up vertically overhead, wrists and elbows stay within the shoulder column (<= halfShoulder), so lateral reach is 0.
+    // When arms spread out sideways horizontally, wrists and elbows move far outside the shoulder column.
+    const lWrLateral = Math.max(0, (lWrXDist - halfShoulder) / halfShoulder);
+    const rWrLateral = Math.max(0, (rWrXDist - halfShoulder) / halfShoulder);
 
-    // Lateral arm extensions relative to shoulder width
-    this.targets.armExtensionL = Math.max(0, Math.min(1.8, (leftReach / shoulderWidth - 0.30) * 1.6));
-    this.targets.armExtensionR = Math.max(0, Math.min(1.8, (rightReach / shoulderWidth - 0.30) * 1.6));
+    // Elbow lateral extension (essential backup when hands extend to or beyond camera frame boundaries)
+    const lElLateral = Math.max(0, (lElXDist - halfShoulder) / (halfShoulder * 0.75));
+    const rElLateral = Math.max(0, (rElXDist - halfShoulder) / (halfShoulder * 0.75));
 
-    // Overall lateral arm spread from central body
+    const leftReach = Math.max(lWrLateral, lElLateral);
+    const rightReach = Math.max(rWrLateral, rElLateral);
+
+    this.targets.armExtensionL = Math.min(1.8, leftReach * 1.2);
+    this.targets.armExtensionR = Math.min(1.8, rightReach * 1.2);
+
+    // Lateral wingspan spread across arms
     const avgSpread = (leftReach + rightReach) * 0.5;
     const maxSpread = Math.max(leftReach, rightReach);
-    const effectiveSpread = Math.max(avgSpread, maxSpread * 0.85);
+    // Allow responsive blooming whether dancer spreads one arm or both arms
+    const effectiveSpread = Math.max(avgSpread, maxSpread * 0.82);
 
-    // Proportional spread ratio:
-    // At rest / center body (e.g. typing, hands clasped, resting in lap): effectiveSpread <= 0.32 * shoulderWidth -> 0.0
-    // Further from central body: increases progressively up to 1.50 * shoulderWidth -> 1.0 full wingspan
-    const palmSpreadRatio = Math.max(0.0, Math.min(1.0, (effectiveSpread / shoulderWidth - 0.32) / 1.15));
+    // Horizontal arm spread ratio (0.0 when arms straight up or at center, 1.0 when fully outstretched horizontally)
+    const horizontalArmSpread = Math.max(0.0, Math.min(1.0, effectiveSpread / 1.35));
 
-    this.targets.wingspanSpread = palmSpreadRatio * 1.5;
-    this.targets.horizontalArmSpread = palmSpreadRatio;
+    this.targets.wingspanSpread = horizontalArmSpread * 1.4;
+    this.targets.horizontalArmSpread = horizontalArmSpread;
 
     // Total distance between wrists & elbows (retained for Namaste pose detection)
     const wristDist = Math.hypot(lWr.x - rWr.x, lWr.y - rWr.y);
@@ -613,17 +626,23 @@ export class BodyTracker {
 
     // 5. FLOWER BLOOM & PETAL SPREAD FORMULATION:
     // Core physical principle:
-    // Petals spread strictly in proportion to how spread out the arms are sideways.
-    // If hands are straight up, the petals do NOT spread out too much (reaching sky stretches stem tall, but petals stay upright).
-    // Petals spread out wide ONLY in proportion to how far arms/palms are spread sideways.
+    // - As hands spread out horizontally, top flower petals spread out in direct proportion (up to 90° horizontal).
+    // - When hands are vertically up (or down/center), petals proportionally close up into a tight, upright bud (~0.06).
+    // - Reaching straight up overhead stretches the stem tall, while petals remain closed up.
     const lerpVal = (a, b, t) => a + (b - a) * t;
-    const sidewaysPetalBloom = lerpVal(0.06, 1.0, palmSpreadRatio);
 
-    // Subtle gentle opening (max ~0.16) when reaching straight up overhead without spreading sideways
-    const subtleUpwardBreath = avgHandUp > 0.35 ? Math.min(0.08, (avgHandUp - 0.35) * 0.12) : 0.0;
+    // Petal bloom scales directly with horizontal lateral arm spread:
+    let petalSpread = lerpVal(0.06, 1.0, horizontalArmSpread);
 
-    // Petals spread strictly proportional to sideways arm spread
-    this.targets.bloomRatio = Math.max(0.06, Math.min(1.0, sidewaysPetalBloom + subtleUpwardBreath));
+    // If hands are reaching vertically up overhead, actively ensure petals stay proportionally closed up
+    if (this.targets.armStretchUp > 0.15) {
+      const upwardPull = (this.targets.armStretchUp - 0.15) / 0.85; // 0 to 1 as hands reach straight up
+      // When reaching straight up, horizontal spread must be an explicit wide 'T' to bloom;
+      // otherwise upward reach pulls petals into a closed upright bud
+      petalSpread = lerpVal(petalSpread, 0.06, upwardPull * Math.max(0, 1.0 - horizontalArmSpread * 1.25));
+    }
+
+    this.targets.bloomRatio = Math.max(0.06, Math.min(1.0, petalSpread));
 
     // 6. LEG LIFT & BALANCING (Works both with full-body standing and sitting/desk framing!)
     let liftL = 0;
