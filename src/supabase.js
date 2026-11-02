@@ -207,6 +207,51 @@ export async function fetchCloudChoreographies() {
 }
 
 /**
+ * Searches the Supabase Cloud database for flower choreographies matching the query name.
+ * Allows visitors to find and dynamically load earlier recorded flowers beyond the initial 200 meadow cap.
+ */
+export async function searchCloudChoreographies(query) {
+  const supabase = getSupabase();
+  if (!supabase || !query || !query.trim()) return [];
+
+  try {
+    const q = query.trim();
+    const { data, error } = await supabase
+      .from('choreographies')
+      .select('*')
+      .ilike('name', `%${q}%`)
+      .order('created_at', { ascending: false })
+      .limit(20);
+
+    if (error) {
+      console.warn('Error searching cloud choreographies:', error.message);
+      return [];
+    }
+
+    return (data || []).map(row => ({
+      id: row.id,
+      name: row.name,
+      choreographer: row.choreographer,
+      species: row.species,
+      duration: row.duration,
+      fps: row.fps,
+      frames: row.frames,
+      namasteBranchCount: (row.namaste_branch_count !== undefined && row.namaste_branch_count !== null)
+        ? Number(row.namaste_branch_count)
+        : (Array.isArray(row.frames) && row.frames.length > 0
+          ? Math.max(0, ...row.frames.map(f => Number(f.namasteBranchCount || 0)))
+          : 0),
+      videoUrl: row.video_url,
+      timestamp: new Date(row.created_at).getTime(),
+      isPlanted: true
+    }));
+  } catch (err) {
+    console.warn('Could not execute cloud database search:', err);
+    return [];
+  }
+}
+
+/**
  * Subscribes to real-time new flower creations across devices (Mac Laptop -> iPad / TV)
  */
 export function subscribeToNewBlooms(onNewBloomCallback) {

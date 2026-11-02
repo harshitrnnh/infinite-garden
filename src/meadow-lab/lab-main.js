@@ -14,7 +14,7 @@ import { WildGrassesField } from './wild-grasses.js';
 import { CHOREOGRAPHY_PRESETS } from './choreography-simulator.js';
 import { FlowerLabelSystem, resetNameDeck, nextName } from './flower-labels.js';
 import { InstancedBotanicalMeadow } from './instanced-meadow.js';
-import { subscribeToNewBlooms, fetchCloudChoreographies } from '../supabase.js';
+import { subscribeToNewBlooms, fetchCloudChoreographies, searchCloudChoreographies } from '../supabase.js';
 import { MeadowButterflies } from './butterflies.js';
 
 /**
@@ -815,9 +815,9 @@ class MeadowVisualLab {
 
   initCommunalSync() {
     const handleNewPlant = (flowerData, isLiveAlert = true) => {
-      if (!flowerData || !flowerData.name) return;
-      const exists = this.flowers.some(f => f.isPlanted && (f.id === flowerData.id || f.name.toLowerCase() === flowerData.name.toLowerCase()));
-      if (exists) return;
+      if (!flowerData || !flowerData.name) return null;
+      const exists = this.flowers.find(f => f.isPlanted && (f.id === flowerData.id || f.name.toLowerCase() === flowerData.name.toLowerCase()));
+      if (exists) return exists;
 
       // Find guaranteed non-overlapping position with generous 2.4m clearance
       const slot = this.findClearPlantedSlot(2.4);
@@ -853,7 +853,9 @@ class MeadowVisualLab {
         // Spotlight celebrate this planted flower for 20 seconds!
         this.focusOnFlowerWithGlow(planted, 20);
       }
+      return planted;
     };
+    this.handleNewPlant = handleNewPlant;
 
     // 1. Cross-tab storage sync
     window.addEventListener('storage', (e) => {
@@ -1191,10 +1193,13 @@ class MeadowVisualLab {
       });
     };
 
-    this.doSearch = (query) => {
+    let searchSeq = 0;
+
+    this.doSearch = async (query) => {
       if (!this.labelSystem) return;
 
       const q = (query || '').trim();
+      const currentSeq = ++searchSeq;
       this.updateChipActive(q);
 
       if (q.length === 0) {
@@ -1211,13 +1216,39 @@ class MeadowVisualLab {
 
       clearBtn && clearBtn.classList.add('visible');
 
-      // 1. Gather all matched flowers across both articulated/planted flowers and proxies
+      // 1. Gather all matched flowers across both articulated/planted flowers already loaded in memory
       const qLower = q.toLowerCase();
-      const matchedFlowers = this.flowers.filter(f => (f.name || '').toLowerCase().includes(qLower));
+      let matchedFlowers = this.flowers.filter(f => (f.name || '').toLowerCase().includes(qLower));
+
+      // 2. On-Demand Cloud Database Search:
+      // If flower is an earlier recording beyond the initial 200 loaded in memory, fetch it directly from Supabase!
+      if (matchedFlowers.length === 0 && q.length >= 2) {
+        if (countEl) countEl.textContent = 'Searching garden archive...';
+        try {
+          const cloudResults = await searchCloudChoreographies(q);
+          if (searchSeq !== currentSeq) return; // Discard stale response if user continued typing
+
+          if (Array.isArray(cloudResults) && cloudResults.length > 0) {
+            // Dynamically plant any found flower from the database archive into the meadow
+            cloudResults.forEach(cloudFlower => {
+              if (this.handleNewPlant) {
+                this.handleNewPlant(cloudFlower, false);
+              }
+            });
+            // Re-query local flowers now that archived flowers have been planted into the glade
+            matchedFlowers = this.flowers.filter(f => (f.name || '').toLowerCase().includes(qLower));
+          }
+        } catch (searchErr) {
+          console.warn('Cloud search execution note:', searchErr);
+        }
+      }
+
+      if (searchSeq !== currentSeq) return;
+
       this.searchMatches = matchedFlowers;
       this.searchMatchIndex = 0;
 
-      // 2. Highlight tags in 3D scene
+      // 3. Highlight tags in 3D scene
       this.labelSystem.search(q);
 
       const totalMatches = matchedFlowers.length;
@@ -1228,7 +1259,7 @@ class MeadowVisualLab {
           : `${totalMatches} flower${totalMatches === 1 ? '' : 's'} found in meadow`;
       }
 
-      // 3. Multi-match cycle controls
+      // 4. Multi-match cycle controls
       if (cycleControls && cycleLabel) {
         if (totalMatches > 1) {
           cycleControls.classList.remove('hidden');
@@ -1238,13 +1269,20 @@ class MeadowVisualLab {
         }
       }
 
-      // 4. Immediately spotlight & focus the first matched flower for 20 seconds!
+      // 5. Immediately spotlight & focus the first matched flower for 20 seconds!
       if (totalMatches > 0) {
         this.focusOnFlowerWithGlow(matchedFlowers[0], 20);
       }
     };
 
-    input.addEventListener('input', (e) => this.doSearch(e.target.value));
+    let searchDebounceTimer = null;
+    input.addEventListener('input', (e) => {
+      const val = e.target.value;
+      clearTimeout(searchDebounceTimer);
+      searchDebounceTimer = setTimeout(() => {
+        this.doSearch(val);
+      }, 200);
+    });
 
     input.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') {
