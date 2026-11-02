@@ -1083,9 +1083,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
       }
 
-      // 2. Upload Postcard Video to Supabase Storage (composited with user's custom tag & choreographer name)
+      // 2. Upload Postcard Video to Supabase Storage
+      // ALWAYS prioritize the authentic 10-second live captured postcard video recorded during the dance!
       let postcardBlob = null;
-      if (lastRecordedChoreography.videoBlob && lastRecordedChoreography.videoBlob.size > 2000) {
+      if (lastRecordedChoreography.postcardVideoBlob && lastRecordedChoreography.postcardVideoBlob.size > 20000) {
+        postcardBlob = lastRecordedChoreography.postcardVideoBlob;
+        console.log('[Email Dispatch] Using authentic 10-second live recorded postcard video:', postcardBlob.size, 'bytes');
+      } else if (lastRecordedChoreography.videoBlob && lastRecordedChoreography.videoBlob.size > 2000) {
+        // Fallback: Re-composite from raw video ensuring full 10-second capture
         try {
           const compMeta = {
             flowerName: flowerName || '',
@@ -1101,19 +1106,16 @@ document.addEventListener('DOMContentLoaded', async () => {
             compMeta,
             shareQrUrl
           );
-          if (compResult && compResult.videoBlob) {
+          if (compResult && compResult.videoBlob && compResult.videoBlob.size > 50000) {
             postcardBlob = compResult.videoBlob;
-            console.log('[Email Dispatch] Custom postcard video composited:', postcardBlob.size, 'bytes');
+            console.log('[Email Dispatch] Postcard video composited fallback:', postcardBlob.size, 'bytes');
           }
         } catch (cErr) {
           console.warn('[Email Dispatch] Postcard video compositing note:', cErr);
         }
       }
-      if (!postcardBlob && lastRecordedChoreography.postcardVideoBlob) {
-        postcardBlob = lastRecordedChoreography.postcardVideoBlob;
-      }
 
-      if (postcardBlob && postcardBlob.size > 2000) {
+      if (postcardBlob && postcardBlob.size > 20000) {
         try {
           const postFilename = `${safeName}_postcard_${timestamp}.mp4`;
           postcardUrl = await uploadVideoToCloud(postcardBlob, postFilename);
@@ -1133,13 +1135,17 @@ document.addEventListener('DOMContentLoaded', async () => {
       };
 
       // Fallback: If cloud upload was not available and blob is < 3MB, send base64
+      const blobToBase64 = (blob) => new Promise((res) => {
+        const reader = new FileReader();
+        reader.onloadend = () => res(reader.result);
+        reader.readAsDataURL(blob);
+      });
+
       if (!videoUrl && lastRecordedChoreography.videoBlob && lastRecordedChoreography.videoBlob.size < 3000000) {
-        const blobToBase64 = (blob) => new Promise((res) => {
-          const reader = new FileReader();
-          reader.onloadend = () => res(reader.result);
-          reader.readAsDataURL(blob);
-        });
         emailPayload.videoBase64 = await blobToBase64(lastRecordedChoreography.videoBlob);
+      }
+      if (!postcardUrl && postcardBlob && postcardBlob.size < 3000000) {
+        emailPayload.postcardBase64 = await blobToBase64(postcardBlob);
       }
 
       console.log('[Email Dispatch] Triggering /api/send-email with payload:', {

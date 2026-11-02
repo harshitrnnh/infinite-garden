@@ -454,20 +454,27 @@ export class InstagramPostcardGenerator {
           video.ontimeupdate = () => {
             video.ontimeupdate = null;
             video.currentTime = 0;
-            done();
+            video.onseeked = () => {
+              video.onseeked = null;
+              done();
+            };
+            setTimeout(done, 500);
           };
         } else {
-          done();
+          video.currentTime = 0;
+          video.onseeked = () => {
+            video.onseeked = null;
+            done();
+          };
+          setTimeout(done, 300);
         }
       };
       video.onerror = done;
       setTimeout(done, 1500); // Fail-safe
     });
 
-    // The full recorded choreography session duration (up to 10.0 seconds)
-    const targetDuration = (video.duration && isFinite(video.duration) && video.duration > 1.5)
-      ? Math.min(10.0, video.duration)
-      : 10.0;
+    // The full recorded choreography session duration is 10.0 seconds
+    const targetDuration = 10.0;
     const { recorder, stop, mimeType } = this.startPostcardVideoRecording(25);
 
     try {
@@ -506,11 +513,11 @@ export class InstagramPostcardGenerator {
           onProgress(progress, elapsed);
         }
 
-        // Finish as soon as the recorded video reaches its natural end OR targetDuration elapsed!
-        // Because video.loop is false, the video does NOT loop back to t=0, so the Namaste branch
-        // remains 100% visible right through the final frame!
-        const isVideoAtEnd = video.ended ||
-          (video.duration && isFinite(video.duration) && video.currentTime >= (video.duration - 0.05));
+        // Finish ONLY after the full 10-second duration has elapsed (at least 9.6s minimum)!
+        // NEVER allow premature cutoff at 1s.
+        const isMinDurationMet = elapsed >= 9.6;
+        const isVideoAtEnd = isMinDurationMet && (video.ended ||
+          (video.duration && isFinite(video.duration) && video.currentTime >= (video.duration - 0.1)));
 
         if (elapsed >= targetDuration || isVideoAtEnd) {
           finishCapture();

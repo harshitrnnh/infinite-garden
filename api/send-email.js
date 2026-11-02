@@ -192,7 +192,7 @@ export default async function handler(req, res) {
     }
 
     // Attach File 2: 9:16 Video Postcard (.mp4 / .webm)
-    if (postcardBuffer && !postcardIsImage) {
+    if (postcardBuffer && !postcardIsImage && postcardBuffer.length > 25000) {
       attachments.push({
         filename: `${safeFileBase}_video_postcard_9x16.${postcardIsWebm ? 'webm' : 'mp4'}`,
         content: postcardBuffer,
