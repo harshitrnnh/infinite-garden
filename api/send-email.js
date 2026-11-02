@@ -228,9 +228,8 @@ export default async function handler(req, res) {
           .header { text-align: center; border-bottom: 1px solid #1e293b; padding-bottom: 20px; margin-bottom: 24px; }
           .title { font-size: 24px; font-weight: 700; color: #38bdf8; margin: 0 0 8px 0; letter-spacing: -0.5px; }
           .subtitle { font-size: 14px; color: #94a3b8; margin: 0; }
-          .flower-box { background: #0f172a; border-radius: 12px; padding: 20px; text-align: center; margin-bottom: 24px; border: 1px solid #334155; }
-          .flower-name { font-size: 26px; font-weight: 800; color: #f8fafc; margin: 0 0 6px 0; }
-          .flower-meta { font-size: 14px; color: #38bdf8; font-weight: 500; }
+          .flower-box { background: #0f172a; border-radius: 12px; padding: 22px 24px; text-align: center; margin-bottom: 24px; border: 1px solid #334155; }
+          .message-highlight { font-size: 20px; font-weight: 800; color: #f8fafc; line-height: 1.45; margin: 0; }
           .btn-container { text-align: center; margin: 28px 0 20px; }
           .btn { display: inline-block; background: #0284c7; color: #ffffff !important; text-decoration: none; padding: 14px 28px; font-size: 15px; font-weight: 600; border-radius: 9999px; }
           .footer { font-size: 12px; color: #64748b; text-align: center; margin-top: 24px; border-top: 1px solid #1e293b; padding-top: 16px; }
@@ -243,21 +242,13 @@ export default async function handler(req, res) {
             <p class="subtitle">Your living botanical choreography has sprouted in Collective Bloom</p>
           </div>
           <div class="flower-box">
-            <div class="flower-name">🌸 ${displayFlower}</div>
-            <div class="flower-meta">${displayChoreographer ? `Choreographed by ${displayChoreographer} • ` : ''}${displaySpecies.toUpperCase()}</div>
+            <div class="message-highlight">Here's your 10 second recording and a custom video postcard we made just for you below!</div>
           </div>
           <p style="font-size: 15px; line-height: 1.6; color: #cbd5e1;">
             Thank you for bringing your movement to Collective Bloom! Your 10-second choreography is now woven into the shared Infinite Garden grown by gardeners at Devcon, Mumbai 2026.
           </p>
-          <div style="background: rgba(56, 189, 248, 0.08); border-radius: 8px; padding: 14px 18px; margin: 18px 0; border-left: 3px solid #38bdf8;">
-            <p style="margin: 0 0 6px 0; font-weight: 600; color: #f8fafc; font-size: 14px;">Attached 10-Second Videos in this Email:</p>
-            <ul style="margin: 0; padding-left: 18px; font-size: 13px; color: #94a3b8; line-height: 1.6;">
-              <li><strong>🎬 Raw Choreography Video (.mp4)</strong>: Your 10-second full dance animation of the living flower.</li>
-              <li><strong>📱 Video Postcard for stories (.mp4)</strong>: Vertical 9:16 video postcard with Devcon artwork stamp, ready for stories, reels, & status.</li>
-            </ul>
-          </div>
           <div class="btn-container">
-            <a href="${gardenLink}" class="btn">Explore Infinite Garden & Find Your Flower</a>
+            <a href="${gardenLink}" class="btn">Link to Infinite Garden</a>
           </div>
           <div class="footer">
             Collective Bloom • Devcon, Mumbai 2026 • An Artwork by Harshit Agrawal (@harshitrnnh)
