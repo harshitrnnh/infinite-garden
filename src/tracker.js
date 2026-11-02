@@ -54,7 +54,7 @@ export class BodyTracker {
     this.namasteFrames = 0;
     this.namasteTriggered = false;
     this.namasteCount = 0;
-    this.namasteDetectionEnabled = false;
+    this.namasteDetectionEnabled = true;
     this.lastNamasteTime = 0;
     this.setupMouseFallback();
   }
@@ -717,7 +717,7 @@ export class BodyTracker {
 
     // 9. NAMASTE / ANJALI MUDRA POSE DETECTION (Easter Egg)
     // Hands clasped together in front of the chest / sternum.
-    // MUST strictly be active only during recording/countdown to prevent ghost triggers while typing!
+    // Active during live exploration & recording. Disabled during countdown & typing modals.
     if (!this.namasteDetectionEnabled) {
       this.namasteFrames = 0;
       this.namasteTriggered = false;

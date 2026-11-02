@@ -250,10 +250,19 @@ document.addEventListener('DOMContentLoaded', async () => {
   };
 
   tracker.onNamaste = () => {
-    // Feature of branch getting added is strictly active ONLY while recording!
-    if (!choreographyRecorder || !choreographyRecorder.isRecording) {
+    // Prevent triggering if planting modal is open (user typing) or countdown running
+    if (plantingModal && !plantingModal.classList.contains('hidden')) return;
+    if (recordCountdownOverlay && !recordCountdownOverlay.classList.contains('hidden')) return;
+
+    // Cap at 2 extra branches per flower
+    const currentBranches = (plant && typeof plant.getNamasteBranchCount === 'function')
+      ? plant.getNamasteBranchCount()
+      : 0;
+    if (currentBranches >= 2) {
+      console.log('🙏 Namaste detected, but maximum branches (2) already sprouted.');
       return;
     }
+
     console.log('🙏 Namaste detected! Sprouting new living flower branch...');
     if (plant && typeof plant.sproutNamasteBranch === 'function') {
       plant.sproutNamasteBranch();
@@ -728,9 +737,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   recordCancelBtn.addEventListener('click', () => {
     choreographyRecorder.cancel();
-    if (tracker && typeof tracker.setNamasteDetectionEnabled === 'function') {
-      tracker.setNamasteDetectionEnabled(false);
-    }
     recordCountdownOverlay.classList.add('hidden');
     recordingActiveHud.classList.add('hidden');
     // Post recording / cancel: reset flower to default
@@ -741,6 +747,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       tracker.namasteCount = 0;
       tracker.namasteFrames = 0;
       tracker.namasteTriggered = false;
+      if (typeof tracker.setNamasteDetectionEnabled === 'function') {
+        tracker.setNamasteDetectionEnabled(true);
+      }
     }
   });
 
@@ -950,6 +959,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       tracker.namasteCount = 0;
       tracker.namasteFrames = 0;
       tracker.namasteTriggered = false;
+      if (typeof tracker.setNamasteDetectionEnabled === 'function') {
+        tracker.setNamasteDetectionEnabled(true);
+      }
     }
   });
 
@@ -1204,6 +1216,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       tracker.namasteCount = 0;
       tracker.namasteFrames = 0;
       tracker.namasteTriggered = false;
+      if (typeof tracker.setNamasteDetectionEnabled === 'function') {
+        tracker.setNamasteDetectionEnabled(true);
+      }
     }
 
     // Broadcast across windows to the TV display in real-time
@@ -1426,9 +1441,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     // 2. Escape key: Cancel active recording or close modals
     if (e.key === 'Escape') {
       if (choreographyRecorder.isRecording || choreographyRecorder.isCountingDown) {
-        choreographyRecorder.cancel();
-        recordCountdownOverlay.classList.add('hidden');
-        recordingActiveHud.classList.add('hidden');
+        recordCancelBtn.click();
+        return;
+      }
+      if (!plantingModal.classList.contains('hidden')) {
+        plantingCancelBtn.click();
         return;
       }
       setGuideModalVisible(false);
