@@ -143,14 +143,6 @@ export class StudioFlowerManager {
 
     this.activeMorphology = this.morphologies[targetKey];
 
-    // Persist earned Namaste branches onto the newly selected morphology
-    if (this.namasteBranchCount > 0 && this.activeMorphology && this.activeMorphology.stem) {
-      const currentStemBranches = this.activeMorphology.stem.namasteBranchCount || 0;
-      for (let i = currentStemBranches; i < this.namasteBranchCount; i++) {
-        this.activeMorphology.stem.sproutNamasteBranch(true);
-      }
-    }
-
     this.triggerGust();
   }
 
@@ -163,8 +155,7 @@ export class StudioFlowerManager {
   }
 
   sproutNamasteBranch() {
-    this.namasteBranchCount = (this.namasteBranchCount || 0) + 1;
-    // Sprout a new branch on the currently selected active flower morphology
+    // Sprout a new branch strictly on the currently selected active flower morphology
     if (this.activeMorphology && this.activeMorphology.stem && typeof this.activeMorphology.stem.sproutNamasteBranch === 'function') {
       return this.activeMorphology.stem.sproutNamasteBranch();
     }
@@ -172,8 +163,8 @@ export class StudioFlowerManager {
   }
 
   getNamasteBranchCount() {
-    const stemCount = this.activeMorphology?.stem?.namasteBranchCount || 0;
-    return Math.max(this.namasteBranchCount || 0, stemCount);
+    // Strictly return the active flower's own branch count
+    return this.activeMorphology?.stem?.namasteBranchCount || 0;
   }
 
   resetNamasteBranches() {

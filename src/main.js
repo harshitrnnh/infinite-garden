@@ -258,15 +258,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (plantingModal && !plantingModal.classList.contains('hidden')) return;
     if (recordCountdownOverlay && !recordCountdownOverlay.classList.contains('hidden')) return;
 
-    // Cap at 2 extra branches per flower
+    // Cap at 3 extra branches per flower
     const currentBranches = (plant && typeof plant.getNamasteBranchCount === 'function')
       ? plant.getNamasteBranchCount()
       : 0;
 
     const activeSpecies = plant?.currentSpecies || currentSpecies || 'flower';
 
-    if (currentBranches >= 2) {
-      console.log('🙏 Namaste detected! (Flower already at full 2-branch capacity)');
+    if (currentBranches >= 3) {
+      console.log('🙏 Namaste detected! (Flower already at full 3-branch capacity)');
       if (garden && typeof garden.addSporeBurst === 'function') {
         garden.addSporeBurst(50);
       }
@@ -732,11 +732,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         recordingActiveHud.classList.add('hidden');
         lastRecordedChoreography = result;
 
-        // Save branches sprouted strictly during this recorded dance session (1 Namaste = 1 branch, capped to 2)
+        // Save branches sprouted strictly on this flower during this recorded dance session (1 Namaste = 1 branch, capped to 3)
         const plantBranches = (plant && typeof plant.getNamasteBranchCount === 'function')
           ? plant.getNamasteBranchCount()
           : 0;
-        const branchesGrownDuringDance = Math.min(2, Math.max(0, plantBranches, tracker?.namasteCount || 0));
+        const branchesGrownDuringDance = Math.min(3, Math.max(0, plantBranches));
         lastRecordedChoreography.namasteBranchCount = branchesGrownDuringDance;
 
         // Keep the sprouted branches intact on plant so the postcard preview and thumbnail match exactly!
@@ -1201,8 +1201,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // Use strictly the Namaste branches grown during the recorded dance session
-    // (Never read live tracker while typing, and clamp to max 2 extra branches)
-    const finalNamasteCount = Math.min(2, Math.max(0, Number(lastRecordedChoreography?.namasteBranchCount || 0)));
+    // (Never read live tracker while typing, and clamp to max 3 extra branches)
+    const finalNamasteCount = Math.min(3, Math.max(0, Number(lastRecordedChoreography?.namasteBranchCount || 0)));
 
     // Plant in Communal Garden
     const newRecord = communityManager.plantNewFlower({

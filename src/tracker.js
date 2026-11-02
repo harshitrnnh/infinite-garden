@@ -723,12 +723,11 @@ export class BodyTracker {
     if (!this.namasteDetectionEnabled) {
       this.namasteFrames = 0;
       this.namasteTriggered = false;
-      this.isHoldingNamaste = false;
       this.drawSkeleton(lm);
       return;
     }
 
-    // Comprehensive multi-point hand contact detection:
+    // Multi-point hand contact detection:
     // Checks wrists (15, 16), pinkies (17, 18), index tips (19, 20), thumbs (21, 22)
     const lHandIndices = [15, 17, 19, 21];
     const rHandIndices = [16, 18, 20, 22];
@@ -746,34 +745,32 @@ export class BodyTracker {
     const avgHandX = (lWr.x + rWr.x) * 0.5;
     const avgHandY = (lWr.y + rWr.y) * 0.5;
 
-    // Generous clasp threshold: allows palms, fingers, or wrists touching (adaptive to user distance)
-    const maxClaspDist = Math.max(0.18, shoulderWidth * 0.75);
+    // Strict clasp threshold: hands/palms/fingers must be close together (<= 0.14 or 48% shoulder width)
+    const maxClaspDist = Math.min(0.14, shoulderWidth * 0.48);
 
-    // Natural vertical zone: from chin/mouth down to navel/hips
-    const midHipY = (lHip && rHip) ? (lHip.y + rHip.y) * 0.5 : (midShoulderY + shoulderWidth * 1.6);
-    const inVerticalRange = avgHandY > (nose.y - 0.05) && avgHandY < (midHipY + 0.10);
+    // Natural heart/sternum zone: from chin down to mid-torso (not above head or at knees)
+    const inVerticalRange = avgHandY > (nose.y + 0.04) && avgHandY < (midShoulderY + shoulderWidth * 1.25);
 
-    // Centering: hands in front of the torso column
-    const inHorizontalCenter = Math.abs(avgHandX - midShoulderX) < (shoulderWidth * 0.70);
+    // Horizontal centering: hands directly in front of the center sternum/chest column
+    const inHorizontalCenter = Math.abs(avgHandX - midShoulderX) < (shoulderWidth * 0.45);
 
     const isNamastePose = (minHandDist < maxClaspDist) && inVerticalRange && inHorizontalCenter;
-    this.isHoldingNamaste = isNamastePose;
 
     const now = performance.now();
     const timeSinceLastNamaste = now - (this.lastNamasteTime || 0);
 
     if (isNamastePose) {
-      // Rapid responsive accumulation (+2 per frame, triggers in ~2-3 frames / 0.1s)
-      this.namasteFrames = Math.min(10, (this.namasteFrames || 0) + 2);
+      // Deliberate hold accumulation (+1 per frame: requires holding ~9-10 frames / ~0.3s)
+      this.namasteFrames = (this.namasteFrames || 0) + 1;
 
-      if (this.namasteFrames >= 4 && !this.namasteTriggered && timeSinceLastNamaste > 1200) {
+      if (this.namasteFrames >= 9 && !this.namasteTriggered && timeSinceLastNamaste > 1500) {
         this.namasteTriggered = true;
         this.triggerNamaste();
       }
     } else {
-      this.namasteFrames = Math.max(0, (this.namasteFrames || 0) - 1);
-      // Fast, natural re-arming: unclasping hands for ~2-3 frames & 800ms cooldown re-arms detection
-      if (this.namasteFrames <= 1 && timeSinceLastNamaste > 800) {
+      this.namasteFrames = Math.max(0, (this.namasteFrames || 0) - 2);
+      // Re-arm when hands unclasp & open for a moment
+      if (this.namasteFrames === 0 && minHandDist > shoulderWidth * 0.50 && timeSinceLastNamaste > 1200) {
         this.namasteTriggered = false;
       }
     }
@@ -862,31 +859,6 @@ export class BodyTracker {
       }
     }
     this.ctx.shadowBlur = 0;
-
-    // Visual Namaste Glow Feedback Indicator in PIP
-    const lWr = lm[15];
-    const rWr = lm[16];
-    if (this.isHoldingNamaste && lWr && rWr) {
-      const cx = (lWr.x + rWr.x) * 0.5 * w;
-      const cy = (lWr.y + rWr.y) * 0.5 * h;
-      this.ctx.save();
-      this.ctx.beginPath();
-      this.ctx.arc(cx, cy, 20, 0, Math.PI * 2);
-      this.ctx.fillStyle = 'rgba(250, 204, 21, 0.40)';
-      this.ctx.strokeStyle = '#fde047';
-      this.ctx.lineWidth = 2.5;
-      this.ctx.shadowColor = '#facc15';
-      this.ctx.shadowBlur = 16;
-      this.ctx.fill();
-      this.ctx.stroke();
-
-      this.ctx.font = 'bold 15px system-ui, sans-serif';
-      this.ctx.textAlign = 'center';
-      this.ctx.textBaseline = 'middle';
-      this.ctx.shadowBlur = 0;
-      this.ctx.fillText('🙏', cx, cy);
-      this.ctx.restore();
-    }
   }
 
   clearSkeletonCanvas() {

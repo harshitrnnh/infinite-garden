@@ -942,7 +942,7 @@ export class CommunityGardenManager {
     plant.setRotationY(rotY);
     plant.setScale(scale);
 
-    // Recreate any extra branches sprouted via Namaste gesture (1 Namaste = 1 branch, capped to 2)
+    // Recreate any extra branches sprouted via Namaste gesture (1 Namaste = 1 branch, capped to 3)
     let rawBranchCount = 0;
     if (flowerData.namasteBranchCount !== undefined && flowerData.namasteBranchCount !== null) {
       rawBranchCount = Number(flowerData.namasteBranchCount);
@@ -951,7 +951,7 @@ export class CommunityGardenManager {
     } else if (Array.isArray(flowerData.frames) && flowerData.frames.length > 0) {
       rawBranchCount = Math.max(0, ...flowerData.frames.map(f => Number(f.namasteBranchCount || 0)));
     }
-    const extraBranches = Math.min(2, Math.max(0, isNaN(rawBranchCount) ? 0 : rawBranchCount));
+    const extraBranches = Math.min(3, Math.max(0, isNaN(rawBranchCount) ? 0 : rawBranchCount));
     if (extraBranches > 0 && typeof plant.sproutNamasteBranch === 'function') {
       for (let b = 0; b < extraBranches; b++) {
         plant.sproutNamasteBranch();
@@ -1027,7 +1027,7 @@ export class CommunityGardenManager {
       position: { x: Number((slot.x + jitterX).toFixed(2)), y: 0, z: Number((slot.z + jitterZ).toFixed(2)) },
       rotationY: Number((slot.rotY + (Math.random() - 0.5) * 0.2).toFixed(2)),
       scale: Number((slot.scale * (0.92 + Math.random() * 0.14)).toFixed(2)),
-      namasteBranchCount: Math.min(2, Math.max(0, namasteBranchCount || extraBranches || 0)),
+      namasteBranchCount: Math.min(3, Math.max(0, namasteBranchCount || extraBranches || 0)),
       timestamp: Date.now(),
       frames: frames
     };
