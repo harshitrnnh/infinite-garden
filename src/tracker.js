@@ -53,6 +53,7 @@ export class BodyTracker {
     this.onNamaste = options.onNamaste || null;
     this.namasteFrames = 0;
     this.namasteTriggered = false;
+    this.isHoldingNamaste = false;
     this.namasteCount = 0;
     this.namasteDetectionEnabled = true;
     this.lastNamasteTime = 0;
@@ -64,6 +65,7 @@ export class BodyTracker {
     if (!enabled) {
       this.namasteFrames = 0;
       this.namasteTriggered = false;
+      this.isHoldingNamaste = false;
     }
   }
 
@@ -716,48 +718,62 @@ export class BodyTracker {
     this.prevPose = { lWr: { ...lWr }, rWr: { ...rWr }, nose: { ...nose } };
 
     // 9. NAMASTE / ANJALI MUDRA POSE DETECTION (Easter Egg)
-    // Hands clasped together in front of the chest / sternum.
+    // Hands clasped together in front of the chest / sternum / upper torso.
     // Active during live exploration & recording. Disabled during countdown & typing modals.
     if (!this.namasteDetectionEnabled) {
       this.namasteFrames = 0;
       this.namasteTriggered = false;
+      this.isHoldingNamaste = false;
       this.drawSkeleton(lm);
       return;
     }
 
-    const avgWristX = (lWr.x + rWr.x) * 0.5;
-    const avgWristY = (lWr.y + rWr.y) * 0.5;
+    // Comprehensive multi-point hand contact detection:
+    // Checks wrists (15, 16), pinkies (17, 18), index tips (19, 20), thumbs (21, 22)
+    const lHandIndices = [15, 17, 19, 21];
+    const rHandIndices = [16, 18, 20, 22];
+    const lHandPts = lHandIndices.map(i => lm[i]).filter(p => p && (p.visibility === undefined || p.visibility > 0.10));
+    const rHandPts = rHandIndices.map(i => lm[i]).filter(p => p && (p.visibility === undefined || p.visibility > 0.10));
 
-    // Detect either wrists or fingertips touching (MediaPipe index finger tips 19 & 20)
-    const lIdx = lm[19];
-    const rIdx = lm[20];
-    const indexDist = (lIdx && rIdx) ? Math.hypot(lIdx.x - rIdx.x, lIdx.y - rIdx.y) : wristDist;
-    const handDist = Math.min(wristDist, indexDist);
+    let minHandDist = wristDist;
+    for (let i = 0; i < lHandPts.length; i++) {
+      for (let j = 0; j < rHandPts.length; j++) {
+        const d = Math.hypot(lHandPts[i].x - rHandPts[j].x, lHandPts[i].y - rHandPts[j].y);
+        if (d < minHandDist) minHandDist = d;
+      }
+    }
 
-    const isNamastePose = (
-      handDist < shoulderWidth * 0.55 &&
-      avgWristY > (nose.y + 0.02) &&
-      avgWristY < (midShoulderY + shoulderWidth * 1.45) &&
-      Math.abs(avgWristX - midShoulderX) < shoulderWidth * 0.42 &&
-      elbowDist > handDist * 1.15 &&
-      elbowDist > shoulderWidth * 0.45
-    );
+    const avgHandX = (lWr.x + rWr.x) * 0.5;
+    const avgHandY = (lWr.y + rWr.y) * 0.5;
+
+    // Generous clasp threshold: allows palms, fingers, or wrists touching (adaptive to user distance)
+    const maxClaspDist = Math.max(0.18, shoulderWidth * 0.75);
+
+    // Natural vertical zone: from chin/mouth down to navel/hips
+    const midHipY = (lHip && rHip) ? (lHip.y + rHip.y) * 0.5 : (midShoulderY + shoulderWidth * 1.6);
+    const inVerticalRange = avgHandY > (nose.y - 0.05) && avgHandY < (midHipY + 0.10);
+
+    // Centering: hands in front of the torso column
+    const inHorizontalCenter = Math.abs(avgHandX - midShoulderX) < (shoulderWidth * 0.70);
+
+    const isNamastePose = (minHandDist < maxClaspDist) && inVerticalRange && inHorizontalCenter;
+    this.isHoldingNamaste = isNamastePose;
 
     const now = performance.now();
     const timeSinceLastNamaste = now - (this.lastNamasteTime || 0);
 
     if (isNamastePose) {
-      this.namasteFrames = (this.namasteFrames || 0) + 1;
-      // Holding Namaste for ~8 frames (~0.25s) confirms deliberate gesture.
-      // 1.5-second cooldown prevents unintended multiple triggers for 1 gesture.
-      if (this.namasteFrames >= 8 && !this.namasteTriggered && timeSinceLastNamaste > 1500) {
+      // Rapid responsive accumulation (+2 per frame, triggers in ~2-3 frames / 0.1s)
+      this.namasteFrames = Math.min(10, (this.namasteFrames || 0) + 2);
+
+      if (this.namasteFrames >= 4 && !this.namasteTriggered && timeSinceLastNamaste > 1200) {
         this.namasteTriggered = true;
         this.triggerNamaste();
       }
     } else {
       this.namasteFrames = Math.max(0, (this.namasteFrames || 0) - 1);
-      // Hands separated to unlock for any subsequent deliberate Namaste gesture
-      if (this.namasteFrames === 0 && handDist > shoulderWidth * 0.50 && timeSinceLastNamaste > 1200) {
+      // Fast, natural re-arming: unclasping hands for ~2-3 frames & 800ms cooldown re-arms detection
+      if (this.namasteFrames <= 1 && timeSinceLastNamaste > 800) {
         this.namasteTriggered = false;
       }
     }
@@ -846,6 +862,31 @@ export class BodyTracker {
       }
     }
     this.ctx.shadowBlur = 0;
+
+    // Visual Namaste Glow Feedback Indicator in PIP
+    const lWr = lm[15];
+    const rWr = lm[16];
+    if (this.isHoldingNamaste && lWr && rWr) {
+      const cx = (lWr.x + rWr.x) * 0.5 * w;
+      const cy = (lWr.y + rWr.y) * 0.5 * h;
+      this.ctx.save();
+      this.ctx.beginPath();
+      this.ctx.arc(cx, cy, 20, 0, Math.PI * 2);
+      this.ctx.fillStyle = 'rgba(250, 204, 21, 0.40)';
+      this.ctx.strokeStyle = '#fde047';
+      this.ctx.lineWidth = 2.5;
+      this.ctx.shadowColor = '#facc15';
+      this.ctx.shadowBlur = 16;
+      this.ctx.fill();
+      this.ctx.stroke();
+
+      this.ctx.font = 'bold 15px system-ui, sans-serif';
+      this.ctx.textAlign = 'center';
+      this.ctx.textBaseline = 'middle';
+      this.ctx.shadowBlur = 0;
+      this.ctx.fillText('🙏', cx, cy);
+      this.ctx.restore();
+    }
   }
 
   clearSkeletonCanvas() {

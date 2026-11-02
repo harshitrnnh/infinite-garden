@@ -231,7 +231,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   // EASTER EGG: Namaste Mudra Sprouting
   // When the dancer performs Namaste gesture, a new living flower branch sprouts with golden spores!
   let namasteToastTimeout = null;
-  const showNamasteEasterEggToast = (speciesName = '') => {
+  const showNamasteEasterEggToast = (speciesName = '', isFullBloom = false) => {
     let pill = document.getElementById('namaste-easter-egg-pill');
     if (!pill) {
       pill = document.createElement('div');
@@ -240,7 +240,11 @@ document.addEventListener('DOMContentLoaded', async () => {
       document.body.appendChild(pill);
     }
     const flowerLabel = speciesName ? speciesName.charAt(0).toUpperCase() + speciesName.slice(1) : 'flower';
-    pill.innerHTML = `<span>🙏</span> <span>Namaste! A new branch sprouted on ${flowerLabel}</span>`;
+    if (isFullBloom) {
+      pill.innerHTML = `<span>🙏</span> <span>Namaste! ${flowerLabel} is in full bloom</span>`;
+    } else {
+      pill.innerHTML = `<span>🙏</span> <span>Namaste! A new branch sprouted on ${flowerLabel}</span>`;
+    }
     pill.classList.remove('hidden');
 
     clearTimeout(namasteToastTimeout);
@@ -258,8 +262,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     const currentBranches = (plant && typeof plant.getNamasteBranchCount === 'function')
       ? plant.getNamasteBranchCount()
       : 0;
+
+    const activeSpecies = plant?.currentSpecies || currentSpecies || 'flower';
+
     if (currentBranches >= 2) {
-      console.log('🙏 Namaste detected, but maximum branches (2) already sprouted.');
+      console.log('🙏 Namaste detected! (Flower already at full 2-branch capacity)');
+      if (garden && typeof garden.addSporeBurst === 'function') {
+        garden.addSporeBurst(50);
+      }
+      showNamasteEasterEggToast(activeSpecies, true);
       return;
     }
 
@@ -270,8 +281,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (garden && typeof garden.addSporeBurst === 'function') {
       garden.addSporeBurst(80);
     }
-    const activeSpecies = plant?.currentSpecies || currentSpecies || 'flower';
-    showNamasteEasterEggToast(activeSpecies);
+    showNamasteEasterEggToast(activeSpecies, false);
   };
 
   // Start vision model only on creator station (keeps TV display ultra-lean)
