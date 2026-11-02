@@ -773,7 +773,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const len = flowerNameInput.value.length;
     if (charNum) charNum.textContent = len;
     if (titleCharCount) {
-      if (len >= 20) {
+      if (len >= 25) {
         titleCharCount.classList.add('limit-reached');
       } else {
         titleCharCount.classList.remove('limit-reached');
@@ -797,7 +797,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Instagram Postcard & Dynamic Mobile QR Generator (Points directly to Infinite Garden Meadow)
   const getShareUrl = (flowerNameToSearch = null) => {
-    const name = flowerNameToSearch || flowerNameInput?.value?.trim()?.slice(0, 20);
+    const name = flowerNameToSearch || flowerNameInput?.value?.trim()?.slice(0, 25);
     if (name && name.toLowerCase() !== 'luna bloom') {
       return `https://collective-bloom-kappa.vercel.app/infinite-garden?search=${encodeURIComponent(name)}`;
     }
@@ -806,8 +806,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   const getPostcardMeta = () => {
     const speciesMeta = CHOREOGRAPHY_SPECIES_META[currentSpecies] || FLOWER_SPECIES[currentSpecies] || {};
-    const inputTitle = flowerNameInput?.value.trim().slice(0, 20);
-    const inputDancer = choreographerInput?.value.trim();
+    const inputTitle = flowerNameInput?.value.trim().slice(0, 25);
+    const inputDancer = choreographerInput?.value.trim().slice(0, 25);
     const cleanDancer = (inputDancer && inputDancer.toLowerCase() !== 'devcon gardener' && inputDancer.toLowerCase() !== 'anonymous dancer') ? inputDancer : '';
     return {
       flowerName: inputTitle || speciesMeta.name || 'Living Flower',
@@ -956,7 +956,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   randomNameBtn.addEventListener('click', () => {
-    flowerNameInput.value = getRandomPoeticName().slice(0, 20);
+    flowerNameInput.value = getRandomPoeticName().slice(0, 25);
     updateTitleCharCount();
   });
 
@@ -1148,9 +1148,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (plantingEmailBtn) {
     plantingEmailBtn.addEventListener('click', async () => {
       if (!lastRecordedChoreography) return;
-      const flowerName = flowerNameInput.value.trim().slice(0, 20) || (CHOREOGRAPHY_SPECIES_META[currentSpecies]?.name || 'Living Flower');
-      const choreographerName = (choreographerInput.value.trim() && choreographerInput.value.trim().toLowerCase() !== 'devcon gardener' && choreographerInput.value.trim().toLowerCase() !== 'anonymous dancer')
-        ? choreographerInput.value.trim()
+      const flowerName = flowerNameInput.value.trim().slice(0, 25) || (CHOREOGRAPHY_SPECIES_META[currentSpecies]?.name || 'Living Flower');
+      const rawChoreographer = choreographerInput.value.trim().slice(0, 25);
+      const choreographerName = (rawChoreographer && rawChoreographer.toLowerCase() !== 'devcon gardener' && rawChoreographer.toLowerCase() !== 'anonymous dancer')
+        ? rawChoreographer
         : '';
       const visitorEmail = visitorEmailInput ? visitorEmailInput.value.trim() : '';
 
@@ -1174,7 +1175,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (plantingDownloadBtn) {
     plantingDownloadBtn.addEventListener('click', () => {
       if (!lastRecordedChoreography) return;
-      const flowerName = flowerNameInput.value.trim().slice(0, 20) || (CHOREOGRAPHY_SPECIES_META[currentSpecies]?.name || 'Living Flower');
+      const flowerName = flowerNameInput.value.trim().slice(0, 25) || (CHOREOGRAPHY_SPECIES_META[currentSpecies]?.name || 'Living Flower');
       downloadChoreographyToLocalDisk(flowerName, currentSpecies, lastRecordedChoreography);
       const origText = plantingDownloadBtn.textContent;
       plantingDownloadBtn.textContent = '✅ Saved to Disk!';
@@ -1187,9 +1188,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   plantingSubmitBtn.addEventListener('click', () => {
     if (!lastRecordedChoreography) return;
 
-    const flowerName = flowerNameInput.value.trim().slice(0, 20) || (CHOREOGRAPHY_SPECIES_META[currentSpecies]?.name || 'Living Flower');
-    const choreographerName = (choreographerInput.value.trim() && choreographerInput.value.trim().toLowerCase() !== 'devcon gardener' && choreographerInput.value.trim().toLowerCase() !== 'anonymous dancer')
-      ? choreographerInput.value.trim()
+    const flowerName = flowerNameInput.value.trim().slice(0, 25) || (CHOREOGRAPHY_SPECIES_META[currentSpecies]?.name || 'Living Flower');
+    const rawChoreographer = choreographerInput.value.trim().slice(0, 25);
+    const choreographerName = (rawChoreographer && rawChoreographer.toLowerCase() !== 'devcon gardener' && rawChoreographer.toLowerCase() !== 'anonymous dancer')
+      ? rawChoreographer
       : '';
     const wantEmail = sendEmailToggle ? sendEmailToggle.checked : true;
     const visitorEmail = visitorEmailInput ? visitorEmailInput.value.trim() : '';

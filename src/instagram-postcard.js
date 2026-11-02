@@ -207,9 +207,15 @@ export class InstagramPostcardGenerator {
       ? meta.flowerName.trim()
       : (meta.speciesName || 'Living Flower');
     ctx.textAlign = 'left';
-    ctx.font = '700 30px "Cinzel", "Playfair Display", Georgia, serif';
     ctx.fillStyle = '#ffffff';
     ctx.letterSpacing = '0.8px';
+    let titleFontSize = 30;
+    ctx.font = `700 ${titleFontSize}px "Cinzel", "Playfair Display", Georgia, serif`;
+    const maxTitleW = qrImage ? (cardW - 240) : (cardW - 52);
+    while (ctx.measureText(displayFlowerTitle).width > maxTitleW && titleFontSize > 18) {
+      titleFontSize -= 1;
+      ctx.font = `700 ${titleFontSize}px "Cinzel", "Playfair Display", Georgia, serif`;
+    }
     ctx.fillText(displayFlowerTitle, cardX + 26, cardY + 54);
 
     // 2. Choreographer Name:
@@ -223,11 +229,18 @@ export class InstagramPostcardGenerator {
 
     let choreoLineY = cardY + 84;
     if (hasDancer) {
-      ctx.font = '500 14px system-ui, -apple-system, sans-serif';
+      const speciesSuffix = meta.speciesName ? ` • ${meta.speciesName}` : '';
+      const choreoText = `Choreographed by ${rawDancer}${speciesSuffix}`;
+      let choreoFontSize = 14;
+      ctx.font = `500 ${choreoFontSize}px system-ui, -apple-system, sans-serif`;
       ctx.fillStyle = '#8eb697';
       ctx.letterSpacing = '0.4px';
-      const speciesSuffix = meta.speciesName ? ` • ${meta.speciesName}` : '';
-      ctx.fillText(`Choreographed by ${rawDancer}${speciesSuffix}`, cardX + 26, choreoLineY);
+      const maxChoreoW = qrImage ? (cardW - 240) : (cardW - 52);
+      while (ctx.measureText(choreoText).width > maxChoreoW && choreoFontSize > 10.5) {
+        choreoFontSize -= 0.5;
+        ctx.font = `500 ${choreoFontSize}px system-ui, -apple-system, sans-serif`;
+      }
+      ctx.fillText(choreoText, cardX + 26, choreoLineY);
     } else if (meta.speciesName && (displayFlowerTitle || '').toLowerCase() !== meta.speciesName.toLowerCase()) {
       ctx.font = '500 14px system-ui, -apple-system, sans-serif';
       ctx.fillStyle = '#8eb697';
