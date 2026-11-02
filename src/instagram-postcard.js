@@ -424,9 +424,13 @@ export class InstagramPostcardGenerator {
 
     const video = document.createElement('video');
     video.muted = true;
+    video.defaultMuted = true;
     video.playsInline = true;
+    video.setAttribute('playsinline', '');
+    video.setAttribute('muted', '');
     video.loop = false; // NEVER loop!
     video.preload = 'auto';
+    video.autoplay = true;
     // Positioned in viewport behind content so modern browsers decode all frames at full rate
     video.style.position = 'fixed';
     video.style.left = '0px';
@@ -441,38 +445,34 @@ export class InstagramPostcardGenerator {
     }
     video.src = URL.createObjectURL(videoBlob);
 
-    await new Promise((resolve) => {
-      let resolved = false;
-      const done = () => {
-        if (!resolved) {
-          resolved = true;
-          resolve();
-        }
-      };
-      video.onloadeddata = () => {
-        video.currentTime = 0;
-        done();
-      };
-      video.oncanplay = () => {
-        video.currentTime = 0;
-        done();
-      };
-      video.onloadedmetadata = () => {
-        video.currentTime = 0;
-        done();
-      };
-      video.onerror = done;
-      setTimeout(done, 1500); // Fail-safe
-    });
+    // Wait for video to load initial frames without ANY currentTime seeks.
+    // In-memory MediaRecorder blobs do not contain seek index cues; seeking traps Chromium in 'seeking: true'.
+    if (video.readyState < 2) {
+      await new Promise((resolve) => {
+        let resolved = false;
+        const done = () => {
+          if (!resolved) {
+            resolved = true;
+            resolve();
+          }
+        };
+        video.oncanplay = done;
+        video.onloadeddata = done;
+        video.onerror = done;
+        setTimeout(done, 1500); // Fail-safe
+      });
+    }
+
+    // Start video playback first so decoding pipeline is active and advancing frames
+    try {
+      await video.play();
+    } catch (err) {
+      console.warn('[Postcard] video.play notice:', err);
+    }
 
     // The full recorded choreography session duration is strictly 10.0 seconds
     const targetDuration = 10.0;
     const { recorder, stop, mimeType } = this.startPostcardVideoRecording(25);
-
-    try {
-      video.currentTime = 0;
-      await video.play();
-    } catch (_) {}
 
     return new Promise((resolve) => {
       let isDone = false;
@@ -499,6 +499,11 @@ export class InstagramPostcardGenerator {
         const elapsed = (performance.now() - startTime) / 1000;
         const progress = Math.min(1.0, elapsed / targetDuration);
 
+        // Keep video playing and actively advancing frames
+        if (video.paused && !video.ended && elapsed < targetDuration) {
+          video.play().catch(() => {});
+        }
+
         this.renderFrame(video, meta, qrImage);
 
         if (typeof onProgress === 'function') {
@@ -507,7 +512,7 @@ export class InstagramPostcardGenerator {
 
         // Record the complete 10-second choreography session
         // (Runs for full 10.0s so the postcard video is identical in length to the raw recording)
-        if (elapsed >= targetDuration || (elapsed >= 9.85 && video.ended)) {
+        if (elapsed >= targetDuration) {
           finishCapture();
         } else {
           requestAnimationFrame(frameStep);
