@@ -916,11 +916,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       plantingInstagramBtn.disabled = true;
 
       try {
-        if (lastRecordedChoreography.postcardVideoBlob) {
-          const ext = lastRecordedChoreography.postcardVideoBlob.type.includes('mp4') ? 'mp4' : 'webm';
-          const filename = `Collective_Bloom_${(meta.flowerName || 'Bloom').replace(/[^a-zA-Z0-9_-]/g, '_')}_Devcon_2026.${ext}`;
-          downloadToDisk(lastRecordedChoreography.postcardVideoBlob, filename, lastRecordedChoreography.postcardVideoBlob.type);
-        } else if (lastRecordedChoreography.videoBlob) {
+        if (lastRecordedChoreography.videoBlob) {
           if (igBtnLabel) igBtnLabel.textContent = 'Rendering Story...';
           const shareQrUrl = getShareUrl(meta.flowerName);
           const result = await instagramPostcard.compositeVideoFromBlob(
@@ -932,6 +928,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
           );
           downloadToDisk(result.videoBlob, result.filename, result.mimeType);
+        } else if (lastRecordedChoreography.postcardVideoBlob) {
+          const ext = lastRecordedChoreography.postcardVideoBlob.type.includes('mp4') ? 'mp4' : 'webm';
+          const filename = `Collective_Bloom_${(meta.flowerName || 'Bloom').replace(/[^a-zA-Z0-9_-]/g, '_')}_Devcon_2026.${ext}`;
+          downloadToDisk(lastRecordedChoreography.postcardVideoBlob, filename, lastRecordedChoreography.postcardVideoBlob.type);
         } else {
           // Fallback if no video blob: export still postcard
           const still = await instagramPostcard.exportStillPostcardPNG();
@@ -1083,17 +1083,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
       }
 
-      // 2. Upload Postcard Video to Supabase Storage
-      // ALWAYS prioritize the authentic 10-second live captured postcard video recorded during the dance!
+      // 2. Composite and Upload 10-Second Postcard Video with User's Given Flower Name & Choreographer
       let postcardBlob = null;
-      if (lastRecordedChoreography.postcardVideoBlob && lastRecordedChoreography.postcardVideoBlob.size > 20000) {
-        postcardBlob = lastRecordedChoreography.postcardVideoBlob;
-        console.log('[Email Dispatch] Using authentic 10-second live recorded postcard video:', postcardBlob.size, 'bytes');
-      } else if (lastRecordedChoreography.videoBlob && lastRecordedChoreography.videoBlob.size > 2000) {
-        // Fallback: Re-composite from raw video ensuring full 10-second capture
+      if (lastRecordedChoreography.videoBlob && lastRecordedChoreography.videoBlob.size > 2000) {
         try {
           const compMeta = {
-            flowerName: flowerName || '',
+            flowerName: flowerName || (CHOREOGRAPHY_SPECIES_META[currentSpecies]?.name || 'Living Flower'),
             choreographer: choreographerName || '',
             speciesName: (CHOREOGRAPHY_SPECIES_META[currentSpecies] || FLOWER_SPECIES[currentSpecies] || {}).name || 'Botanical Wildflower',
             artworkTitle: 'Collective Bloom',
@@ -1101,6 +1096,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             eventTitle: 'Devcon, Mumbai 2026'
           };
           const shareQrUrl = getShareUrl(flowerName);
+          console.log('[Email Dispatch] Compositing 10s custom video postcard with flower name & choreographer:', compMeta);
           const compResult = await instagramPostcard.compositeVideoFromBlob(
             lastRecordedChoreography.videoBlob,
             compMeta,
@@ -1108,11 +1104,17 @@ document.addEventListener('DOMContentLoaded', async () => {
           );
           if (compResult && compResult.videoBlob && compResult.videoBlob.size > 50000) {
             postcardBlob = compResult.videoBlob;
-            console.log('[Email Dispatch] Postcard video composited fallback:', postcardBlob.size, 'bytes');
+            console.log('[Email Dispatch] 10s custom video postcard generated:', postcardBlob.size, 'bytes');
           }
         } catch (cErr) {
-          console.warn('[Email Dispatch] Postcard video compositing note:', cErr);
+          console.warn('[Email Dispatch] Custom postcard video compositing note:', cErr);
         }
+      }
+
+      // Fallback: If compositing was skipped or errored, use the simultaneous recording
+      if (!postcardBlob && lastRecordedChoreography.postcardVideoBlob && lastRecordedChoreography.postcardVideoBlob.size > 20000) {
+        postcardBlob = lastRecordedChoreography.postcardVideoBlob;
+        console.log('[Email Dispatch] Using fallback simultaneous recorded postcard video:', postcardBlob.size, 'bytes');
       }
 
       if (postcardBlob && postcardBlob.size > 20000) {

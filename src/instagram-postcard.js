@@ -202,8 +202,8 @@ export class InstagramPostcardGenerator {
     ctx.fill();
     ctx.stroke();
 
-    // 1. Flower Tag / Title (starts directly at top of card; nothing above it)
-    const displayFlowerTitle = (meta.flowerName && meta.flowerName.trim() && meta.flowerName.trim().toLowerCase() !== 'luna bloom')
+    // 1. Flower Tag / Title (name given by person)
+    const displayFlowerTitle = (meta.flowerName && meta.flowerName.trim())
       ? meta.flowerName.trim()
       : (meta.speciesName || 'Living Flower');
     ctx.textAlign = 'left';
@@ -425,14 +425,16 @@ export class InstagramPostcardGenerator {
     const video = document.createElement('video');
     video.muted = true;
     video.playsInline = true;
-    video.loop = false; // NEVER loop! Looping to 0.0s wipes out Namaste branches sprouted during recording!
-    // Must be in DOM offscreen so browser decodes all frames with GPU acceleration
+    video.loop = false; // NEVER loop!
+    video.preload = 'auto';
+    // Positioned in viewport behind content so modern browsers decode all frames at full rate
     video.style.position = 'fixed';
-    video.style.left = '-9999px';
-    video.style.top = '-9999px';
-    video.style.width = '1px';
-    video.style.height = '1px';
-    video.style.opacity = '0.01';
+    video.style.left = '0px';
+    video.style.top = '0px';
+    video.style.width = '480px';
+    video.style.height = '270px';
+    video.style.zIndex = '-9999';
+    video.style.opacity = '0.001';
     video.style.pointerEvents = 'none';
     if (typeof document !== 'undefined' && document.body) {
       document.body.appendChild(video);
@@ -447,33 +449,23 @@ export class InstagramPostcardGenerator {
           resolve();
         }
       };
+      video.onloadeddata = () => {
+        video.currentTime = 0;
+        done();
+      };
+      video.oncanplay = () => {
+        video.currentTime = 0;
+        done();
+      };
       video.onloadedmetadata = () => {
-        // Fix for Chrome WebM duration bug: seek to tail to force full cluster parsing
-        if (video.duration === Infinity || !isFinite(video.duration)) {
-          video.currentTime = 1e101;
-          video.ontimeupdate = () => {
-            video.ontimeupdate = null;
-            video.currentTime = 0;
-            video.onseeked = () => {
-              video.onseeked = null;
-              done();
-            };
-            setTimeout(done, 500);
-          };
-        } else {
-          video.currentTime = 0;
-          video.onseeked = () => {
-            video.onseeked = null;
-            done();
-          };
-          setTimeout(done, 300);
-        }
+        video.currentTime = 0;
+        done();
       };
       video.onerror = done;
       setTimeout(done, 1500); // Fail-safe
     });
 
-    // The full recorded choreography session duration is 10.0 seconds
+    // The full recorded choreography session duration is strictly 10.0 seconds
     const targetDuration = 10.0;
     const { recorder, stop, mimeType } = this.startPostcardVideoRecording(25);
 
@@ -513,13 +505,9 @@ export class InstagramPostcardGenerator {
           onProgress(progress, elapsed);
         }
 
-        // Finish ONLY after the full 10-second duration has elapsed (at least 9.6s minimum)!
-        // NEVER allow premature cutoff at 1s.
-        const isMinDurationMet = elapsed >= 9.6;
-        const isVideoAtEnd = isMinDurationMet && (video.ended ||
-          (video.duration && isFinite(video.duration) && video.currentTime >= (video.duration - 0.1)));
-
-        if (elapsed >= targetDuration || isVideoAtEnd) {
+        // Record the complete 10-second choreography session
+        // (Runs for full 10.0s so the postcard video is identical in length to the raw recording)
+        if (elapsed >= targetDuration || (elapsed >= 9.85 && video.ended)) {
           finishCapture();
         } else {
           requestAnimationFrame(frameStep);
