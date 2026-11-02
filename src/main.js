@@ -250,8 +250,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   };
 
   tracker.onNamaste = () => {
-    // Feature of branch getting added is active during countdown OR recording!
-    if (!choreographyRecorder || (!choreographyRecorder.isRecording && !choreographyRecorder.isCountingDown)) {
+    // Feature of branch getting added is strictly active ONLY while recording!
+    if (!choreographyRecorder || !choreographyRecorder.isRecording) {
       return;
     }
     console.log('🙏 Namaste detected! Sprouting new living flower branch...');
@@ -669,7 +669,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       tracker.namasteFrames = 0;
       tracker.namasteTriggered = false;
       if (typeof tracker.setNamasteDetectionEnabled === 'function') {
-        tracker.setNamasteDetectionEnabled(true);
+        tracker.setNamasteDetectionEnabled(false); // Disable during countdown so gestures don't prematurely sprout
       }
     }
 
@@ -687,6 +687,19 @@ document.addEventListener('DOMContentLoaded', async () => {
         recordingActiveHud.classList.remove('hidden');
         recordProgressBar.style.width = '0%';
         recordTimerText.textContent = '0.0s / 10.0s';
+
+        // Clean flower & tracker state right as 10s recording commences so it starts at strictly 0
+        if (plant && typeof plant.resetNamasteBranches === 'function') {
+          plant.resetNamasteBranches();
+        }
+        if (tracker) {
+          tracker.namasteCount = 0;
+          tracker.namasteFrames = 0;
+          tracker.namasteTriggered = false;
+          if (typeof tracker.setNamasteDetectionEnabled === 'function') {
+            tracker.setNamasteDetectionEnabled(true);
+          }
+        }
       },
       (progress, elapsedSec) => {
         recordProgressBar.style.width = `${Math.round(progress * 100)}%`;
@@ -701,11 +714,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         lastRecordedChoreography = result;
 
         // Save branches sprouted strictly during this recorded dance session (1 Namaste = 1 branch, capped to 2)
-        const branchesGrownDuringDance = Math.min(2, Math.max(
-          (plant && typeof plant.getNamasteBranchCount === 'function') ? plant.getNamasteBranchCount() : 0,
-          tracker?.namasteCount || 0,
-          result?.namasteBranchCount || 0
-        ));
+        const plantBranches = (plant && typeof plant.getNamasteBranchCount === 'function')
+          ? plant.getNamasteBranchCount()
+          : 0;
+        const branchesGrownDuringDance = Math.min(2, Math.max(0, plantBranches, tracker?.namasteCount || 0));
         lastRecordedChoreography.namasteBranchCount = branchesGrownDuringDance;
 
         // Keep the sprouted branches intact on plant so the postcard preview and thumbnail match exactly!

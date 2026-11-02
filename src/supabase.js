@@ -191,9 +191,10 @@ export async function fetchCloudChoreographies() {
       duration: row.duration,
       fps: row.fps,
       frames: row.frames,
-      namasteBranchCount: row.namaste_branch_count ||
-        (Array.isArray(row.frames) && row.frames.length > 0
-          ? Math.max(0, ...row.frames.map(f => f.namasteBranchCount || 0))
+      namasteBranchCount: (row.namaste_branch_count !== undefined && row.namaste_branch_count !== null)
+        ? Number(row.namaste_branch_count)
+        : (Array.isArray(row.frames) && row.frames.length > 0
+          ? Math.max(0, ...row.frames.map(f => Number(f.namasteBranchCount || 0)))
           : 0),
       videoUrl: row.video_url,
       timestamp: new Date(row.created_at).getTime(),
@@ -227,9 +228,10 @@ export function subscribeToNewBlooms(onNewBloomCallback) {
         { event: 'INSERT', schema: 'public', table: 'choreographies' },
         (payload) => {
           if (payload.new && typeof onNewBloomCallback === 'function') {
-            const extra = payload.new.namaste_branch_count ||
-              (Array.isArray(payload.new.frames) && payload.new.frames.length > 0
-                ? Math.max(0, ...payload.new.frames.map(f => f.namasteBranchCount || 0))
+            const extra = (payload.new.namaste_branch_count !== undefined && payload.new.namaste_branch_count !== null)
+              ? Number(payload.new.namaste_branch_count)
+              : (Array.isArray(payload.new.frames) && payload.new.frames.length > 0
+                ? Math.max(0, ...payload.new.frames.map(f => Number(f.namasteBranchCount || 0)))
                 : 0);
             onNewBloomCallback({
               ...payload.new,

@@ -943,10 +943,15 @@ export class CommunityGardenManager {
     plant.setScale(scale);
 
     // Recreate any extra branches sprouted via Namaste gesture (1 Namaste = 1 branch, capped to 2)
-    const extraBranches = Math.min(2, Math.max(0, flowerData.namasteBranchCount || flowerData.extraBranches ||
-      (Array.isArray(flowerData.frames) && flowerData.frames.length > 0
-        ? Math.max(0, ...flowerData.frames.map(f => f.namasteBranchCount || 0))
-        : 0)));
+    let rawBranchCount = 0;
+    if (flowerData.namasteBranchCount !== undefined && flowerData.namasteBranchCount !== null) {
+      rawBranchCount = Number(flowerData.namasteBranchCount);
+    } else if (flowerData.extraBranches !== undefined && flowerData.extraBranches !== null) {
+      rawBranchCount = Number(flowerData.extraBranches);
+    } else if (Array.isArray(flowerData.frames) && flowerData.frames.length > 0) {
+      rawBranchCount = Math.max(0, ...flowerData.frames.map(f => Number(f.namasteBranchCount || 0)));
+    }
+    const extraBranches = Math.min(2, Math.max(0, isNaN(rawBranchCount) ? 0 : rawBranchCount));
     if (extraBranches > 0 && typeof plant.sproutNamasteBranch === 'function') {
       for (let b = 0; b < extraBranches; b++) {
         plant.sproutNamasteBranch();
