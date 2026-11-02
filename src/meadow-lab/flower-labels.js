@@ -148,6 +148,24 @@ export class FlowerLabelSystem {
   }
 
   /**
+   * Remove and clean up label attached to a flowerGroup
+   */
+  removeLabel(flowerGroup) {
+    if (!flowerGroup) return;
+    const idx = this.labels.findIndex(l => l.flowerGroup === flowerGroup);
+    if (idx !== -1) {
+      const lbl = this.labels[idx];
+      if (lbl.css2dObj) {
+        if (lbl.css2dObj.parent) lbl.css2dObj.parent.remove(lbl.css2dObj);
+        if (lbl.pill && lbl.pill.parentElement) {
+          lbl.pill.parentElement.removeChild(lbl.pill);
+        }
+      }
+      this.labels.splice(idx, 1);
+    }
+  }
+
+  /**
    * Helper: Normalize string for robust, case-agnostic comparison
    */
   normalizeStr(str) {

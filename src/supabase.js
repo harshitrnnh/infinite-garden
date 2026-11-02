@@ -176,7 +176,7 @@ export async function fetchCloudChoreographies() {
       .from('choreographies')
       .select('*')
       .order('created_at', { ascending: false })
-      .limit(200);
+      .limit(1000);
 
     if (error) {
       console.warn('Error fetching cloud choreographies:', error.message);

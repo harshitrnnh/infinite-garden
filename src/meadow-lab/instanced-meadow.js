@@ -410,7 +410,7 @@ export class InstancedBotanicalMeadow {
     while (this.group.children.length > 0) {
       const child = this.group.children[0];
       this.group.remove(child);
-      if (child.geometry) child.geometry.dispose();
+      if (typeof child.dispose === 'function') child.dispose();
     }
     this.instancedMeshes = {};
     this.instances = [];

@@ -194,10 +194,11 @@ class MeadowVisualLab {
     this.labelSystem = null;
     this.butterflies = null;
     this.instancedMeadow = new InstancedBotanicalMeadow(this.sceneEnv.scene);
+    this.instancedList = [];
     this.flowerNames = [];  // parallel array to this.flowers
     this.windStrength = 1.0;
     this.currentHeroPalette = 'periwinkle';
-    this.flowerCount = 50; // Default to 50 simulated flowers
+    this.flowerCount = 1000; // Default to 1,000 living meadow flowers
 
     // Choreography Simulation State
     this.currentDanceId = 'random100'; // Default to 100 Random Dancers!
@@ -260,10 +261,10 @@ class MeadowVisualLab {
       }
     } catch (_) {}
 
-    return list;
+    return list.slice(0, 1000);
   }
 
-  initMeadow(count = 50) {
+  initMeadow(count = 1000) {
     this.flowerCount = count;
 
     // Reset name deck so every initMeadow gets a fresh deterministic shuffle
@@ -313,8 +314,8 @@ class MeadowVisualLab {
     // Terrain elevation function matching meadow-scene.js ground plane
     const getTerrainY = (x, z) => this.getTerrainHeight(x, z);
 
-    // Dynamic field radius based on requested density (46m for 2,000 flowers!)
-    const maxGladeRadius = count > 500 ? 46.0 : (count > 200 ? 25.0 : 12.5);
+    // Dynamic field radius based on requested density (42m for 1,000 flowers across 130m terrain)
+    const maxGladeRadius = count >= 2000 ? 54.0 : (count >= 1000 ? 42.0 : (count > 500 ? 32.0 : (count > 200 ? 25.0 : 14.5)));
 
     // High-performance spatial grid for O(1) clearance & collision testing
     const cellSize = 3.0;
@@ -356,24 +357,24 @@ class MeadowVisualLab {
     };
 
     // 1. Place visitor-planted flowers first, spread across the 2D area in 360 degrees
-    const userPlanted = this.getUserPlantedFlowers();
+    const userPlanted = this.getUserPlantedFlowers().slice(0, count);
     userPlanted.forEach((pData, idx) => {
       let slot = null;
-      for (let r = 2.4; r <= 24.0 && !slot; r += 0.5) {
-        const step = Math.max(0.12, 2.5 / r);
+      for (let r = 2.4; r <= maxGladeRadius - 2.5 && !slot; r += 0.5) {
+        const step = Math.max(0.08, 1.8 / r);
         const phase = (idx * 2.39996) % (Math.PI * 2);
         for (let th = 0; th < Math.PI * 2; th += step) {
           const ang = th + phase;
           const x = Math.cos(ang) * r;
           const z = Math.sin(ang) * r;
-          if (isPositionClear(x, z, 2.5)) {
+          if (isPositionClear(x, z, 1.8)) {
             slot = { x: Number(x.toFixed(3)), z: Number(z.toFixed(3)) };
             break;
           }
         }
       }
       if (!slot) {
-        slot = this.findClearPlantedSlot(2.5);
+        slot = this.findClearPlantedSlot(1.8, maxGladeRadius);
       }
 
       insertGrid(slot);
@@ -405,17 +406,15 @@ class MeadowVisualLab {
       'periwinkle'
     ];
 
-    // For 2,000 flowers:
-    // First 70 flowers are full articulated skeletons (hero glade)
-    // Remaining ~1,930 flowers use high-performance instanced botanical rendering (60 FPS!)
-    const numArticulated = count <= 150 ? count : 70;
+    // Ensure all visitor flowers are articulated, plus at least 50 articulated flowers in the hero glade
+    const numArticulated = Math.min(count, Math.max(70, userPlanted.length + 30));
     const instancedList = [];
 
     // 3. True 2D Area Golden-Angle Distribution across the vast meadow
     const goldenAngle = 2.39996323;
     let attempt = 0;
     let ring = 0;
-    const maxAttempts = count * 2200;
+    const maxAttempts = count * 3000;
 
     while (this.flowers.length < count && attempt < maxAttempts) {
       attempt++;
@@ -423,11 +422,11 @@ class MeadowVisualLab {
 
       const progress = this.flowers.length / count;
       // Area-uniform radial expansion from 1.6m out to maxGladeRadius
-      const baseRadius = 1.60 + Math.sqrt(progress) * (maxGladeRadius - 1.60);
+      const baseRadius = 1.60 + Math.sqrt(progress) * (maxGladeRadius - 1.80);
       const radius = baseRadius + (Math.sin(ring * 1.8) * 0.45);
       const angle = ring * goldenAngle + (Math.cos(ring * 2.3) * 0.30);
 
-      const r = Math.max(1.4, Math.min(maxGladeRadius, radius + (Math.random() - 0.5) * 0.35));
+      const r = Math.max(1.5, Math.min(maxGladeRadius, radius + (Math.random() - 0.5) * 0.35));
       const theta = angle + (Math.random() - 0.5) * 0.25;
 
       // Full 360-degree 2D area coverage across ALL sides of the rolling landscape
@@ -435,8 +434,10 @@ class MeadowVisualLab {
       const z = Math.sin(theta) * r;
 
       // Guaranteed non-intersection clearance:
-      // Inner glade has generous clearance; outer vast field maintains strict 0.95m clearance
-      const reqDist = count > 500 ? (r < 8.0 ? 1.45 : (r < 22.0 ? 1.15 : 0.95)) : 1.85;
+      // Inner glade has generous clearance; outer field maintains strict 1.25m clearance (petals never collide)
+      const reqDist = count >= 1000
+        ? (r < 10.0 ? 1.70 : (r < 24.0 ? 1.40 : 1.25))
+        : (count > 500 ? (r < 8.0 ? 1.45 : 1.15) : 1.85);
 
       if (isPositionClear(x, z, reqDist)) {
         insertGrid({ x, z });
@@ -485,7 +486,7 @@ class MeadowVisualLab {
           };
           instancedList.push(instData);
 
-          // Lightweight proxy so search & stats track all 2,000 flowers
+          // Lightweight proxy so search & stats track all flowers
           this.flowers.push({
             id: `inst_${flowerIdx}`,
             name: flowerName,
@@ -505,6 +506,7 @@ class MeadowVisualLab {
       }
     }
 
+    this.instancedList = instancedList;
     // Populate the high-performance instanced botanical sea
     if (instancedList.length > 0 && this.instancedMeadow) {
       this.instancedMeadow.populate(instancedList);
@@ -777,11 +779,20 @@ class MeadowVisualLab {
     if (overviewBtn) overviewBtn.classList.add('active');
   }
 
-  findClearPlantedSlot(minDist = 2.6) {
-    // 360-degree radial candidate search across the meadow glade (up to 38m radius)
-    // with large 2.6m minimum clearance to guarantee no leaf or petal intersection
-    for (let r = 2.4; r <= 38.0; r += 0.5) {
-      const stepAngle = Math.max(0.10, minDist / r);
+  scheduleInstancedRebuild() {
+    clearTimeout(this._instancedRebuildTimer);
+    this._instancedRebuildTimer = setTimeout(() => {
+      if (this.instancedMeadow && this.instancedList) {
+        this.instancedMeadow.populate(this.instancedList);
+      }
+    }, 40);
+  }
+
+  findClearPlantedSlot(minDist = 1.8, maxR = 40.0) {
+    // 360-degree radial candidate search across the meadow glade (up to maxR radius)
+    // with 1.8m minimum clearance to guarantee no leaf or petal intersection
+    for (let r = 2.4; r <= maxR - 2.0; r += 0.5) {
+      const stepAngle = Math.max(0.08, minDist / r);
       const phase = Math.random() * Math.PI * 2;
       for (let theta = 0; theta < Math.PI * 2; theta += stepAngle) {
         const ang = theta + phase;
@@ -790,7 +801,7 @@ class MeadowVisualLab {
 
         // Skip camera vantage point
         if (Math.hypot(x - 0.3, z - 1.8) < 1.4) continue;
-        if (Math.hypot(x, z) > 42.0) continue;
+        if (Math.hypot(x, z) > maxR) continue;
 
         let clear = true;
         for (let i = 0; i < this.flowers.length; i++) {
@@ -799,8 +810,7 @@ class MeadowVisualLab {
           if (!pos) continue;
           const dx = x - pos.x;
           const dz = z - pos.z;
-          // Dedicated user-planted flowers get extra generous clearance (2.8m)
-          const req = fl.isPlanted ? 2.8 : minDist;
+          const req = fl.isPlanted ? Math.max(minDist, 1.8) : minDist;
           if (dx * dx + dz * dz < req * req) {
             clear = false;
             break;
@@ -819,11 +829,49 @@ class MeadowVisualLab {
       const exists = this.flowers.find(f => f.isPlanted && (f.id === flowerData.id || f.name.toLowerCase() === flowerData.name.toLowerCase()));
       if (exists) return exists;
 
-      // Find guaranteed non-overlapping position with generous 2.4m clearance
-      const slot = this.findClearPlantedSlot(2.4);
-      const groundY = Math.sin(slot.x * 0.25) * Math.cos(slot.z * 0.25) * 0.35 +
-                      Math.sin(slot.x * 0.08 + slot.z * 0.08) * 0.40 -
-                      Math.hypot(slot.x, slot.z) * 0.006;
+      let slot = null;
+
+      // Maintain exact capacity (1000 flowers):
+      // Replace 1 simulated flower first (articulated or instanced)
+      const simIdx = this.flowers.findIndex(f => !f.isPlanted);
+      if (simIdx !== -1) {
+        const replacedSim = this.flowers[simIdx];
+        const p = replacedSim.group ? replacedSim.group.position : replacedSim.position;
+        slot = { x: Number(p.x.toFixed(3)), z: Number(p.z.toFixed(3)) };
+
+        // Remove simulated flower and its label
+        if (replacedSim.group) {
+          if (this.labelSystem) this.labelSystem.removeLabel(replacedSim.group);
+          if (typeof replacedSim.dispose === 'function') replacedSim.dispose();
+          this.sceneEnv.scene.remove(replacedSim.group);
+        }
+        if (replacedSim.isInstanced && this.instancedList) {
+          const instIdx = this.instancedList.findIndex(item => item.name === replacedSim.name || (Math.abs(item.x - slot.x) < 0.05 && Math.abs(item.z - slot.z) < 0.05));
+          if (instIdx !== -1) {
+            this.instancedList.splice(instIdx, 1);
+            this.scheduleInstancedRebuild();
+          }
+        }
+        this.flowers.splice(simIdx, 1);
+      } else if (this.flowers.length >= this.flowerCount) {
+        // If all 1000 are already recorded visitor flowers, replace the oldest (last in list)
+        const oldest = this.flowers.pop();
+        if (oldest) {
+          const p = oldest.group ? oldest.group.position : oldest.position;
+          slot = { x: Number(p.x.toFixed(3)), z: Number(p.z.toFixed(3)) };
+          if (oldest.group) {
+            if (this.labelSystem) this.labelSystem.removeLabel(oldest.group);
+            if (typeof oldest.dispose === 'function') oldest.dispose();
+            this.sceneEnv.scene.remove(oldest.group);
+          }
+        }
+      }
+
+      if (!slot) {
+        slot = this.findClearPlantedSlot(1.8, 42.0);
+      }
+
+      const groundY = this.getTerrainHeight(slot.x, slot.z);
 
       const planted = new PlantedChoreographyFlower(flowerData, slot, true);
       planted.setPosition(slot.x, groundY, slot.z);
@@ -840,12 +888,12 @@ class MeadowVisualLab {
         });
       }
 
-      // Cache locally on device so reloads retain cloud plants even offline
+      // Cache locally on device so reloads retain cloud plants even offline (up to 1000)
       try {
         const userPlants = JSON.parse(localStorage.getItem('botanical_garden_user_plants') || '[]');
         if (!userPlants.some(p => p.id === flowerData.id || p.name === flowerData.name)) {
           userPlants.unshift(flowerData);
-          localStorage.setItem('botanical_garden_user_plants', JSON.stringify(userPlants.slice(0, 100)));
+          localStorage.setItem('botanical_garden_user_plants', JSON.stringify(userPlants.slice(0, 1000)));
         }
       } catch (_) {}
 
@@ -1248,7 +1296,7 @@ class MeadowVisualLab {
       let matchedFlowers = this.flowers.filter(f => (f.name || '').toLowerCase().includes(qLower));
 
       // 2. On-Demand Cloud Database Search:
-      // If flower is an earlier recording beyond the initial 200 loaded in memory, fetch it directly from Supabase!
+      // If flower is an earlier recording beyond the initial 1000 loaded in memory, fetch it directly from Supabase!
       if (matchedFlowers.length === 0 && q.length >= 2) {
         if (countEl) countEl.textContent = 'Searching garden archive...';
         try {
