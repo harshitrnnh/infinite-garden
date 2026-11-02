@@ -120,6 +120,13 @@ export class FlowerLabelSystem {
     }
     pill.dataset.flowerName = tagName.toLowerCase();
 
+    pill.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (typeof this.onTagClick === 'function') {
+        this.onTagClick(record);
+      }
+    });
+
     const obj = new CSS2DObject(pill);
     // Float the label directly above the bloom crown
     obj.position.set(0, 2.35, 0);

@@ -1073,9 +1073,21 @@ class MeadowVisualLab {
     this.toggleLabels = (forceState = null) => {
       this.labelsVisible = (forceState !== null) ? forceState : !this.labelsVisible;
       document.body.classList.toggle('labels-hidden', !this.labelsVisible);
+      document.body.classList.toggle('show-all-tags', this.labelsVisible);
 
       if (this.labelSystem) {
-        this.labelSystem.setVisible(this.labelsVisible);
+        this.labelSystem.setVisible(true);
+        this.labelSystem.update();
+      }
+
+      const allTagsBtn = document.getElementById('btn-toggle-all-tags');
+      if (allTagsBtn) {
+        allTagsBtn.classList.toggle('active', this.labelsVisible);
+        const labelText = allTagsBtn.querySelector('.tag-toggle-label');
+        if (labelText) {
+          labelText.textContent = this.labelsVisible ? 'Hide Tags' : 'All Tags';
+        }
+        allTagsBtn.title = this.labelsVisible ? 'Hide all flower name tags' : 'Show all flower name tags near flowers';
       }
 
       const toggleBtn = document.getElementById('btn-toggle-labels');
@@ -1103,6 +1115,21 @@ class MeadowVisualLab {
         toggleChip.classList.toggle('labels-off', !this.labelsVisible);
       }
     };
+
+    const allTagsBtn = document.getElementById('btn-toggle-all-tags');
+    if (allTagsBtn) {
+      allTagsBtn.addEventListener('click', () => this.toggleLabels());
+    }
+
+    // Clicking any floating flower tag swoops camera to spotlight that bloom
+    if (this.labelSystem) {
+      this.labelSystem.onTagClick = (lbl) => {
+        const match = this.flowers.find(f => (f.name || '').toLowerCase() === (lbl.name || '').toLowerCase());
+        if (match) {
+          this.focusOnFlowerWithGlow(match, 20);
+        }
+      };
+    }
 
     const toggleLabelsBtn = document.getElementById('btn-toggle-labels');
     if (toggleLabelsBtn) {
