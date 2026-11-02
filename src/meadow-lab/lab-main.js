@@ -53,11 +53,11 @@ class PlantedChoreographyFlower {
       this.morphology = new PeriwinkleMorphology();
     }
 
-    // Recreate any extra branches sprouted via Namaste gesture (before or during recording)!
-    const extraBranches = data.namasteBranchCount || data.extraBranches ||
+    // Recreate any extra branches sprouted via Namaste gesture (1 Namaste = 1 branch, capped to 2)
+    const extraBranches = Math.min(2, Math.max(0, data.namasteBranchCount || data.extraBranches ||
       (Array.isArray(this.frames) && this.frames.length > 0
         ? Math.max(0, ...this.frames.map(f => f.namasteBranchCount || 0))
-        : 0);
+        : 0)));
 
     if (extraBranches > 0 && this.morphology && this.morphology.stem && typeof this.morphology.stem.sproutNamasteBranch === 'function') {
       for (let b = 0; b < extraBranches; b++) {

@@ -54,11 +54,23 @@ export class BodyTracker {
     this.namasteFrames = 0;
     this.namasteTriggered = false;
     this.namasteCount = 0;
+    this.namasteDetectionEnabled = false;
+    this.lastNamasteTime = 0;
     this.setupMouseFallback();
   }
 
+  setNamasteDetectionEnabled(enabled) {
+    this.namasteDetectionEnabled = !!enabled;
+    if (!enabled) {
+      this.namasteFrames = 0;
+      this.namasteTriggered = false;
+    }
+  }
+
   triggerNamaste() {
+    if (!this.namasteDetectionEnabled) return;
     this.namasteCount = (this.namasteCount || 0) + 1;
+    this.lastNamasteTime = performance.now();
     console.log(`🙏 [Easter Egg] Namaste Pose confirmed! (Total: ${this.namasteCount})`);
     if (typeof this.onNamaste === 'function') {
       this.onNamaste();
@@ -704,7 +716,15 @@ export class BodyTracker {
     this.prevPose = { lWr: { ...lWr }, rWr: { ...rWr }, nose: { ...nose } };
 
     // 9. NAMASTE / ANJALI MUDRA POSE DETECTION (Easter Egg)
-    // Hands clasped together in front of the chest / sternum
+    // Hands clasped together in front of the chest / sternum.
+    // MUST strictly be active only during recording/countdown to prevent ghost triggers while typing!
+    if (!this.namasteDetectionEnabled) {
+      this.namasteFrames = 0;
+      this.namasteTriggered = false;
+      this.drawSkeleton(lm);
+      return;
+    }
+
     const avgWristX = (lWr.x + rWr.x) * 0.5;
     const avgWristY = (lWr.y + rWr.y) * 0.5;
 
@@ -717,17 +737,23 @@ export class BodyTracker {
       elbowDist > shoulderWidth * 0.65
     );
 
+    const now = performance.now();
+    const timeSinceLastNamaste = now - (this.lastNamasteTime || 0);
+
     if (isNamastePose) {
       this.namasteFrames = (this.namasteFrames || 0) + 1;
-      // Holding Namaste for ~14 frames (~0.45s) confirms the deliberate gesture
-      if (this.namasteFrames >= 14 && !this.namasteTriggered) {
+      // Holding Namaste for ~15 frames (~0.5s) confirms deliberate gesture.
+      // Must not already be triggered, and must have had a 3-second cooldown to avoid multiple triggers for 1 gesture.
+      if (this.namasteFrames >= 15 && !this.namasteTriggered && timeSinceLastNamaste > 3000) {
         this.namasteTriggered = true;
         this.triggerNamaste();
       }
     } else {
-      this.namasteFrames = Math.max(0, (this.namasteFrames || 0) - 2);
-      if (this.namasteFrames === 0) {
-        this.namasteTriggered = false; // Reset lock when hands release
+      this.namasteFrames = Math.max(0, (this.namasteFrames || 0) - 1);
+      // Hands must be clearly separated (wristDist > 0.60 * shoulderWidth)
+      // to unlock for any subsequent deliberate Namaste gesture
+      if (this.namasteFrames === 0 && wristDist > shoulderWidth * 0.60 && timeSinceLastNamaste > 2000) {
+        this.namasteTriggered = false;
       }
     }
 

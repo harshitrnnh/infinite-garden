@@ -112,9 +112,10 @@ export class InstagramPostcardGenerator {
     const sh = (sourceCanvas && (sourceCanvas.videoHeight || sourceCanvas.height)) || 0;
     if (sourceCanvas && sw > 0 && sh > 0) {
       // Postcard viewport runs between top header (y ≈ 125) and bottom metadata card (y ≈ 948)
-      const destY = 132;
-      const destH = 812;
-      const targetAspect = w / destH; // 720 / 812 ≈ 0.8867
+      // destY starts at 138 to leave comfortable clear margin under the COLLECTIVE BLOOM header divider
+      const destY = 138;
+      const destH = 804;
+      const targetAspect = w / destH; // 720 / 804 ≈ 0.8955
 
       // Center focus crop around the flower
       // ALWAYS keep sy = 0 so the entire flower crown and open sky headroom are 100% preserved!
@@ -149,13 +150,12 @@ export class InstagramPostcardGenerator {
       ctx.restore();
 
       // Soft compact vignette blend at top and bottom boundaries
-      // (Kept very shallow ~34px so it NEVER overlaps or cuts into flower petals!)
-      const topFade = ctx.createLinearGradient(0, destY, 0, destY + 34);
-      topFade.addColorStop(0, '#0c130f');
-      topFade.addColorStop(0.5, 'rgba(12, 19, 15, 0.5)');
+      // (Kept very shallow ~22px so it NEVER overlaps or cuts into flower petals!)
+      const topFade = ctx.createLinearGradient(0, destY, 0, destY + 22);
+      topFade.addColorStop(0, 'rgba(12, 19, 15, 0.45)');
       topFade.addColorStop(1, 'rgba(12, 19, 15, 0)');
       ctx.fillStyle = topFade;
-      ctx.fillRect(0, destY, w, 34);
+      ctx.fillRect(0, destY, w, 22);
 
       const botFade = ctx.createLinearGradient(0, destY + destH - 45, 0, destY + destH);
       botFade.addColorStop(0, 'rgba(16, 26, 20, 0)');
@@ -412,7 +412,7 @@ export class InstagramPostcardGenerator {
     const video = document.createElement('video');
     video.muted = true;
     video.playsInline = true;
-    video.loop = true; // Prevents browser from stalling before target duration
+    video.loop = false; // NEVER loop! Looping to 0.0s wipes out Namaste branches sprouted during recording!
     // Must be in DOM offscreen so browser decodes all frames with GPU acceleration
     video.style.position = 'fixed';
     video.style.left = '-9999px';
@@ -451,8 +451,10 @@ export class InstagramPostcardGenerator {
       setTimeout(done, 1500); // Fail-safe
     });
 
-    // The full recorded choreography session is strictly 10.0 seconds
-    const targetDuration = 10.0;
+    // The full recorded choreography session duration (up to 10.0 seconds)
+    const targetDuration = (video.duration && isFinite(video.duration) && video.duration > 1.5)
+      ? Math.min(10.0, video.duration)
+      : 10.0;
     const { recorder, stop, mimeType } = this.startPostcardVideoRecording(25);
 
     try {
@@ -464,15 +466,26 @@ export class InstagramPostcardGenerator {
       let isDone = false;
       const startTime = performance.now();
 
+      const finishCapture = () => {
+        if (isDone) return;
+        isDone = true;
+        try { video.pause(); } catch (_) {}
+        URL.revokeObjectURL(video.src);
+        if (video.parentNode) {
+          video.parentNode.removeChild(video);
+        }
+        stop().then((result) => {
+          resolve({
+            ...result,
+            filename: `Collective_Bloom_${(meta.flowerName || 'Bloom').replace(/[^a-zA-Z0-9_-]/g, '_')}_Devcon_2026.${result.extension}`
+          });
+        });
+      };
+
       const frameStep = () => {
         if (isDone) return;
         const elapsed = (performance.now() - startTime) / 1000;
         const progress = Math.min(1.0, elapsed / targetDuration);
-
-        // Watchdog: If playback paused prematurely before 10s, resume it immediately
-        if (video.paused && elapsed < targetDuration - 0.25) {
-          try { video.play(); } catch (_) {}
-        }
 
         this.renderFrame(video, meta, qrImage);
 
@@ -480,20 +493,14 @@ export class InstagramPostcardGenerator {
           onProgress(progress, elapsed);
         }
 
-        // Strictly guarantee the full 10.0 seconds of recording is captured
-        if (elapsed >= targetDuration) {
-          isDone = true;
-          try { video.pause(); } catch (_) {}
-          URL.revokeObjectURL(video.src);
-          if (video.parentNode) {
-            video.parentNode.removeChild(video);
-          }
-          stop().then((result) => {
-            resolve({
-              ...result,
-              filename: `Collective_Bloom_${(meta.flowerName || 'Bloom').replace(/[^a-zA-Z0-9_-]/g, '_')}_Devcon_2026.${result.extension}`
-            });
-          });
+        // Finish as soon as the recorded video reaches its natural end OR targetDuration elapsed!
+        // Because video.loop is false, the video does NOT loop back to t=0, so the Namaste branch
+        // remains 100% visible right through the final frame!
+        const isVideoAtEnd = video.ended ||
+          (video.duration && isFinite(video.duration) && video.currentTime >= (video.duration - 0.05));
+
+        if (elapsed >= targetDuration || isVideoAtEnd) {
+          finishCapture();
         } else {
           requestAnimationFrame(frameStep);
         }

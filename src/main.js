@@ -447,10 +447,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   if (isTabletBloom) {
     // Natural frontal portrait view with subtle top angle into petals & generous headroom so flower never cuts off
-    const TABLET_BLOOM_RADIUS = isLaptopBloom ? 4.60 : 5.15; // Generous distance ensuring full flower & tall stretches fit with clear headroom
+    const TABLET_BLOOM_RADIUS = isLaptopBloom ? 5.10 : 5.50; // Generous distance ensuring full flower & tall stretches fit with clear headroom
     const TABLET_BLOOM_PHI = 1.14; // Gently elevated top angle (~65° from vertical / ~25° above horizontal)
     const TABLET_BLOOM_THETA = 0.04; // Centered
-    const TABLET_BLOOM_LOOK_Y = 1.18; // Aimed comfortably on flower center & blossom
+    const TABLET_BLOOM_LOOK_Y = 1.32; // Aimed comfortably on flower center & blossom
 
     if (garden) {
       garden.defaultStudioRadius = TABLET_BLOOM_RADIUS;
@@ -668,6 +668,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       tracker.namasteCount = 0;
       tracker.namasteFrames = 0;
       tracker.namasteTriggered = false;
+      if (typeof tracker.setNamasteDetectionEnabled === 'function') {
+        tracker.setNamasteDetectionEnabled(true);
+      }
     }
 
     // Show countdown overlay & initialize cues at 5
@@ -690,16 +693,19 @@ document.addEventListener('DOMContentLoaded', async () => {
         recordTimerText.textContent = `${elapsedSec.toFixed(1)}s / 10.0s`;
       },
       (result) => {
-        // Recording complete: open planting dialog
+        // Recording complete: disable live namaste detection so typing does NOT add branches
+        if (tracker && typeof tracker.setNamasteDetectionEnabled === 'function') {
+          tracker.setNamasteDetectionEnabled(false);
+        }
         recordingActiveHud.classList.add('hidden');
         lastRecordedChoreography = result;
 
-        // Save branches sprouted during this recorded dance
-        const branchesGrownDuringDance = Math.max(
+        // Save branches sprouted strictly during this recorded dance session (1 Namaste = 1 branch, capped to 2)
+        const branchesGrownDuringDance = Math.min(2, Math.max(
           (plant && typeof plant.getNamasteBranchCount === 'function') ? plant.getNamasteBranchCount() : 0,
           tracker?.namasteCount || 0,
           result?.namasteBranchCount || 0
-        );
+        ));
         lastRecordedChoreography.namasteBranchCount = branchesGrownDuringDance;
 
         // Keep the sprouted branches intact on plant so the postcard preview and thumbnail match exactly!
@@ -710,6 +716,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   recordCancelBtn.addEventListener('click', () => {
     choreographyRecorder.cancel();
+    if (tracker && typeof tracker.setNamasteDetectionEnabled === 'function') {
+      tracker.setNamasteDetectionEnabled(false);
+    }
     recordCountdownOverlay.classList.add('hidden');
     recordingActiveHud.classList.add('hidden');
     // Post recording / cancel: reset flower to default
@@ -1157,15 +1166,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       return;
     }
 
-    // Compute total Namaste branches sprouted on the flower (before or during recording)
-    const heroStemBranches = (plant && typeof plant.getNamasteBranchCount === 'function')
-      ? plant.getNamasteBranchCount()
-      : 0;
-    const finalNamasteCount = Math.max(
-      heroStemBranches,
-      tracker?.namasteCount || 0,
-      lastRecordedChoreography?.namasteBranchCount || 0
-    );
+    // Use strictly the Namaste branches grown during the recorded dance session
+    // (Never read live tracker while typing, and clamp to max 2 extra branches)
+    const finalNamasteCount = Math.min(2, Math.max(0, Number(lastRecordedChoreography?.namasteBranchCount || 0)));
 
     // Plant in Communal Garden
     const newRecord = communityManager.plantNewFlower({

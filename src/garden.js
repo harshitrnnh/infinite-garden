@@ -22,10 +22,10 @@ export class GardenEnvironment {
     // Camera Modes: 'studio' (live creation), 'tv' (infinite garden on HDMI TV), 'panorama' (wide communal meadow), 'inspect' (close-up)
     this.cameraMode = 'studio';
     this.isSoloMode = false;
-    this.cameraGardenPos = new THREE.Vector3(0, 1.35, 3.85);
-    this.cameraGardenLook = new THREE.Vector3(0, 1.15, 0);
-    this.cameraSoloPos = new THREE.Vector3(0, 1.35, 3.85);
-    this.cameraSoloLook = new THREE.Vector3(0, 1.15, 0);
+    this.cameraGardenPos = new THREE.Vector3(0, 1.45, 4.45);
+    this.cameraGardenLook = new THREE.Vector3(0, 1.30, 0);
+    this.cameraSoloPos = new THREE.Vector3(0, 1.45, 4.45);
+    this.cameraSoloLook = new THREE.Vector3(0, 1.30, 0);
     this.cameraPanoramaPos = new THREE.Vector3(0, 2.3, 5.4);
     this.cameraPanoramaLook = new THREE.Vector3(0, 0.85, -1.0);
     this.inspectTargetPos = new THREE.Vector3();
@@ -33,10 +33,10 @@ export class GardenEnvironment {
     this.currentCameraLook = new THREE.Vector3().copy(this.cameraGardenLook);
 
     // Studio Mode Interactive View Angle & Zoom (Generous framing so entire flower & crown are visible at all times)
-    this.defaultStudioRadius = 3.85;
-    this.defaultStudioPhi = 1.18;
+    this.defaultStudioRadius = 4.45;
+    this.defaultStudioPhi = 1.16;
     this.defaultStudioTheta = 0.08;
-    this.defaultStudioLookY = 1.15;
+    this.defaultStudioLookY = 1.30;
     this.studioSpherical = { radius: this.defaultStudioRadius, theta: this.defaultStudioTheta, phi: this.defaultStudioPhi };
     this.targetStudioSpherical = { ...this.studioSpherical };
     this.studioLookAt = new THREE.Vector3(0, this.defaultStudioLookY, 0);
@@ -575,24 +575,38 @@ export class GardenEnvironment {
     return this.cameraMode;
   }
 
-  focusPlantedFlower(flowerRecord) {
+  focusPlantedFlower(flowerRecord, durationSeconds = 20) {
     if (!flowerRecord) return;
     this.cameraMode = 'inspect';
     const pos = flowerRecord.meta.position || { x: 0, y: 0, z: 0 };
     const offsetX = pos.x > 0 ? 0.35 : (pos.x < 0 ? -0.35 : 0);
     this.inspectTargetPos.set(pos.x + offsetX, 2.10, pos.z + 2.85);
     this.inspectTargetLook.set(pos.x, 0.85, pos.z);
+
+    // After 20 seconds of inspecting a searched or recently planted flower,
+    // smoothly pan out to the default view (elevated and zoomed out to showcase the garden)
+    clearTimeout(this.inspectPanTimeout);
+    this.inspectPanTimeout = setTimeout(() => {
+      if (this.cameraMode === 'inspect') {
+        if (this.isTvMode || document.body.classList.contains('tv-mode')) {
+          this.cameraMode = 'tv';
+        } else {
+          this.resetToStudio();
+        }
+      }
+    }, durationSeconds * 1000);
   }
 
   resetToStudio() {
+    clearTimeout(this.inspectPanTimeout);
     this.cameraMode = 'studio';
     if (this.targetStudioSpherical) {
-      this.targetStudioSpherical.radius = this.defaultStudioRadius || 3.85;
-      this.targetStudioSpherical.phi = this.defaultStudioPhi || 1.18;
+      this.targetStudioSpherical.radius = this.defaultStudioRadius || 4.45;
+      this.targetStudioSpherical.phi = this.defaultStudioPhi || 1.16;
       this.targetStudioSpherical.theta = this.defaultStudioTheta || 0.08;
     }
     if (this.studioLookAt) {
-      this.studioLookAt.set(0, this.defaultStudioLookY || 1.15, 0);
+      this.studioLookAt.set(0, this.defaultStudioLookY || 1.30, 0);
     }
   }
 
