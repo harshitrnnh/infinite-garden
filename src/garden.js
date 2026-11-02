@@ -32,11 +32,11 @@ export class GardenEnvironment {
     this.inspectTargetLook = new THREE.Vector3();
     this.currentCameraLook = new THREE.Vector3().copy(this.cameraGardenLook);
 
-    // Studio Mode Interactive View Angle & Zoom (Generous framing so entire flower & crown are visible at all times)
-    this.defaultStudioRadius = 4.45;
-    this.defaultStudioPhi = 1.16;
-    this.defaultStudioTheta = 0.08;
-    this.defaultStudioLookY = 1.30;
+    // Studio Mode Interactive View Angle & Zoom (Generous framing so entire flower & crown are visible at all times with open headroom)
+    this.defaultStudioRadius = 5.25;
+    this.defaultStudioPhi = 1.14;
+    this.defaultStudioTheta = 0.04;
+    this.defaultStudioLookY = 1.18;
     this.studioSpherical = { radius: this.defaultStudioRadius, theta: this.defaultStudioTheta, phi: this.defaultStudioPhi };
     this.targetStudioSpherical = { ...this.studioSpherical };
     this.studioLookAt = new THREE.Vector3(0, this.defaultStudioLookY, 0);

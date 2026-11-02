@@ -447,10 +447,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   if (isTabletBloom) {
     // Natural frontal portrait view with subtle top angle into petals & generous headroom so flower never cuts off
-    const TABLET_BLOOM_RADIUS = isLaptopBloom ? 5.10 : 5.50; // Generous distance ensuring full flower & tall stretches fit with clear headroom
+    const TABLET_BLOOM_RADIUS = isLaptopBloom ? 5.35 : 5.65; // Generous distance ensuring full flower & tall stretches fit with clear headroom
     const TABLET_BLOOM_PHI = 1.14; // Gently elevated top angle (~65° from vertical / ~25° above horizontal)
     const TABLET_BLOOM_THETA = 0.04; // Centered
-    const TABLET_BLOOM_LOOK_Y = 1.32; // Aimed comfortably on flower center & blossom
+    const TABLET_BLOOM_LOOK_Y = 1.20; // Aimed comfortably on flower center, giving ample sky headroom above crown
 
     if (garden) {
       garden.defaultStudioRadius = TABLET_BLOOM_RADIUS;
