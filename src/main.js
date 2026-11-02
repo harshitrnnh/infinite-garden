@@ -62,6 +62,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   const charNum = document.getElementById('char-num');
   const titleCharCount = document.getElementById('title-char-count');
+  const choreoCharNum = document.getElementById('choreo-char-num');
+  const choreoCharCount = document.getElementById('choreo-char-count');
   const sendEmailToggle = document.getElementById('send-email-toggle');
   const emailInputContainer = document.getElementById('email-input-container');
   const visitorEmailInput = document.getElementById('visitor-email-input');
@@ -781,8 +783,28 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   };
 
+  const updateChoreoCharCount = () => {
+    if (!choreographerInput) return;
+    const len = choreographerInput.value.length;
+    if (choreoCharNum) choreoCharNum.textContent = len;
+    if (choreoCharCount) {
+      if (len >= 25) {
+        choreoCharCount.classList.add('limit-reached');
+      } else {
+        choreoCharCount.classList.remove('limit-reached');
+      }
+    }
+  };
+
   if (flowerNameInput) {
     flowerNameInput.addEventListener('input', updateTitleCharCount);
+  }
+
+  if (choreographerInput) {
+    choreographerInput.addEventListener('input', () => {
+      updateChoreoCharCount();
+      updatePostcardPreview();
+    });
   }
 
   if (sendEmailToggle && emailInputContainer) {
@@ -855,6 +877,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       choreographerInput.value = '';
     }
     updateTitleCharCount();
+    updateChoreoCharCount();
     speciesPillName.textContent = meta ? meta.name : 'Living Flower';
     speciesPillIcon.textContent =
       currentSpecies === 'periwinkle' ? '🌸' :
@@ -873,6 +896,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (flowerNameInput) {
     flowerNameInput.addEventListener('input', () => {
       updateTitleCharCount();
+    updateChoreoCharCount();
       updatePostcardPreview();
     });
   }
@@ -958,6 +982,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   randomNameBtn.addEventListener('click', () => {
     flowerNameInput.value = getRandomPoeticName().slice(0, 25);
     updateTitleCharCount();
+    updateChoreoCharCount();
   });
 
   plantingCancelBtn.addEventListener('click', () => {
