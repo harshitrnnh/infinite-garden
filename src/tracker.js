@@ -728,13 +728,19 @@ export class BodyTracker {
     const avgWristX = (lWr.x + rWr.x) * 0.5;
     const avgWristY = (lWr.y + rWr.y) * 0.5;
 
+    // Detect either wrists or fingertips touching (MediaPipe index finger tips 19 & 20)
+    const lIdx = lm[19];
+    const rIdx = lm[20];
+    const indexDist = (lIdx && rIdx) ? Math.hypot(lIdx.x - rIdx.x, lIdx.y - rIdx.y) : wristDist;
+    const handDist = Math.min(wristDist, indexDist);
+
     const isNamastePose = (
-      wristDist < shoulderWidth * 0.44 &&
-      avgWristY > (nose.y + 0.04) &&
-      avgWristY < (midShoulderY + shoulderWidth * 1.35) &&
-      Math.abs(avgWristX - midShoulderX) < shoulderWidth * 0.38 &&
-      elbowDist > wristDist * 1.7 &&
-      elbowDist > shoulderWidth * 0.65
+      handDist < shoulderWidth * 0.55 &&
+      avgWristY > (nose.y + 0.02) &&
+      avgWristY < (midShoulderY + shoulderWidth * 1.45) &&
+      Math.abs(avgWristX - midShoulderX) < shoulderWidth * 0.42 &&
+      elbowDist > handDist * 1.15 &&
+      elbowDist > shoulderWidth * 0.45
     );
 
     const now = performance.now();
@@ -742,17 +748,16 @@ export class BodyTracker {
 
     if (isNamastePose) {
       this.namasteFrames = (this.namasteFrames || 0) + 1;
-      // Holding Namaste for ~15 frames (~0.5s) confirms deliberate gesture.
-      // Must not already be triggered, and must have had a 3-second cooldown to avoid multiple triggers for 1 gesture.
-      if (this.namasteFrames >= 15 && !this.namasteTriggered && timeSinceLastNamaste > 3000) {
+      // Holding Namaste for ~8 frames (~0.25s) confirms deliberate gesture.
+      // 1.5-second cooldown prevents unintended multiple triggers for 1 gesture.
+      if (this.namasteFrames >= 8 && !this.namasteTriggered && timeSinceLastNamaste > 1500) {
         this.namasteTriggered = true;
         this.triggerNamaste();
       }
     } else {
       this.namasteFrames = Math.max(0, (this.namasteFrames || 0) - 1);
-      // Hands must be clearly separated (wristDist > 0.60 * shoulderWidth)
-      // to unlock for any subsequent deliberate Namaste gesture
-      if (this.namasteFrames === 0 && wristDist > shoulderWidth * 0.60 && timeSinceLastNamaste > 2000) {
+      // Hands separated to unlock for any subsequent deliberate Namaste gesture
+      if (this.namasteFrames === 0 && handDist > shoulderWidth * 0.50 && timeSinceLastNamaste > 1200) {
         this.namasteTriggered = false;
       }
     }
