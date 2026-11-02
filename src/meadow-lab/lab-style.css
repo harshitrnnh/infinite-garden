@@ -852,6 +852,7 @@ body.ui-hidden .nav-hint-badge,
 body.ui-hidden .lab-dock,
 body.ui-hidden .mist-vignette {
   opacity: 0;
+  display: none !important;
   pointer-events: none;
   transition: opacity 0.35s ease;
 }
@@ -971,13 +972,20 @@ body.ui-hidden .hide-ui-btn:hover {
   padding: 3px 9px;
   white-space: nowrap;
   pointer-events: none;
-  transform: translateX(-50%);
-  transition: opacity 0.25s ease, transform 0.25s ease, background 0.2s, border-color 0.2s;
+  /* Do NOT set transform in CSS — CSS2DRenderer sets 3D screen translate dynamically */
+  transition: opacity 0.25s ease, background 0.2s, border-color 0.2s;
   user-select: none;
 
   /* Hidden by default — only shown on search match */
   opacity: 0;
   visibility: hidden;
+}
+
+/* Guard: If CSS2DRenderer has not positioned this tag in 3D yet, never let it show at top:0 left:0 */
+.flower-name-tag:not([style*="translate"]) {
+  display: none !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
 }
 
 /* Highlighted (search match) — tag appears */
@@ -987,7 +995,6 @@ body.ui-hidden .hide-ui-btn:hover {
   background: rgba(18, 28, 22, 0.88);
   border: 1px solid rgba(228, 204, 140, 0.55);
   color: #fbfaf5;
-  transform: translateX(-50%) scale(1.05);
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.45), 0 0 12px rgba(228, 204, 140, 0.25);
 }
 
@@ -1020,7 +1027,6 @@ body.ui-hidden .hide-ui-btn:hover {
   border: 1px solid rgba(134, 239, 172, 0.75);
   color: #fff;
   box-shadow: 0 4px 18px rgba(0, 0, 0, 0.45), 0 0 16px rgba(74, 222, 128, 0.4);
-  transform: translateX(-50%) scale(1.08);
 }
 
 /* Dimmed state — stays hidden (non-matching during search) */
@@ -1158,7 +1164,7 @@ body.ui-hidden .hide-ui-btn:hover {
   box-shadow: 0 0 14px rgba(56, 189, 248, 0.4);
 }
 
-/* Searched & Celebrated Flower Tag: Subtle, elegant floating tag showing flower name */
+/* Searched & Celebrated Flower Tag: Subtle, elegant floating tag showing flower name in 3D above bloom */
 .flower-name-tag.tag-celebrate-glow {
   display: inline-flex !important;
   align-items: center !important;
@@ -1178,9 +1184,8 @@ body.ui-hidden .hide-ui-btn:hover {
   padding: 5px 14px !important;
   border-radius: 20px !important;
   box-shadow: 0 4px 18px rgba(0, 0, 0, 0.5), 0 0 16px rgba(235, 214, 158, 0.32) !important;
-  transform: translateX(-50%) !important;
   z-index: 9999 !important;
-  animation: subtleTagFloat 2.8s infinite alternate ease-in-out !important;
+  animation: subtleTagGlowPulse 2.8s infinite alternate ease-in-out !important;
 }
 
 .flower-name-tag.tag-celebrate-glow::before {
@@ -1194,14 +1199,14 @@ body.ui-hidden .hide-ui-btn:hover {
   flex-shrink: 0;
 }
 
-@keyframes subtleTagFloat {
+@keyframes subtleTagGlowPulse {
   0% {
-    transform: translateX(-50%) translateY(0) scale(1.0);
     box-shadow: 0 4px 18px rgba(0, 0, 0, 0.5), 0 0 14px rgba(235, 214, 158, 0.25);
+    border-color: rgba(235, 214, 158, 0.55);
   }
   100% {
-    transform: translateX(-50%) translateY(-4px) scale(1.04);
-    box-shadow: 0 6px 22px rgba(0, 0, 0, 0.5), 0 0 20px rgba(235, 214, 158, 0.42);
+    box-shadow: 0 6px 22px rgba(0, 0, 0, 0.55), 0 0 20px rgba(235, 214, 158, 0.45);
+    border-color: rgba(235, 214, 158, 0.85);
   }
 }
 

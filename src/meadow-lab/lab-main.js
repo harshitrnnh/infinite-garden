@@ -735,6 +735,12 @@ class MeadowVisualLab {
         matchLabel.pill.classList.add('tag-celebrate-glow');
         matchLabel.highlighted = true;
       }
+
+      // Immediately synchronize 3D world matrix so the tag is positioned accurately above the bloom
+      if (flower.group) {
+        flower.group.updateMatrixWorld(true);
+      }
+      this.labelSystem.update();
     }
 
     // 6. Restore after durationSeconds: pan out to default view (from a little up, zoomed out showing majority of garden)
