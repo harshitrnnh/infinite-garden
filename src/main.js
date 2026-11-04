@@ -671,9 +671,13 @@ document.addEventListener('DOMContentLoaded', async () => {
   };
 
   const startRecordingChoreography = () => {
-    // Reset any open inspect or modal
+    // Reset any open inspect or modal and wipe previous form inputs
     flowerInspectCard.classList.add('hidden');
-    plantingModal.classList.add('hidden');
+    if (typeof closePlantingModal === 'function') {
+      closePlantingModal();
+    } else if (plantingModal) {
+      plantingModal.classList.add('hidden');
+    }
     setGuideModalVisible(false);
     garden.resetToStudio();
     communityManager.setFlowersVisible(false); // Clean studio for choreography!
@@ -870,12 +874,61 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   };
 
-  const openPlantingModal = () => {
-    const meta = CHOREOGRAPHY_SPECIES_META[currentSpecies] || FLOWER_SPECIES[currentSpecies];
-    // Do not force generic 'Devcon Gardener' - leave empty if not typed by user
-    if (choreographerInput.value === 'Devcon Gardener' || choreographerInput.value === 'Anonymous Dancer') {
+  // Helper to completely clear and reset the planting form for a fresh session
+  const resetPlantingForm = () => {
+    if (flowerNameInput) {
+      flowerNameInput.value = '';
+    }
+    if (choreographerInput) {
       choreographerInput.value = '';
     }
+    if (visitorEmailInput) {
+      visitorEmailInput.value = '';
+    }
+    if (sendEmailToggle) {
+      sendEmailToggle.checked = true;
+    }
+    if (emailInputContainer) {
+      emailInputContainer.classList.remove('collapsed');
+    }
+    if (plantingEmailBtn) {
+      plantingEmailBtn.textContent = '✉️ Send Email';
+      plantingEmailBtn.disabled = false;
+    }
+    if (plantingDownloadBtn) {
+      plantingDownloadBtn.textContent = '💾 Save to Disk';
+      plantingDownloadBtn.disabled = false;
+    }
+    if (plantingInstagramBtn && igBtnLabel) {
+      igBtnLabel.textContent = 'Instagram Story (9:16)';
+      plantingInstagramBtn.disabled = false;
+    }
+    updateTitleCharCount();
+    updateChoreoCharCount();
+    updatePostcardPreview();
+  };
+
+  const closePlantingModal = () => {
+    if (plantingModal) {
+      plantingModal.classList.add('hidden');
+    }
+    resetPlantingForm();
+    if (plant && typeof plant.resetNamasteBranches === 'function') {
+      plant.resetNamasteBranches();
+    }
+    if (tracker) {
+      tracker.namasteCount = 0;
+      tracker.namasteFrames = 0;
+      tracker.namasteTriggered = false;
+      if (typeof tracker.setNamasteDetectionEnabled === 'function') {
+        tracker.setNamasteDetectionEnabled(true);
+      }
+    }
+  };
+
+  const openPlantingModal = () => {
+    resetPlantingForm();
+    const meta = CHOREOGRAPHY_SPECIES_META[currentSpecies] || FLOWER_SPECIES[currentSpecies];
     updateTitleCharCount();
     updateChoreoCharCount();
     speciesPillName.textContent = meta ? meta.name : 'Living Flower';
@@ -890,19 +943,19 @@ document.addEventListener('DOMContentLoaded', async () => {
     refreshPostcardAndQR();
 
     plantingModal.classList.remove('hidden');
-    setTimeout(() => flowerNameInput.focus(), 100);
+    setTimeout(() => flowerNameInput && flowerNameInput.focus(), 100);
   };
 
   if (flowerNameInput) {
     flowerNameInput.addEventListener('input', () => {
       updateTitleCharCount();
-    updateChoreoCharCount();
       updatePostcardPreview();
     });
   }
 
   if (choreographerInput) {
     choreographerInput.addEventListener('input', () => {
+      updateChoreoCharCount();
       updatePostcardPreview();
     });
   }
@@ -986,24 +1039,21 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
 
   plantingCancelBtn.addEventListener('click', () => {
-    plantingModal.classList.add('hidden');
-    if (plant && typeof plant.resetNamasteBranches === 'function') {
-      plant.resetNamasteBranches();
-    }
-    if (tracker) {
-      tracker.namasteCount = 0;
-      tracker.namasteFrames = 0;
-      tracker.namasteTriggered = false;
-      if (typeof tracker.setNamasteDetectionEnabled === 'function') {
-        tracker.setNamasteDetectionEnabled(true);
-      }
-    }
+    closePlantingModal();
   });
 
   plantingRerecordBtn.addEventListener('click', () => {
-    plantingModal.classList.add('hidden');
+    closePlantingModal();
     startRecordingChoreography();
   });
+
+  if (plantingModal) {
+    plantingModal.addEventListener('click', (e) => {
+      if (e.target === plantingModal) {
+        closePlantingModal();
+      }
+    });
+  }
 
   // Local Disk Download Helper for Every Choreography Recording
   const downloadToDisk = (blobOrString, filename, mimeType) => {
@@ -1250,21 +1300,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       namasteBranchCount: finalNamasteCount
     });
 
-    plantingModal.classList.add('hidden');
+    closePlantingModal();
     updateGardenCountUI();
-
-    // Reset hero studio flower for the next visitor
-    if (plant && typeof plant.resetNamasteBranches === 'function') {
-      plant.resetNamasteBranches();
-    }
-    if (tracker) {
-      tracker.namasteCount = 0;
-      tracker.namasteFrames = 0;
-      tracker.namasteTriggered = false;
-      if (typeof tracker.setNamasteDetectionEnabled === 'function') {
-        tracker.setNamasteDetectionEnabled(true);
-      }
-    }
 
     // Broadcast across windows to the TV display in real-time
     if (gardenChannel) {
@@ -1495,7 +1532,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
       setGuideModalVisible(false);
       flowerInspectCard.classList.add('hidden');
-      plantingModal.classList.add('hidden');
+      closePlantingModal();
       garden.resetToStudio();
       communityManager.setFlowersVisible(false);
       return;
